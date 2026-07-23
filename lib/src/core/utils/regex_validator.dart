@@ -5,6 +5,5 @@ class RegexValidator {
 
   static final email = RegExp(r"^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$");
   static final mobile = RegExp(r"^[6-9]\d{9}$");
-  static final otp = RegExp(r'^.{4}$');
-  static final RegExp communityCode = RegExp(r'^[A-Z0-9]+$');
+  static final password = RegExp(r'^.{8,}$');
 }

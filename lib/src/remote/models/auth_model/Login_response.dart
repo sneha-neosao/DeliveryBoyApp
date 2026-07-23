@@ -1,132 +1,127 @@
 import 'dart:convert';
 
+/// Represents the API response for login.
 class LoginResponse {
-  final int status;
-  final bool success;
-  final String message;
-  final String? refreshToken;
-  final String? accessToken;
-  final Technician? technician;
-  final Dealer? dealer;
+  dynamic status;
+  String? message;
+  LoginResult? data;
 
   LoginResponse({
     required this.status,
-    required this.success,
     required this.message,
-    this.refreshToken,
-    this.accessToken,
-    this.technician,
-    this.dealer,
+    required this.data,
   });
 
-  factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    // Extract message from top-level or nested error object
-    String msg = json['message'] ?? "";
-    if (msg.isEmpty) {
-      if (json['error'] != null) {
-        msg = json['error']['message'] ?? "";
-      } else if (json['success'] == true) {
-        msg = "Login Successful"; // Default if success but no message
-      }
-    }
+  factory LoginResponse.fromRawJson(String str) =>
+      LoginResponse.fromJson(json.decode(str));
 
-    final data = json['data'];
+  String toRawJson() => json.encode(toJson());
 
-    return LoginResponse(
-      status: json['status'] ?? 0,
-      success: json['success'] ?? false,
-      message: msg,
-      refreshToken: data?['refresh_token'],
-      accessToken: data?['access_token'],
-      technician: data?['technician'] != null
-          ? Technician.fromJson(data['technician'])
-          : null,
-      dealer: data?['dealer'] != null ? Dealer.fromJson(data['dealer']) : null,
-    );
-  }
+  factory LoginResponse.fromJson(Map<String, dynamic> json) => LoginResponse(
+    status: json["status"],
+    message: json["message"],
+    data: json["data"] != null ? LoginResult.fromJson(json["data"]) : null,
+  );
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> json = {
-      'status': status,
-      'success': success,
-      'message': message,
-    };
-
-    if (refreshToken != null ||
-        accessToken != null ||
-        technician != null ||
-        dealer != null) {
-      json['data'] = {
-        'refresh_token': refreshToken,
-        'access_token': accessToken,
-        'technician': technician?.toJson(),
-        'dealer': dealer?.toJson(),
-      };
-    }
-
-    return json;
+    final map = <String, dynamic>{};
+    if (status != null) map['status'] = status;
+    if (message != null) map['message'] = message;
+    if (data != null) map['data'] = data?.toJson();
+    return map;
   }
-
-  /// Convert to raw JSON string for storage
-  String toRawJson() => jsonEncode(toJson());
-
-  /// Restore from raw JSON string
-  factory LoginResponse.fromRawJson(String str) =>
-      LoginResponse.fromJson(jsonDecode(str));
 }
 
-class Technician {
-  final String id;
-  final String name;
-  final String code;
-  final String phone;
-  final String email;
+/// Represents the login result containing tokens and delivery boy details.
+class LoginResult {
+  String? accessToken;
+  String? refreshToken;
+  String? tokenType;
+  DeliveryBoy? deliveryBoy;
 
-  Technician({
+  LoginResult({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.tokenType,
+    required this.deliveryBoy,
+  });
+
+  factory LoginResult.fromRawJson(String str) =>
+      LoginResult.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory LoginResult.fromJson(Map<String, dynamic> json) => LoginResult(
+    accessToken: json["access_token"] ?? "",
+    refreshToken: json["refresh_token"] ?? "",
+    tokenType: json["token_type"] ?? "",
+    deliveryBoy: json["delivery_boy"] != null
+        ? DeliveryBoy.fromJson(json["delivery_boy"])
+        : null,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "access_token": accessToken,
+    "refresh_token": refreshToken,
+    "token_type": tokenType,
+    "delivery_boy": deliveryBoy?.toJson(),
+  };
+}
+
+/// Represents the delivery boy details.
+class DeliveryBoy {
+  int? id;
+  String? uuId;
+  String? name;
+  String? phone;
+  String? email;
+  String? vehicleType;
+  String? deliveryType;
+  String? vehicleNumber;
+  bool? isActive;
+  bool? isAvailable;
+
+  DeliveryBoy({
     required this.id,
+    required this.uuId,
     required this.name,
-    required this.code,
     required this.phone,
     required this.email,
+    required this.vehicleType,
+    required this.deliveryType,
+    required this.vehicleNumber,
+    required this.isActive,
+    required this.isAvailable,
   });
 
-  factory Technician.fromJson(Map<String, dynamic> json) {
-    return Technician(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      code: json['code'] ?? '',
-      phone: json['phone'] ?? '',
-      email: json['email'] ?? '',
-    );
-  }
+  factory DeliveryBoy.fromRawJson(String str) =>
+      DeliveryBoy.fromJson(json.decode(str));
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'code': code,
-      'phone': phone,
-      'email': email,
-    };
-  }
-}
+  String toRawJson() => json.encode(toJson());
 
-class Dealer {
-  final String id;
-  final String name;
-  final String code;
+  factory DeliveryBoy.fromJson(Map<String, dynamic> json) => DeliveryBoy(
+    id: json["id"],
+    uuId: json["uu_id"] ?? "",
+    name: json["name"] ?? "",
+    phone: json["phone"] ?? "",
+    email: json["email"] ?? "",
+    vehicleType: json["vehicle_type"] ?? "",
+    deliveryType: json["delivery_type"] ?? "",
+    vehicleNumber: json["vehicle_number"] ?? "",
+    isActive: json["is_active"] ?? false,
+    isAvailable: json["is_available"] ?? false,
+  );
 
-  Dealer({required this.id, required this.name, required this.code});
-
-  factory Dealer.fromJson(Map<String, dynamic> json) {
-    return Dealer(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      code: json['code'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name, 'code': code};
-  }
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "uu_id": uuId,
+    "name": name,
+    "phone": phone,
+    "email": email,
+    "vehicle_type": vehicleType,
+    "delivery_type": deliveryType,
+    "vehicle_number": vehicleNumber,
+    "is_active": isActive,
+    "is_available": isAvailable,
+  };
 }

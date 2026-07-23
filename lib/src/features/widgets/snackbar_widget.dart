@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
+import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
 
 /// Shows a custom Toast/SnackBar using an OverlayEntry.
@@ -14,13 +15,11 @@ void appSnackBar(BuildContext context, Color color, String label) {
   overlay ??= globalNavigator.currentState?.overlay;
 
   if (overlay == null) {
-    print("⚠️ Cannot show appSnackBar: Overlay is null");
     return;
   }
 
   late OverlayEntry entry;
   
-  // To handle animations, we need a StatefulBuilder or custom stateful widget.
   entry = OverlayEntry(
     builder: (context) => _AnimatedOverlaySnackBar(
       color: color,
@@ -73,8 +72,8 @@ class _AnimatedOverlaySnackBarState extends State<_AnimatedOverlaySnackBar>
 
     _controller.forward();
 
-    // Auto dismiss after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
+    // Auto dismiss after 2.5 seconds
+    Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
         _controller.reverse().then((_) {
           widget.onDismissed();
@@ -91,15 +90,15 @@ class _AnimatedOverlaySnackBarState extends State<_AnimatedOverlaySnackBar>
 
   @override
   Widget build(BuildContext context) {
-    // Determine bottom padding, taking safe area (like keyboards/home indicators) into account.
+    // Determine bottom padding, taking safe area into account.
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom +
         24.0;
 
     return Positioned(
       bottom: bottomPadding,
-      left: 16.0,
-      right: 16.0,
+      left: 20.0,
+      right: 20.0,
       child: Material(
         color: Colors.transparent,
         child: FadeTransition(
@@ -107,25 +106,43 @@ class _AnimatedOverlaySnackBarState extends State<_AnimatedOverlaySnackBar>
           child: SlideTransition(
             position: _offsetAnimation,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+              padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 12.0),
               decoration: BoxDecoration(
-                color: widget.color,
-                borderRadius: BorderRadius.circular(4.0),
-                boxShadow: const [
+                color: Colors.white, // Fixed white background
+                borderRadius: BorderRadius.circular(25.0), // Curved like login textfields (radius 25)
+                border: Border.all(
+                  color: AppColor.darkOrange, // Dark orange border
+                  width: 1.5,
+                ),
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 6.0,
-                    offset: Offset(0, 3),
-                  )
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12.0,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
-              child: Text(
-                widget.label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.0,
-                  fontWeight: FontWeight.w400,
-                ),
+              child: Row(
+                children: [
+                  // Dark orange icon at left side
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColor.darkOrange, // Dark Orange Icon
+                    size: 22.0,
+                  ),
+                  const SizedBox(width: 12.0),
+                  // Display message in front of icon
+                  Expanded(
+                    child: Text(
+                      widget.label,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

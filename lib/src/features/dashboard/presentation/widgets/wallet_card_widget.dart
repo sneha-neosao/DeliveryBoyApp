@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -75,12 +76,7 @@ class WalletCardWidget extends StatelessWidget {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Wallet details up to date!'),
-                      backgroundColor: AppColor.darkOrange,
-                    ),
-                  );
+                  appSnackBar(context, AppColor.darkOrange, 'Wallet details up to date!');
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Container(

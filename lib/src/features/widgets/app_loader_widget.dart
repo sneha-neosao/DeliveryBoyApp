@@ -5,7 +5,7 @@ showLoader(BuildContext context) {
   showDialog(
     context: context,
     barrierDismissible: false,
-    barrierColor: Colors.black.withOpacity(0.4),
+    barrierColor: Colors.black.withValues(alpha: 0.4),
     builder: (_) {
       return BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),

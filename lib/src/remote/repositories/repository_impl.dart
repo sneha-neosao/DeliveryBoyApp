@@ -1,11 +1,18 @@
-
+import 'package:delivery_boy_app/src/core/api/api_exception.dart';
+import 'package:delivery_boy_app/src/core/errors/exceptions.dart';
+import 'package:delivery_boy_app/src/core/errors/failures.dart';
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
+import 'package:delivery_boy_app/src/core/utils/failure_converter.dart';
+import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
+import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
+import 'package:fpdart/fpdart.dart';
 
 import '../../configs/injector/injector.dart';
 
 /// Abstract Repository interface defining all data operations for the app
 
 abstract class Repository {
-  // Future<Either<Failure, LoginResponse>> login(LoginParams params);
+  Future<Either<Failure, LoginResponse>> login(LoginParams params);
 }
 
 class AuthRepositoryImpl implements Repository {
@@ -14,56 +21,46 @@ class AuthRepositoryImpl implements Repository {
 
   const AuthRepositoryImpl(this._remoteDataSource, this._networkInfo);
 
-  // @override
-  // Future<Either<Failure, LoginResponse>> login(LoginParams params) {
-  //   return _networkInfo.check<LoginResponse>(
-  //     connected: () async {
-  //       try {
-  //         final respData = await _remoteDataSource.login(params);
-  //
-  //         if (respData.status != 200) {
-  //           return Left(CredentialFailure(respData.message!));
-  //         }
-  //
-  //         // Save full session object
-  //         await SessionManager.saveUserSession(respData);
-  //
-  //         // Save tokens to their dedicated keys so ApiInterceptor can read them
-  //         if (respData.accessToken != null) {
-  //           await SessionManager.saveSessionId(respData.accessToken!);
-  //         }
-  //         if (respData.refreshToken != null) {
-  //           await SessionManager.saveRefreshToken(respData.refreshToken!);
-  //         }
-  //
-  //         // Save credentials for auto-fill on next login
-  //         await SessionManager.saveCredentials(params.phone, params.password);
-  //
-  //         // Retrieve later
-  //         final savedSession = await SessionManager.getUserSession();
-  //         if (savedSession != null) {
-  //           print(savedSession.technician?.name);
-  //           print(savedSession.dealer?.name);
-  //         }
-  //
-  //         return Right(respData);
-  //       } on ServerException {
-  //         return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
-  //       } catch (e) {
-  //         if (e is ApiException) {
-  //           return Left(ApiFailure(e.message)); // rethrow as-is
-  //         }
-  //         return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
-  //       }
-  //     },
-  //     notConnected: () async {
-  //       try {
-  //         return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
-  //       } on CacheException {
-  //         return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
-  //       }
-  //     },
-  //   );
-  // }
+  @override
+  Future<Either<Failure, LoginResponse>> login(LoginParams params) {
+    return _networkInfo.check<LoginResponse>(
+      connected: () async {
+        try {
+          final respData = await _remoteDataSource.login(params);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          // Save full session object
+          await SessionManager.saveUserSession(respData);
+
+          // Save tokens to their dedicated keys so ApiInterceptor can read them
+          if (respData.data?.accessToken != null) {
+            await SessionManager.saveSessionId(respData.data?.accessToken);
+          }
+          if (respData.data?.refreshToken != null) {
+            await SessionManager.saveRefreshToken(respData.data?.accessToken);
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
 
 }

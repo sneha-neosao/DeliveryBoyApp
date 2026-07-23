@@ -5,6 +5,5 @@ import 'package:delivery_boy_app/src/core/utils/regex_validator.dart';
 extension StringValidatorExtension on String {
   bool get isEmailValid => RegexValidator.email.hasMatch(this);
   bool get isMobileNumberValid => RegexValidator.mobile.hasMatch(this);
-  bool get isOtpValid => RegexValidator.otp.hasMatch(this);
-  bool get isCommunityCodeValid => RegexValidator.communityCode.hasMatch(this);
+  bool get isPasswordValid => RegexValidator.password.hasMatch(this);
 }

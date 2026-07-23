@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/change_password_input_widget.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_input_widget.dart';
+import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -52,33 +53,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _handleProfileSave() {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile details saved successfully!'),
-          backgroundColor: Color(0xFFFA6624),
-        ),
-      );
+      appSnackBar(context, const Color(0xFFFA6624), 'Profile details saved successfully!');
     }
   }
 
   void _handlePasswordUpdate() {
     if (_passwordFormKey.currentState?.validate() ?? false) {
       if (_newPasswordController.text != _confirmPasswordController.text) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('New password and confirm password do not match!'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        appSnackBar(context, Colors.redAccent, 'New password and confirm password do not match!');
         return;
       }
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password updated successfully!'),
-          backgroundColor: Color(0xFFFA6624),
-        ),
-      );
+      appSnackBar(context, const Color(0xFFFA6624), 'Password updated successfully!');
       
       // Clear password inputs on successful update
       _oldPasswordController.clear();

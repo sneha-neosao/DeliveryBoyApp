@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../errors/failures.dart';
@@ -21,9 +22,9 @@ class SessionManager {
     return prefs.getBool("isLoggedIn");
   }
 
-  static saveSessionId(String token) async {
+  static saveSessionId(String? token) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString("token", token);
+    prefs.setString("token", token ?? "");
   }
 
   static Future<String?> getAuthToken() async {
@@ -31,9 +32,9 @@ class SessionManager {
     return prefs.getString("token");
   }
 
-  static saveRefreshToken(String token) async {
+  static saveRefreshToken(String? token) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString("refreshToken", token);
+    prefs.setString("refreshToken", token ?? "");
   }
 
   static Future<String?> getRefreshToken() async {
@@ -41,17 +42,17 @@ class SessionManager {
     return prefs.getString("refreshToken");
   }
 
-  // static Future<void> saveUserSession(LoginResponse value) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   await prefs.setString("userSession", value.toRawJson());
-  // }
-  //
-  // static Future<LoginResponse?> getUserSession() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final raw = prefs.getString("userSession");
-  //   if (raw == null) return null;
-  //   return LoginResponse.fromRawJson(raw);
-  // }
+  static Future<void> saveUserSession(LoginResponse value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("userSession", value.toRawJson());
+  }
+
+  static Future<LoginResponse?> getUserSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString("userSession");
+    if (raw == null) return null;
+    return LoginResponse.fromRawJson(raw);
+  }
 
   // static saveCommunityCode(String code) async {
   //   final prefs =await SharedPreferences.getInstance();

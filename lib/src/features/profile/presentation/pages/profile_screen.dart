@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/profile/presentation/widgets/change_password_input_widget.dart';
+import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_input_widget.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -140,61 +142,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // Profile Details Form (Editable from start)
                       Form(
                         key: _formKey,
-                        child: Column(
-                          children: [
-                            _buildTextField(
-                              controller: _nameController,
-                              prefixIcon: Icons.person_outline_rounded,
-                              hintText: 'Name',
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your name';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _phoneController,
-                              prefixIcon: Icons.phone_android_rounded,
-                              hintText: 'Phone Number',
-                              keyboardType: TextInputType.phone,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your phone number';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _emailController,
-                              prefixIcon: Icons.email_outlined,
-                              hintText: 'Email',
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your email';
-                                }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                  return 'Please enter a valid email address';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _locationController,
-                              prefixIcon: Icons.location_on_outlined,
-                              hintText: 'Location',
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your location';
-                                }
-                                return null;
-                              },
-                            ),
-                          ],
+                        child: EditProfileInputWidget(
+                          nameController: _nameController,
+                          phoneController: _phoneController,
+                          emailController: _emailController,
+                          locationController: _locationController,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -278,43 +230,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              _buildTextField(
-                                controller: _oldPasswordController,
-                                prefixIcon: Icons.vpn_key_rounded,
-                                hintText: 'Old Password',
-                                obscureText: true,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter old password';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              _buildTextField(
-                                controller: _newPasswordController,
-                                prefixIcon: Icons.vpn_key_rounded,
-                                hintText: 'New Password',
-                                obscureText: true,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter new password';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              _buildTextField(
-                                controller: _confirmPasswordController,
-                                prefixIcon: Icons.vpn_key_rounded,
-                                hintText: 'Confirm Password',
-                                obscureText: true,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please confirm new password';
-                                  }
-                                  return null;
-                                },
+                              ChangePasswordInputWidget(
+                                oldPasswordController: _oldPasswordController,
+                                newPasswordController: _newPasswordController,
+                                confirmPasswordController: _confirmPasswordController,
                               ),
                             ],
                           ),
@@ -356,70 +275,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required IconData prefixIcon,
-    required String hintText,
-    bool obscureText = false,
-    String? Function(String?)? validator,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        validator: validator,
-        style: const TextStyle(
-          color: Colors.black87,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-        ),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.only(left: 18.0, right: 12.0),
-            child: Icon(prefixIcon, color: const Color(0xFFFA6624), size: 20),
-          ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 40),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(color: Colors.grey.shade100, width: 1),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(color: Colors.grey.shade100, width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: const BorderSide(color: Color(0xFFFA6624), width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-          ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
         ),
       ),
     );

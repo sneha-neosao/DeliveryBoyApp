@@ -78,52 +78,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(width: 10),
 
-                          // Online / Offline Status Toggle Button
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isOnline = !_isOnline;
-                              });
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  width: 1.2,
+                          // Online / Offline Status Toggle Button (Same as OrdersScreen)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColor.white.withValues(alpha: 0.95),
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColor.black.withValues(alpha: 0.1),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
                                 ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: _isOnline
-                                          ? const Color(0xFF00E676)
-                                          : Colors.grey.shade300,
-                                    ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _isOnline
+                                      ? 'home_status_online'.tr()
+                                      : 'home_status_offline'.tr(),
+                                  style: TextStyle(
+                                    color: _isOnline
+                                        ? const Color(0xFFFA6624)
+                                        : const Color(0xFF7A869A),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _isOnline
-                                        ? 'home_status_online'.tr()
-                                        : 'home_status_offline'.tr(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  height: 30,
+                                  child: Switch(
+                                    value: _isOnline,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _isOnline = value;
+                                      });
+                                    },
+                                    activeThumbColor: AppColor.primary,
+                                    activeTrackColor:
+                                        AppColor.primaryDark.withValues(alpha: 0.3),
+                                    inactiveThumbColor: AppColor.gray,
+                                    inactiveTrackColor: AppColor.white,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

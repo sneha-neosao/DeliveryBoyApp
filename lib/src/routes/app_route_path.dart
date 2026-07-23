@@ -2,6 +2,7 @@ enum AppRoute {
   splash(path: "/splash_screen"),
   getStarted(path: "/get_started_screen"),
   login(path: "/login_screen"),
+  dashboard(path: "/dashboard_screen"),
   orders(path: "/orders_screen"),
   delivered(path: "/delivered_screen"),
   cancelled(path: "/cancelled_screen"),

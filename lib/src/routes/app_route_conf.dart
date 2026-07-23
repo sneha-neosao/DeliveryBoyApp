@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:delivery_boy_app/src/features/main_screen/presentation/pages/main_screen.dart';
 import 'app_route_path.dart';
 import 'routes.dart';
 
@@ -29,30 +30,29 @@ class AppRouteConf {
         name: AppRoute.login.name,
         pageBuilder: (context, state) => _fadePage(const LoginScreen()),
       ),
-      GoRoute(
-        path: AppRoute.orders.path,
-        name: AppRoute.orders.name,
-        pageBuilder: (context, state) => _fadePage(const OrdersScreen()),
-      ),
-      GoRoute(
-        path: AppRoute.delivered.path,
-        name: AppRoute.delivered.name,
-        pageBuilder: (context, state) => _fadePage(const DeliveredScreen()),
-      ),
-      GoRoute(
-        path: AppRoute.cancelled.path,
-        name: AppRoute.cancelled.name,
-        pageBuilder: (context, state) => _fadePage(const CancelledScreen()),
-      ),
-      GoRoute(
-        path: AppRoute.rejected.path,
-        name: AppRoute.rejected.name,
-        pageBuilder: (context, state) => _fadePage(const RejectedScreen()),
-      ),
-      GoRoute(
-        path: AppRoute.profile.path,
-        name: AppRoute.profile.name,
-        pageBuilder: (context, state) => _fadePage(const ProfileScreen()),
+
+      // Shell route for bottom navigation bar screens
+      ShellRoute(
+        builder: (context, state, child) {
+          return MainScreen(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: AppRoute.dashboard.path,
+            name: AppRoute.dashboard.name,
+            pageBuilder: (context, state) => _fadePage(const DashboardScreen()),
+          ),
+          GoRoute(
+            path: AppRoute.orders.path,
+            name: AppRoute.orders.name,
+            pageBuilder: (context, state) => _fadePage(const OrdersScreen()),
+          ),
+          GoRoute(
+            path: AppRoute.profile.path,
+            name: AppRoute.profile.name,
+            pageBuilder: (context, state) => _fadePage(const ProfileScreen()),
+          ),
+        ],
       ),
     ],
   );
@@ -62,7 +62,7 @@ class AppRouteConf {
 
 CustomTransitionPage _fadePage(Widget child) => CustomTransitionPage(
   transitionDuration: const Duration(
-    milliseconds: 800,
+    milliseconds: 500,
   ), // Duration of the animation
   child: child,
   transitionsBuilder: (context, animation, secondaryAnimation, child) {

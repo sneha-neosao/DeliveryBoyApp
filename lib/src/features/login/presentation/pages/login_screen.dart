@@ -193,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
                       ),
                       onPressed: () {
-                        context.go(AppRoute.orders.path);
+                        context.go(AppRoute.dashboard.path);
                       },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,

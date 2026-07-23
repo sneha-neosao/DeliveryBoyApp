@@ -37,5 +37,6 @@
   "drawer_logout": "Logout",
   "drawer_logout_confirm": "Are you sure you want to logout?",
   "drawer_logout_yes": "Logout",
-  "drawer_logout_no": "Cancel"
+  "drawer_logout_no": "Cancel",
+  "dashboard": "Dashboard"
 }

@@ -1,7 +1,8 @@
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
-import 'package:delivery_boy_app/src/features/orders/widgets/drawer_widget.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -57,7 +58,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: const DrawerWidget(),
       backgroundColor: const Color(0xFFFFF9F5), // soft cream background
       body: Stack(
         children: [
@@ -496,9 +496,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           ],
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.menu_rounded, color: Color(0xFFFA6624)),
+                          icon: const Icon(Icons.person_rounded, color: Color(0xFFFA6624)),
                           onPressed: () {
-                            _scaffoldKey.currentState?.openDrawer();
+                            context.go(AppRoute.profile.path);
                           },
                         ),
                       ),

@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/info_card_widget.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/order_history_overview_widget.dart';
@@ -15,6 +16,28 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isOnline = true;
+  String? _userName;
+  String? _userPhone;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserSession();
+  }
+
+  Future<void> _loadUserSession() async {
+    final session = await SessionManager.getUserSession();
+    final deliveryBoy = session?.data?.deliveryBoy;
+    if (mounted && deliveryBoy != null) {
+      setState(() {
+        _userName = deliveryBoy.name;
+        _userPhone = deliveryBoy.phone;
+        if (deliveryBoy.isAvailable != null) {
+          _isOnline = deliveryBoy.isAvailable!;
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +49,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Top Gradient Header with Profile & Online Toggle
             InfoCardWidget(
               isOnline: _isOnline,
+              userName: _userName,
+              userPhone: _userPhone,
               onOnlineToggle: (value) {
                 setState(() {
                   _isOnline = value;

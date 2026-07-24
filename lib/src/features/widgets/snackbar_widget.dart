@@ -126,7 +126,7 @@ class _AnimatedOverlaySnackBarState extends State<_AnimatedOverlaySnackBar>
                 children: [
                   // Dark orange icon at left side
                   const Icon(
-                    Icons.info_outline_rounded,
+                    Icons.location_on,
                     color: AppColor.darkOrange, // Dark Orange Icon
                     size: 22.0,
                   ),

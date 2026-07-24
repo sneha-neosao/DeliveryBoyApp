@@ -7,11 +7,15 @@ import 'package:go_router/go_router.dart';
 class InfoCardWidget extends StatelessWidget {
   final bool isOnline;
   final ValueChanged<bool> onOnlineToggle;
+  final String? userName;
+  final String? userPhone;
 
   const InfoCardWidget({
     super.key,
     required this.isOnline,
     required this.onOnlineToggle,
+    this.userName,
+    this.userPhone,
   });
 
   @override
@@ -159,9 +163,9 @@ class InfoCardWidget extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Neosao Partner',
-                          style: TextStyle(
+                        Text(
+                          (userName != null && userName!.isNotEmpty) ? userName! : 'Neosao Partner',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -177,7 +181,7 @@ class InfoCardWidget extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '+91 8482940592',
+                              (userPhone != null && userPhone!.isNotEmpty) ? userPhone! : '+91 8482940592',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.9),
                                 fontSize: 13,
@@ -189,16 +193,16 @@ class InfoCardWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      context.go(AppRoute.profile.path);
-                    },
-                    icon: const Icon(
-                      Icons.edit_note_rounded,
-                      color: Colors.white,
-                      size: 26,
-                    ),
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     context.go(AppRoute.profile.path);
+                  //   },
+                  //   icon: const Icon(
+                  //     Icons.edit_note_rounded,
+                  //     color: Colors.white,
+                  //     size: 26,
+                  //   ),
+                  // ),
                 ],
               ),
             ],

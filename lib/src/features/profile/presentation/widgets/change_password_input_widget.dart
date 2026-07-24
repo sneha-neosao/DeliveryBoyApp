@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/change_password_textfield.dart';
 import 'package:flutter/material.dart';
 
@@ -29,7 +30,7 @@ class ChangePasswordInputWidget extends StatelessWidget {
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        16.hS,
         ChangePasswordTextField(
           controller: newPasswordController,
           prefixIcon: Icons.vpn_key_rounded,
@@ -42,7 +43,7 @@ class ChangePasswordInputWidget extends StatelessWidget {
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        16.hS,
         ChangePasswordTextField(
           controller: confirmPasswordController,
           prefixIcon: Icons.vpn_key_rounded,

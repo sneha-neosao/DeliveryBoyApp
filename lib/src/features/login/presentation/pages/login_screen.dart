@@ -152,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                8.hS,
+                                8.wS,
                                 const Icon(
                                   Icons.arrow_forward_rounded,
                                   size: 18,

@@ -21,13 +21,13 @@ class AuthLoginEvent extends AuthEvent {
   List<Object?> get props => [email, password];
 }
 
-/// Event for logout.
-
-class AuthLogoutEvent extends AuthEvent {}
-
 /// Event to check login status.
 
 class AuthCheckSignInStatusEvent extends AuthEvent {}
+
+/// Event for logout.
+
+class AuthLogoutEvent extends AuthEvent {}
 
 /// Event for forgot password.
 

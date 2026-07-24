@@ -201,7 +201,7 @@ class _GetStartedScreenState extends State<GetStartedScreen> {
               size: 14,
             ),
           ),
-          const SizedBox(height: 6),
+          6.hS,
           Text(
             title,
             textAlign: TextAlign.center,
@@ -211,7 +211,7 @@ class _GetStartedScreenState extends State<GetStartedScreen> {
               color: AppColor.charcoal, // Dark Charcoal
             ),
           ),
-          const SizedBox(height: 2),
+          2.hS,
           Text(
             subtitle,
             textAlign: TextAlign.center,

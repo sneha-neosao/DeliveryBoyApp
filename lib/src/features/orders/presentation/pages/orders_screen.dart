@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:flutter/material.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -52,7 +53,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const SizedBox(height: 34),
+                              34.hS,
                               const Text(
                                 '#ORD-12548',
                                 style: TextStyle(
@@ -61,7 +62,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 20), // offset for circle
+                              20.hS, // offset for circle
                             ],
                           ),
                         ),
@@ -110,7 +111,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       ],
                     ),
                     
-                    const SizedBox(height: 65), // spacing for overlap circle
+                    65.hS, // spacing for overlap circle
                     
                     // Single Order Badge
                     Container(
@@ -129,7 +130,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    20.hS,
                     
                     // Main Cards Column
                     Padding(
@@ -156,7 +157,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 // Timeline Graphic column
                                 Column(
                                   children: [
-                                    const SizedBox(height: 4),
+                                    4.hS,
                                     Container(
                                       width: 24,
                                       height: 24,
@@ -173,7 +174,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     const Icon(Icons.location_on_rounded, color: Color(0xFFFA6624), size: 24),
                                   ],
                                 ),
-                                const SizedBox(width: 14),
+                                14.wS,
                                 // Address details list
                                 Expanded(
                                   child: Column(
@@ -194,7 +195,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
-                                                const SizedBox(height: 2),
+                                                2.hS,
                                                 Text(
                                                   '2.4 km away',
                                                   style: TextStyle(
@@ -209,7 +210,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                           _buildPhoneCircle(),
                                         ],
                                       ),
-                                      const SizedBox(height: 38), // match vertical custom dotted line spacing
+                                      38.hS, // match vertical custom dotted line spacing
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
@@ -225,7 +226,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
-                                                const SizedBox(height: 2),
+                                                2.hS,
                                                 Text(
                                                   'Shivaji Nagar, Kolhapur\nNear Laxmi Mandir',
                                                   style: TextStyle(
@@ -248,7 +249,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                           ),
                           
-                          const SizedBox(height: 16),
+                          16.hS,
                           
                           // Summary metrics in columns
                           Container(
@@ -269,7 +270,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                           ),
                           
-                          const SizedBox(height: 20),
+                          20.hS,
                           
                           // Order Items Section Header
                           Row(
@@ -302,7 +303,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ],
                           ),
                           
-                          const SizedBox(height: 10),
+                          10.hS,
                           
                           // Order Items List Card
                           Container(
@@ -331,7 +332,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                           ),
                           
-                          const SizedBox(height: 16),
+                          16.hS,
                           
                           // Instruction Banner Card
                           Container(
@@ -345,7 +346,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Icon(Icons.assignment_rounded, color: Color(0xFFFA6624), size: 18),
-                                const SizedBox(width: 10),
+                                10.wS,
                                 Expanded(
                                   child: Text(
                                     'Please collect the items and deliver before the time runs out.',
@@ -361,7 +362,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                           ),
                           
-                          const SizedBox(height: 24),
+                          24.hS,
                           
                           // Accept / Release Action Buttons Row
                           Row(
@@ -385,7 +386,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              12.wS,
                               Expanded(
                                 child: SizedBox(
                                   height: 50,
@@ -400,14 +401,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       elevation: 3,
                                       shadowColor: const Color(0xFFFA6624).withValues(alpha: 0.4),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
                                           'Accept Order',
                                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                         ),
-                                        SizedBox(width: 6),
+                                        6.wS,
                                         Icon(Icons.arrow_forward_rounded, size: 18),
                                       ],
                                     ),
@@ -416,7 +417,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 32),
+                          32.hS,
                         ],
                       ),
                     ),
@@ -464,7 +465,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       child: Column(
         children: [
           Icon(icon, color: const Color(0xFFFA6624), size: 24),
-          const SizedBox(height: 6),
+          6.hS,
           Text(
             value,
             style: const TextStyle(
@@ -473,7 +474,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 2),
+          2.hS,
           Text(
             label,
             style: TextStyle(
@@ -515,7 +516,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          14.wS,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,7 +529,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 2),
+                2.hS,
                 Text(
                   subtitle,
                   style: TextStyle(

@@ -30,51 +30,49 @@ class AuthLoginFailureState extends AuthLoginState {
   List<Object?> get props => [message];
 }
 
-// /// States like loading, success and failure representing login status.
-//
-// class AuthCheckSignInStatusLoadingState extends AuthLoginState {}
-//
-// class AuthCheckSignInStatusSuccessState extends AuthLoginState {
-//   final MemberModel userData;
-//   final List<CompanySocialAccountSelectionResult> socialData;
-//
-//   const AuthCheckSignInStatusSuccessState(this.userData,this.socialData);
-//
-//   @override
-//   List<Object?> get props => [userData];
-// }
-//
-// class AuthCheckSignInStatusFailureState extends AuthLoginState {
-//   final String message;
-//
-//   const AuthCheckSignInStatusFailureState(this.message);
-//
-//   @override
-//   List<Object?> get props => [message];
-// }
-//
-// /// States like loading, success and failure representing logout.
-//
-// class AuthLogoutLoadingState extends AuthLoginState {}
-//
-// class AuthLogoutSuccessState extends AuthLoginState {
-//   final String message;
-//
-//   const AuthLogoutSuccessState(this.message);
-//
-//   @override
-//   List<Object?> get props => [message];
-// }
-//
-// class AuthLogoutFailureState extends AuthLoginState {
-//   final String message;
-//
-//   const AuthLogoutFailureState(this.message);
-//
-//   @override
-//   List<Object?> get props => [message];
-// }
-//
+/// States like loading, success and failure representing login status.
+
+class AuthCheckSignInStatusLoadingState extends AuthLoginState {}
+
+class AuthCheckSignInStatusSuccessState extends AuthLoginState {
+  final LoginResponse data;
+  const AuthCheckSignInStatusSuccessState(this.data);
+
+  @override
+  List<Object?> get props => [data];
+}
+
+class AuthCheckSignInStatusFailureState extends AuthLoginState {
+  final String message;
+
+  const AuthCheckSignInStatusFailureState(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// States like loading, success and failure representing logout.
+
+class AuthLogoutLoadingState extends AuthLoginState {}
+
+class AuthLogoutSuccessState extends AuthLoginState {
+  final CommonResponse data;
+
+  const AuthLogoutSuccessState(this.data);
+
+  @override
+  List<Object?> get props => [data];
+}
+
+class AuthLogoutFailureState extends AuthLoginState {
+  final String message;
+
+  const AuthLogoutFailureState(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 // /// States like loading, success and failure representing forgot password.
 //
 // class AuthForgotPasswordLoadingState extends AuthLoginState {}

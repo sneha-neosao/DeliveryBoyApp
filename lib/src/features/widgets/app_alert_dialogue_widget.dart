@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/extensions/integer_sizedbox_extension.dart';
 import '../../core/theme/app_font.dart';
 
 class AppAlertDialogWidget extends StatelessWidget {
@@ -52,33 +53,33 @@ class AppAlertDialogWidget extends StatelessWidget {
                   child: Icon(icon, color: iconColor, size: 32),
                 ),
 
-                const SizedBox(height: 20),
+                20.hS,
 
                 // ── Title ──────────────────────────────────────────────
                 Text(
                   title,
                   style: AppFont.style(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0D121F),
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                12.hS,
 
                 // ── Subtitle ───────────────────────────────────────────
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
                   style: AppFont.style(
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF5C616E),
                     height: 1.4,
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                32.hS,
 
                 // ── Buttons ────────────────────────────────────────────
                 Row(
@@ -91,13 +92,13 @@ class AppAlertDialogWidget extends StatelessWidget {
                           style: TextButton.styleFrom(
                             backgroundColor: const Color(0xFFF6F6F6),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(25),
                             ),
                           ),
                           child: Text(
                             cancelText,
                             style: AppFont.style(
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF0D121F),
                             ),
@@ -105,7 +106,7 @@ class AppAlertDialogWidget extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    12.wS,
                     Expanded(
                       child: SizedBox(
                         height: 48,
@@ -116,7 +117,7 @@ class AppAlertDialogWidget extends StatelessWidget {
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(25),
                             ),
                           ),
                           child: isLoading
@@ -131,7 +132,7 @@ class AppAlertDialogWidget extends StatelessWidget {
                               : Text(
                             confirmText,
                             style: AppFont.style(
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),

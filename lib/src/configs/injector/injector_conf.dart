@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
+import 'package:delivery_boy_app/src/features/login/domain/logout_usecase.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'injector.dart';
@@ -34,8 +35,11 @@ void configureDepedencies() {
   getIt.registerLazySingleton(
         () => AuthLoginUseCase(getIt<AuthRepositoryImpl>()),
   );
+  getIt.registerLazySingleton(
+        () => LogoutUseCase(getIt<AuthRepositoryImpl>()),
+  );
   getIt.registerFactory(
-        () => AuthLoginBloc(getIt<AuthLoginUseCase>()),
+        () => AuthLoginBloc(getIt<AuthLoginUseCase>(), getIt<LogoutUseCase>()),
   );
 
   getIt.registerFactory(

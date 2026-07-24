@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
+import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
 
@@ -130,7 +131,7 @@ class _AnimatedOverlaySnackBarState extends State<_AnimatedOverlaySnackBar>
                     color: AppColor.darkOrange, // Dark Orange Icon
                     size: 22.0,
                   ),
-                  const SizedBox(width: 12.0),
+                  12.wS,
                   // Display message in front of icon
                   Expanded(
                     child: Text(

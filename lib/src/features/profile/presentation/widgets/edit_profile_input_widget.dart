@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_textfield.dart';
 import 'package:flutter/material.dart';
 
@@ -30,7 +31,7 @@ class EditProfileInputWidget extends StatelessWidget {
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        16.hS,
         EditProfileTextField(
           controller: phoneController,
           prefixIcon: Icons.phone_android_rounded,
@@ -43,7 +44,7 @@ class EditProfileInputWidget extends StatelessWidget {
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        16.hS,
         EditProfileTextField(
           controller: emailController,
           prefixIcon: Icons.email_outlined,
@@ -59,7 +60,7 @@ class EditProfileInputWidget extends StatelessWidget {
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        16.hS,
         EditProfileTextField(
           controller: locationController,
           prefixIcon: Icons.location_on_outlined,

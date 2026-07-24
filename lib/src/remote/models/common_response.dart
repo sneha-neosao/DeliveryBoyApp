@@ -2,15 +2,13 @@ import 'dart:convert';
 
 class CommonResponse {
   final int status;
-  final bool success;
-  final dynamic data; // can be null or any type depending on API
   final String message;
+  final dynamic data; // can be null or any type depending on API
 
   CommonResponse({
     required this.status,
-    required this.success,
-    this.data,
     required this.message,
+    this.data,
   });
 
   factory CommonResponse.fromRawJson(String str) =>
@@ -21,16 +19,14 @@ class CommonResponse {
   factory CommonResponse.fromJson(Map<String, dynamic> json) {
     return CommonResponse(
       status: json["status"],
-      success: json["success"],
-      data: json["data"],
       message: json["message"],
+      data: json["data"],
     );
   }
 
   Map<String, dynamic> toJson() => {
     "status": status,
-    "success": success,
-    "data": data,
     "message": message,
+    "data": data,
   };
 }

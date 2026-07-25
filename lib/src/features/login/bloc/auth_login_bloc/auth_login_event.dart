@@ -21,24 +21,24 @@ class AuthLoginEvent extends AuthEvent {
   List<Object?> get props => [email, password];
 }
 
-/// Event to check login status.
-
-class AuthCheckSignInStatusEvent extends AuthEvent {}
-
 /// Event for logout.
 
 class AuthLogoutEvent extends AuthEvent {}
 
+/// Event to check login status.
+
+class AuthCheckSignInStatusEvent extends AuthEvent {}
+
 /// Event for forgot password.
 
 class AuthForgotPasswordEvent extends AuthEvent {
-  final String companyCode;
+  final String company_code;
   final String email;
 
-  const AuthForgotPasswordEvent(this.companyCode, this.email);
+  const AuthForgotPasswordEvent(this.company_code,this.email);
 
   @override
-  List<Object?> get props => [companyCode, email];
+  List<Object?> get props => [company_code,email];
 }
 
 /// Event to delete user account .

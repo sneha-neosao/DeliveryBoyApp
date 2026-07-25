@@ -7,5 +7,7 @@ class ApiUrl {
   static const login = "/auth/login";
 
   static const logout = "/auth/logout";
+
+  static const orderList = "/orders/list";
 }
 

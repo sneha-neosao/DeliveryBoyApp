@@ -97,15 +97,38 @@ class ApiHelper {
         
         final data = e.response?.data;
         if (data is Map<String, dynamic>) {
+          if (data['detail'] != null) {
+            if (data['detail'] is String) {
+              throw ApiException(data['detail'].toString());
+            } else if (data['detail'] is List && (data['detail'] as List).isNotEmpty) {
+              final firstErr = (data['detail'] as List).first;
+              if (firstErr is Map && firstErr['msg'] != null) {
+                throw ApiException(firstErr['msg'].toString());
+              }
+              throw ApiException(data['detail'].toString());
+            } else {
+              throw ApiException(data['detail'].toString());
+            }
+          }
           if (data['error'] is Map<String, dynamic> && data['error']['message'] != null) {
             throw ApiException(data['error']['message'].toString());
+          }
+          if (data['error'] is String) {
+            throw ApiException(data['error'].toString());
           }
           if (data['message'] != null) {
             throw ApiException(data['message'].toString());
           }
+          if (data['msg'] != null) {
+            throw ApiException(data['msg'].toString());
+          }
         }
       }
-      throw ApiException(e.message ?? "Network error");
+      final rawMsg = e.message ?? "";
+      final cleanMsg = (rawMsg.contains("This exception was thrown") || rawMsg.contains("status code"))
+          ? "Something went wrong. Please try again."
+          : (rawMsg.isNotEmpty ? rawMsg : "Network error");
+      throw ApiException(cleanMsg);
     }
   }
 

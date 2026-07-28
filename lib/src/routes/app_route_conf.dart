@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:delivery_boy_app/src/features/main_screen/presentation/pages/main_screen.dart';
@@ -29,6 +30,14 @@ class AppRouteConf {
         path: AppRoute.login.path,
         name: AppRoute.login.name,
         pageBuilder: (context, state) => _fadePage(const LoginScreen()),
+      ),
+      GoRoute(
+        path: AppRoute.orderDetails.path,
+        name: AppRoute.orderDetails.name,
+        pageBuilder: (context, state) {
+          final order = state.extra as Order?;
+          return _fadePage(OrderDetailsScreen(order: order));
+        },
       ),
 
       // Shell route for bottom navigation bar screens

@@ -4,6 +4,7 @@ enum AppRoute {
   login(path: "/login_screen"),
   dashboard(path: "/dashboard_screen"),
   orders(path: "/orders_screen"),
+  orderDetails(path: "/order_details_screen"),
   delivered(path: "/delivered_screen"),
   cancelled(path: "/cancelled_screen"),
   rejected(path: "/rejected_screen"),

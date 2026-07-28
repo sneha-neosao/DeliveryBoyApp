@@ -5,8 +5,10 @@ import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
 import 'package:delivery_boy_app/src/core/utils/failure_converter.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../configs/injector/injector.dart';
@@ -19,6 +21,9 @@ abstract class Repository {
   Future<Either<Failure, LoginResponse>> login(LoginParams params);
 
   Future<Either<Failure, CommonResponse>> logout(NoParams params);
+
+  /// Orders
+  Future<Either<Failure, OrdersListResponse>> orderList(OrderListParams params);
 
 }
 
@@ -95,6 +100,39 @@ class AuthRepositoryImpl implements Repository {
           // if (respData.data?.refreshToken != null) {
           //   await SessionManager.saveRefreshToken(respData.data?.accessToken);
           // }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, OrdersListResponse>> orderList(OrderListParams params) {
+    return _networkInfo.check<OrdersListResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.order_list(params, token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
 
           return Right(respData);
         } on ServerException {

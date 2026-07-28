@@ -46,6 +46,15 @@ void configureDepedencies() {
         () => AuthLoginFormBloc(),
   );
 
+  getIt.registerLazySingleton(
+        () => PostsListUseCase(getIt<AuthRepositoryImpl>()),
+  );
+
+  getIt.registerFactory(
+        () => OrderListBloc(getIt<PostsListUseCase>()),
+  );
+
+
   /// API Helper
 
   getIt.registerLazySingleton(() => NetworkInfo());

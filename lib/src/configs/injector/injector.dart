@@ -8,3 +8,6 @@ export '../../remote/datasource/auth_remote_datasource.dart';
 export '../../remote/repositories/repository_impl.dart';
 export '../../features/login/bloc/auth_login_bloc/auth_login_bloc.dart';
 export '../../features/login/bloc/auth_login_form/auth_login_form_bloc.dart';
+export '../../features/orders/bloc/order_list_bloc/order_list_bloc.dart';
+export '../../features/orders/domain/usecase/order_list_usecase.dart';
+

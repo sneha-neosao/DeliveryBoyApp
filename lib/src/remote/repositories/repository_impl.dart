@@ -5,9 +5,11 @@ import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
 import 'package:delivery_boy_app/src/core/utils/failure_converter.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -24,6 +26,8 @@ abstract class Repository {
 
   /// Orders
   Future<Either<Failure, OrdersListResponse>> orderList(OrderListParams params);
+
+  Future<Either<Failure, OrderDetailsResponse>> orderDetails(OrderDetailsParams params);
 
 }
 
@@ -129,6 +133,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.order_list(params, token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, OrderDetailsResponse>> orderDetails(OrderDetailsParams params) {
+    return _networkInfo.check<OrderDetailsResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.order_details(params, token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

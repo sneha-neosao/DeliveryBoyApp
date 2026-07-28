@@ -47,11 +47,11 @@ void configureDepedencies() {
   );
 
   getIt.registerLazySingleton(
-        () => PostsListUseCase(getIt<AuthRepositoryImpl>()),
+        () => OrderListUseCase(getIt<AuthRepositoryImpl>()),
   );
 
   getIt.registerFactory(
-        () => OrderListBloc(getIt<PostsListUseCase>()),
+        () => OrderListBloc(getIt<OrderListUseCase>()),
   );
 
 

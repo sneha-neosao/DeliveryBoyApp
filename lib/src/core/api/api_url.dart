@@ -9,5 +9,9 @@ class ApiUrl {
   static const logout = "/auth/logout";
 
   static const orderList = "/orders/list";
+
+  static const orderDetails = "/orders/detail";
+
+  static const walletDetails = "/wallets/";
 }
 

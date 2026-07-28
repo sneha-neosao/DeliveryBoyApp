@@ -8,10 +8,10 @@ import '../../../../configs/injector/injector.dart';
 
 /// Domain layer use case for requesting order list
 
-class PostsListUseCase implements UseCase<OrdersListResponse, OrderListParams> {
+class OrderListUseCase implements UseCase<OrdersListResponse, OrderListParams> {
   final Repository _authRepository;
 
-  const PostsListUseCase(this._authRepository);
+  const OrderListUseCase(this._authRepository);
 
   @override
   Future<Either<Failure, OrdersListResponse>> call(OrderListParams params) async {
@@ -20,9 +20,6 @@ class PostsListUseCase implements UseCase<OrdersListResponse, OrderListParams> {
     return result;
   }
 }
-
-typedef OrderListUseCase = PostsListUseCase;
-
 
 class OrderListParams extends Equatable {
   final String? slot_uu_id;

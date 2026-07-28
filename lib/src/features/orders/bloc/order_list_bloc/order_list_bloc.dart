@@ -9,7 +9,7 @@ part 'order_list_state.dart';
 
 /// Handles state management for **Order List** with pagination support.
 class OrderListBloc extends Bloc<OrderListEvent, OrderListState> {
-  final PostsListUseCase _orderListUseCase;
+  final OrderListUseCase _orderListUseCase;
 
   OrderListBloc(
     this._orderListUseCase,

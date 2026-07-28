@@ -9,6 +9,7 @@ import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dar
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
 import 'package:dio/dio.dart';
 
 import '../../configs/injector/injector.dart';
@@ -24,6 +25,9 @@ sealed class RemoteDataSource {
   Future<OrdersListResponse> order_list(OrderListParams params, String token);
 
   Future<OrderDetailsResponse> order_details(OrderDetailsParams params, String token);
+
+  /// Profile
+  Future<ProfileResponse> profile(String token);
 
 }
 
@@ -135,6 +139,35 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = OrderDetailsResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<ProfileResponse> profile(String token) async {
+    try {
+      final response = await _helper.execute(
+        method: Method.get,
+        url: ApiUrl.profile,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = ProfileResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

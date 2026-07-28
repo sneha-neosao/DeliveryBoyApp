@@ -12,6 +12,7 @@ class ApiUrl {
 
   static const orderDetails = "/orders/detail";
 
-  static const walletDetails = "/wallets/";
+  static const profile = "/profile/list";
+
 }
 

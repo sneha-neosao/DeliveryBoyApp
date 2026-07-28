@@ -11,6 +11,7 @@ import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dar
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../configs/injector/injector.dart';
@@ -28,6 +29,9 @@ abstract class Repository {
   Future<Either<Failure, OrdersListResponse>> orderList(OrderListParams params);
 
   Future<Either<Failure, OrderDetailsResponse>> orderDetails(OrderDetailsParams params);
+
+  /// Profile
+  Future<Either<Failure, ProfileResponse>> profile(NoParams params);
 
 }
 
@@ -166,6 +170,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.order_details(params, token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, ProfileResponse>> profile(NoParams params) {
+    return _networkInfo.check<ProfileResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.profile(token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

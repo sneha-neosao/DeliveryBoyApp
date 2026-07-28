@@ -21,9 +21,6 @@ class OrderDetailsUseCase implements UseCase<OrderDetailsResponse, OrderDetailsP
   }
 }
 
-typedef OrderListUseCase = OrderDetailsUseCase;
-
-
 class OrderDetailsParams extends Equatable {
   final String uu_id ;
 

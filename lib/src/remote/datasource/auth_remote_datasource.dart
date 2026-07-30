@@ -3,10 +3,12 @@ import 'package:delivery_boy_app/src/core/api/api_url.dart';
 import 'package:delivery_boy_app/src/core/constants/error_message.dart';
 import 'package:delivery_boy_app/src/core/errors/exceptions.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
@@ -25,6 +27,8 @@ sealed class RemoteDataSource {
   Future<OrdersListResponse> order_list(OrderListParams params, String token);
 
   Future<OrderDetailsResponse> order_details(OrderDetailsParams params, String token);
+
+  Future<OrderAssignmentResponse> order_assignment(OrderAssignmentParams params, String token);
 
   /// Profile
   Future<ProfileResponse> profile(String token);
@@ -139,6 +143,39 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = OrderDetailsResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<OrderAssignmentResponse> order_assignment(OrderAssignmentParams params,String token) async {
+    try {
+
+      var data = {"order_uu_id": params.uu_id, "action": params.action, "note": params.note};
+
+      final response = await _helper.execute(
+        method: Method.post,
+        url: ApiUrl.orderAssignment,
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = OrderAssignmentResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

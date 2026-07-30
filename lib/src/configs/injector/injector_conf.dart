@@ -1,5 +1,9 @@
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/logout_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'injector.dart';
@@ -61,7 +65,13 @@ void configureDepedencies() {
   getIt.registerFactory(
         () => OrderDetailsBloc(getIt<OrderDetailsUseCase>()),
   );
+  getIt.registerLazySingleton(
+        () => OrderAssignmentUseCase(getIt<AuthRepositoryImpl>()),
+  );
 
+  getIt.registerFactory(
+        () => OrderAssignmentBloc(getIt<OrderAssignmentUseCase>()),
+  );
 
   /// API Helper
 

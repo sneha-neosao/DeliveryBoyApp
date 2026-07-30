@@ -1,6 +1,7 @@
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_details_bloc/order_details_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/delivery_address_card_widget.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_details_widget.dart';
@@ -47,8 +48,16 @@ class OrderDetailsScreen extends StatelessWidget {
       );
     }
 
-    return BlocProvider(
-      create: (context) => getIt<OrderDetailsBloc>()..add(OrderDetailsGetEvent(order!.uuId)),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) =>
+              getIt<OrderDetailsBloc>()..add(OrderDetailsGetEvent(order!.uuId)),
+        ),
+        BlocProvider(
+          create: (context) => getIt<OrderAssignmentBloc>(),
+        ),
+      ],
       child: Scaffold(
         backgroundColor: const Color(0xFFFFF9F5),
         body: SafeArea(
@@ -147,6 +156,7 @@ class _OrderDetailsView extends StatefulWidget {
 class _OrderDetailsViewState extends State<_OrderDetailsView> {
   final ScrollController _sc = ScrollController();
   double _scrollOffset = 0.0;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -183,6 +193,40 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
 
   @override
   Widget build(BuildContext context) {
+    final orderDetails = widget.orderDetails;
+    final fallbackOrder = widget.fallbackOrder;
+
+    return BlocListener<OrderAssignmentBloc, OrderAssignmentState>(
+      listener: (context, state) {
+        if (state is OrderAssignmentLoadingState) {
+          setState(() => _isLoading = true);
+        } else if (state is OrderAssignmentSuccessState) {
+          setState(() => _isLoading = false);
+          appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
+              ? state.data.message
+              : 'order_accepted'.tr());
+          context.pop();
+        } else if (state is OrderAssignmentFailureState) {
+          setState(() => _isLoading = false);
+          appSnackBar(context, AppColor.bright_red, state.message);
+        }
+      },
+      child: Stack(
+        children: [
+          _buildBody(context),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.35),
+              child: const Center(
+                child: CircularProgressIndicator(color: AppColor.darkOrange),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     final orderDetails = widget.orderDetails;
     final fallbackOrder = widget.fallbackOrder;
 
@@ -332,22 +376,56 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                 children: [
                   12.hS,
                   // Status badge — sits below circle, scrolls away naturally
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF2E6),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      orderDetails.orderStatus.isNotEmpty
-                          ? orderDetails.orderStatus
-                          : 'single_order'.tr(),
-                      style: const TextStyle(
-                        color: AppColor.darkOrange,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  Builder(
+                    builder: (_) {
+                      // Resolve badge colors from order status
+                      final Color bgColor;
+                      final Color textColor;
+                      switch (orderDetails.orderStatus.toUpperCase()) {
+                        case 'PLACED':
+                        case 'PENDING':
+                          bgColor = const Color(0xFFDBEAFE);   // light blue
+                          textColor = const Color(0xFF2563EB);  // blue
+                          break;
+                        case 'ACCEPTED':
+                        case 'DELIVERED':
+                          bgColor = const Color(0xFFDCFCE7);   // light green
+                          textColor = const Color(0xFF16A34A);  // green
+                          break;
+                        case 'PREPARING':
+                          bgColor = const Color(0xFFFEF9C3);   // light yellow
+                          textColor = const Color(0xFFCA8A04);  // amber
+                          break;
+                        case 'PICKED_UP':
+                          bgColor = const Color(0xFFEDE9FE);   // light purple
+                          textColor = const Color(0xFF7C3AED);  // purple
+                          break;
+                        case 'ON_THE_WAY':
+                          bgColor = const Color(0xFFDBEAFE);   // light indigo-blue
+                          textColor = const Color(0xFF3B82F6);  // indigo-blue
+                          break;
+                        default:
+                          bgColor = const Color(0xFFFFF2E6);   // default orange tint
+                          textColor = AppColor.darkOrange;
+                      }
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          orderDetails.orderStatus.isNotEmpty
+                              ? orderDetails.orderStatus
+                              : 'single_order'.tr(),
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   16.hS,
                   // Delivery address card
@@ -379,77 +457,231 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
           ),
         ),
 
-        // ── Sticky bottom buttons ──────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 50,
-                  child: OutlinedButton(
-                    onPressed: () => context.pop(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColor.darkOrange,
-                      side: const BorderSide(color: AppColor.darkOrange, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                    child: Text(
-                      'back_to_list'.tr(),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                  ),
+        // ── Sticky bottom buttons (only shown when order is PREPARING) ─────
+        if (orderDetails.orderStatus == 'PREPARING')
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, -4),
                 ),
-              ),
-              12.wS,
-              Expanded(
-                child: SizedBox(
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      appSnackBar(context, AppColor.green, 'order_accepted'.tr());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.darkOrange,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      elevation: 3,
-                      shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'accept_order'.tr(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Reject button
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: OutlinedButton(
+                      onPressed: _isLoading ? null : () => _showRejectDialog(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColor.bright_red,
+                        side: const BorderSide(color: AppColor.bright_red, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
                         ),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.arrow_forward_rounded, size: 18),
-                      ],
+                      ),
+                      child: Text(
+                        'reject'.tr(),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                12.wS,
+                // Accept button
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () => context.read<OrderAssignmentBloc>().add(
+                                OrderAssignmentGetEvent(
+                                  orderDetails.uuId,
+                                  'accept',
+                                  null,
+                                ),
+                              ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.darkOrange,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        elevation: 3,
+                        shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'accept_order'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_rounded, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+
       ],
     );
   }
+
+  // ── Reject dialog ──────────────────────────────────────────────────────────
+  void _showRejectDialog(BuildContext context) {
+    final TextEditingController _reasonCtrl = TextEditingController();
+    final _formKey = GlobalKey<FormState>();
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 24,
+              bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title row
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFEEEE),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.cancel_outlined,
+                            color: AppColor.bright_red, size: 20),
+                      ),
+                      12.wS,
+                      Text(
+                        'reject_order'.tr(),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  16.hS,
+                  // Reason text field
+                  TextFormField(
+                    controller: _reasonCtrl,
+                    maxLines: 3,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      hintText: 'enter_rejection_reason'.tr(),
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                      filled: true,
+                      fillColor: const Color(0xFFFFF9F5),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            const BorderSide(color: AppColor.darkOrange, width: 1.5),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            const BorderSide(color: AppColor.bright_red, width: 1.5),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            const BorderSide(color: AppColor.bright_red, width: 1.5),
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'please_enter_reason'.tr();
+                      }
+                      return null;
+                    },
+                  ),
+                  20.hS,
+                  // Submit button — right-aligned, styled like Accept
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      height: 46,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!_formKey.currentState!.validate()) return;
+                          final reason = _reasonCtrl.text.trim();
+                          Navigator.of(dialogCtx).pop();
+                          context.read<OrderAssignmentBloc>().add(
+                                OrderAssignmentGetEvent(
+                                  widget.orderDetails.uuId,
+                                  'reject',
+                                  reason,
+                                ),
+                              );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.darkOrange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          elevation: 3,
+                          shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'submit'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.arrow_forward_rounded, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) => _reasonCtrl.dispose());
+  }
 }
-
-

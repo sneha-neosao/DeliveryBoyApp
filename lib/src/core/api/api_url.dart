@@ -12,6 +12,8 @@ class ApiUrl {
 
   static const orderDetails = "/orders/detail";
 
+  static const orderAssignment = "/orders/accept-reject";
+
   static const profile = "/profile/list";
 
 }

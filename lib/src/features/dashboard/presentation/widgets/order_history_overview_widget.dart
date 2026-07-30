@@ -22,8 +22,8 @@ class OrderHistoryOverviewWidget extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _buildShortcutCard(
-            title: 'drawer_cancelled'.tr(),
-            icon: Icons.cancel_rounded,
+            title: 'drawer_pending'.tr(),
+            icon: Icons.hourglass_top_rounded,
             color: Colors.orange.shade800,
             bgColor: Colors.orange.shade50,
             onTap: () => context.go(AppRoute.orders.path),
@@ -32,8 +32,8 @@ class OrderHistoryOverviewWidget extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _buildShortcutCard(
-            title: 'drawer_rejected'.tr(),
-            icon: Icons.remove_circle_rounded,
+            title: 'drawer_cancelled'.tr(),
+            icon: Icons.cancel_rounded,
             color: const Color(0xFFE62222),
             bgColor: const Color(0xFFFFEBEE),
             onTap: () => context.go(AppRoute.orders.path),

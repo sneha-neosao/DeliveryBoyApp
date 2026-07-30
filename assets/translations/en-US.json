@@ -32,6 +32,7 @@
   "drawer_orders": "Orders",
   "drawer_delivered": "Delivered",
   "drawer_cancelled": "Cancelled",
+  "drawer_pending": "Pending",
   "drawer_rejected": "Rejected",
   "drawer_order_history": "Order History",
   "drawer_earning": "Earnings",
@@ -82,5 +83,10 @@
   "no_notes": "No customer instructions provided.",
   "payment_status_label": "Payment Status",
   "failed_load_details": "Failed to load order details",
-  "changed_by": "By"
+  "changed_by": "By",
+  "reject": "Reject",
+  "reject_order": "Reject Order",
+  "enter_rejection_reason": "Enter reason for rejection...",
+  "please_enter_reason": "Please enter the reason first",
+  "submit": "Submit"
 }

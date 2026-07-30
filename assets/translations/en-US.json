@@ -72,5 +72,15 @@
   "delivery_instruction": "Please collect the items and deliver before the slot ends",
   "back_to_list": "Back to List",
   "accept_order": "Accept Order",
-  "order_accepted": "Order Accepted"
+  "order_accepted": "Order Accepted",
+  "order_items": "Order Items",
+  "platform_charges_label": "Platform Charges",
+  "subtotal": "Subtotal",
+  "grand_total_label": "Grand Total",
+  "status_history": "Status History",
+  "customer_note": "Customer Note",
+  "no_notes": "No customer instructions provided.",
+  "payment_status_label": "Payment Status",
+  "failed_load_details": "Failed to load order details",
+  "changed_by": "By"
 }

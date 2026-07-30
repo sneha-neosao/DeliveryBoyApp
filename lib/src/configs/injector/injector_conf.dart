@@ -54,6 +54,14 @@ void configureDepedencies() {
         () => OrderListBloc(getIt<OrderListUseCase>()),
   );
 
+  getIt.registerLazySingleton(
+        () => OrderDetailsUseCase(getIt<AuthRepositoryImpl>()),
+  );
+
+  getIt.registerFactory(
+        () => OrderDetailsBloc(getIt<OrderDetailsUseCase>()),
+  );
+
 
   /// API Helper
 

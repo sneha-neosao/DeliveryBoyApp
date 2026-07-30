@@ -16,5 +16,7 @@ class ApiUrl {
 
   static const profile = "/profile/list";
 
+  static const onlineStatus = "/auth/toggle-online";
+
 }
 

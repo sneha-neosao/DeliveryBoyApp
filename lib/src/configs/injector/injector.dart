@@ -10,5 +10,6 @@ export '../../features/login/bloc/auth_login_bloc/auth_login_bloc.dart';
 export '../../features/login/bloc/auth_login_form/auth_login_form_bloc.dart';
 export '../../features/orders/bloc/order_list_bloc/order_list_bloc.dart';
 export '../../features/orders/bloc/order_details_bloc/order_details_bloc.dart';
+export '../../features/dashboard/bloc/online_status_bloc/online_status_bloc.dart';
 
 

@@ -4,12 +4,14 @@ import 'package:delivery_boy_app/src/core/errors/failures.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
 import 'package:delivery_boy_app/src/core/utils/failure_converter.dart';
+import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
+import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
@@ -36,6 +38,9 @@ abstract class Repository {
 
   /// Profile
   Future<Either<Failure, ProfileResponse>> profile(NoParams params);
+
+  /// Online Status
+  Future<Either<Failure, OnlineStatusResponse>> onlineStatus(OnlineStatusParams params);
 
 }
 
@@ -240,6 +245,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.profile(token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, OnlineStatusResponse>> onlineStatus(OnlineStatusParams params) {
+    return _networkInfo.check<OnlineStatusResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.online_status(params,token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

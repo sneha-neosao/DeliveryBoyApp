@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/logout_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
@@ -72,6 +73,14 @@ void configureDepedencies() {
   getIt.registerFactory(
         () => OrderAssignmentBloc(getIt<OrderAssignmentUseCase>()),
   );
+  getIt.registerLazySingleton(
+        () => OnlineStatusUseCase(getIt<AuthRepositoryImpl>()),
+  );
+
+  getIt.registerFactory(
+        () => OnlineStatusBloc(getIt<OnlineStatusUseCase>()),
+  );
+
 
   /// API Helper
 

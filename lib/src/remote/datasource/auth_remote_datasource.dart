@@ -2,12 +2,14 @@ import 'package:delivery_boy_app/src/core/api/api_exception.dart';
 import 'package:delivery_boy_app/src/core/api/api_url.dart';
 import 'package:delivery_boy_app/src/core/constants/error_message.dart';
 import 'package:delivery_boy_app/src/core/errors/exceptions.dart';
+import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
+import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
@@ -32,6 +34,9 @@ sealed class RemoteDataSource {
 
   /// Profile
   Future<ProfileResponse> profile(String token);
+
+  /// Online Status
+  Future<OnlineStatusResponse> online_status(OnlineStatusParams params, String token);
 
 }
 
@@ -205,6 +210,35 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = ProfileResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<OnlineStatusResponse> online_status(OnlineStatusParams params, String token) async {
+    try {
+      final response = await _helper.execute(
+        method: Method.put,
+        url: ApiUrl.onlineStatus,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = OnlineStatusResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

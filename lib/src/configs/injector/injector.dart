@@ -13,5 +13,7 @@ export '../../features/orders/bloc/order_details_bloc/order_details_bloc.dart';
 export '../../features/dashboard/bloc/online_status_bloc/online_status_bloc.dart';
 export '../../features/profile/bloc/profile_bloc/profile_bloc.dart';
 export '../../features/dashboard/bloc/dashboard_bloc/dashboard_bloc.dart';
+export '../../features/profile/bloc/password_update_bloc/password_update_bloc.dart';
+export '../../features/profile/bloc/password_update_form/password_update_form_bloc.dart';
 
 

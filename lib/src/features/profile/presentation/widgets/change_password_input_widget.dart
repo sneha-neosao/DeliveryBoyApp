@@ -1,59 +1,60 @@
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
+import 'package:delivery_boy_app/src/core/extensions/string_validator_extension.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/change_password_textfield.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ChangePasswordInputWidget extends StatelessWidget {
-  final TextEditingController oldPasswordController;
-  final TextEditingController newPasswordController;
-  final TextEditingController confirmPasswordController;
+import '../../../../configs/injector/injector.dart';
+
+class ChangePasswordInputWidget extends StatefulWidget {
 
   const ChangePasswordInputWidget({
     super.key,
-    required this.oldPasswordController,
-    required this.newPasswordController,
-    required this.confirmPasswordController,
   });
 
   @override
+  State<ChangePasswordInputWidget> createState() => _ChangePasswordInputWidgetState();
+}
+
+class _ChangePasswordInputWidgetState extends State<ChangePasswordInputWidget> {
+
+  @override
   Widget build(BuildContext context) {
+    final formBloc = context.read<PasswordUpdateFormBloc>();
+
     return Column(
       children: [
-        ChangePasswordTextField(
-          controller: oldPasswordController,
+        ChangePasswordTextField<PasswordUpdateFormBloc>(
+          label: "old_password".tr(),
           prefixIcon: Icons.vpn_key_rounded,
-          hintText: 'Old Password',
-          obscureText: true,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter old password';
-            }
-            return null;
+          hintText: 'enter_old_password'.tr(),
+          isSecure: true,
+          onChanged: (val) {
+            final trimmed = val.trim();
+            formBloc.add(OldPasswordChangedEvent(trimmed));
           },
         ),
         16.hS,
-        ChangePasswordTextField(
-          controller: newPasswordController,
+        ChangePasswordTextField<PasswordUpdateFormBloc>(
+          label: "new_password".tr(),
           prefixIcon: Icons.vpn_key_rounded,
-          hintText: 'New Password',
-          obscureText: true,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter new password';
-            }
-            return null;
+          hintText: 'enter_new_password'.tr(),
+          isSecure: true,
+          onChanged: (val) {
+            final trimmed = val.trim();
+            formBloc.add(NewPasswordChangedEvent(trimmed));
           },
         ),
         16.hS,
-        ChangePasswordTextField(
-          controller: confirmPasswordController,
+        ChangePasswordTextField<PasswordUpdateFormBloc>(
+          label: "confirm_password".tr(),
           prefixIcon: Icons.vpn_key_rounded,
-          hintText: 'Confirm Password',
-          obscureText: true,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please confirm new password';
-            }
-            return null;
+          hintText: 'enter_confirm_password'.tr(),
+          isSecure: true,
+          onChanged: (val) {
+            final trimmed = val.trim();
+            formBloc.add(ConfirmPasswordChangedEvent(trimmed));
           },
         ),
       ],

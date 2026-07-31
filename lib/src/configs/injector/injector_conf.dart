@@ -6,6 +6,7 @@ import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
+import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_usecase.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
@@ -95,6 +96,16 @@ void configureDepedencies() {
 
   getIt.registerFactory(
         () => DashboardBloc(getIt<DashboardUseCase>()),
+  );
+  getIt.registerLazySingleton(
+        () => PasswordUpdateUseCase(getIt<AuthRepositoryImpl>()),
+  );
+  getIt.registerFactory(
+        () => PasswordUpdateBloc(getIt<PasswordUpdateUseCase>()),
+  );
+
+  getIt.registerFactory(
+        () => PasswordUpdateFormBloc(),
   );
 
   /// API Helper

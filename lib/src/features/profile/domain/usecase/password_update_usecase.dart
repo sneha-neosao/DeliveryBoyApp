@@ -29,7 +29,7 @@ class PasswordUpdateUseCase implements UseCase<CommonResponse, PasswordUpdatePar
       return Left(EmptyFailure("please_enter_new_password".tr()));
     }
 
-    if (!params.new_password.isEmailValid) {
+    if (!params.new_password.isPasswordValid) {
       return Left(EmptyFailure("please_enter_valid_new_password".tr()));
     }
 

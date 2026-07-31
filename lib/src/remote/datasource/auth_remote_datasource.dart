@@ -299,15 +299,21 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   Future<CommonResponse> password_update(PasswordUpdateParams params,String token) async {
     try {
 
-      var data = {"old_password": params.old_password, "new_password": params.new_password, "confirm_password": params.confirm_password};
+      var data = {
+        "old_password": params.old_password,
+        "new_password": params.new_password,
+        "confirm_password": params.confirm_password
+      };
 
       final response = await _helper.execute(
         method: Method.put,
         url: ApiUrl.passwordUpdate,
         data: data,
         options: Options(
+          contentType: Headers.formUrlEncodedContentType,
           headers: {
             'Authorization': 'Bearer $token',
+            'accept': 'application/json',
           },
         ),
       );

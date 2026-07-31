@@ -1,6 +1,7 @@
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
+import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/login/bloc/auth_login_bloc/auth_login_bloc.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/change_password_input_widget.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_input_widget.dart';
@@ -27,11 +28,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final TextEditingController _emailController;
   late final TextEditingController _locationController;
 
-  late final TextEditingController _oldPasswordController;
-  late final TextEditingController _newPasswordController;
-  late final TextEditingController _confirmPasswordController;
-
   late final ProfileBloc _profileBloc;
+
+  void _passwordUpdate(BuildContext context) {
+    primaryFocus?.unfocus();
+    final authForm = context.read<PasswordUpdateFormBloc>().state;
+
+    context.read<PasswordUpdateBloc>().add(
+      PasswordUpdateGetEvent(authForm.old_password.trim(), authForm.new_password.trim(), authForm.confirm_password),
+    );
+  }
 
   @override
   void initState() {
@@ -40,10 +46,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneController = TextEditingController();
     _emailController = TextEditingController();
     _locationController = TextEditingController();
-
-    _oldPasswordController = TextEditingController();
-    _newPasswordController = TextEditingController();
-    _confirmPasswordController = TextEditingController();
 
     // Load cached session data first (immediate display)
     _loadUserData();
@@ -59,9 +61,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneController.dispose();
     _emailController.dispose();
     _locationController.dispose();
-    _oldPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -79,22 +78,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _handleProfileSave() {
     if (_formKey.currentState?.validate() ?? false) {
       appSnackBar(context, const Color(0xFFFA6624), 'Profile details saved successfully!');
-    }
-  }
-
-  void _handlePasswordUpdate() {
-    if (_passwordFormKey.currentState?.validate() ?? false) {
-      if (_newPasswordController.text != _confirmPasswordController.text) {
-        appSnackBar(context, Colors.redAccent, 'New password and confirm password do not match!');
-        return;
-      }
-
-      appSnackBar(context, const Color(0xFFFA6624), 'Password updated successfully!');
-
-      // Clear password inputs on successful update
-      _oldPasswordController.clear();
-      _newPasswordController.clear();
-      _confirmPasswordController.clear();
     }
   }
 
@@ -141,6 +124,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider(create: (_) => getIt<PasswordUpdateBloc>()),
+        BlocProvider(create: (_) => getIt<PasswordUpdateFormBloc>()),
         BlocProvider(create: (_) => getIt<AuthLoginBloc>()),
         BlocProvider(create: (_) => _profileBloc),
       ],
@@ -224,29 +209,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const SizedBox(height: 24),
 
                               // Save Button
-                              ElevatedButton(
-                                onPressed: _handleProfileSave,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFA6624),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  minimumSize: const Size.fromHeight(50),
-                                  elevation: 3,
-                                  shadowColor:
+                              BlocConsumer<PasswordUpdateBloc, PasswordUpdateState>(
+                                listener: (context, state) {
+                                  if (state is PasswordUpdateSuccessState) {
+                                    appSnackBar(context, AppColor.green, state.data.message );
+                                    context.go(AppRoute.dashboard.path);
+                                  } else if (state is PasswordUpdateFailureState) {
+                                    appSnackBar(context, AppColor.bright_red, state.message);
+                                  }
+                                },
+                                builder: (context, state) {
+                                  final isLoading = state is PasswordUpdateLoadingState;
+
+                                  return ElevatedButton(
+                                    onPressed: isLoading ? null : () => _passwordUpdate(context),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFFA6624),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      minimumSize: const Size.fromHeight(50),
+                                      elevation: 3,
+                                      shadowColor:
                                       const Color(0xFFFA6624).withValues(alpha: 0.3),
-                                ),
-                                child: const Text(
-                                  'SAVE',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.0,
-                                  ),
-                                ),
+                                    ),
+                                    child: isLoading
+                                        ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    ) : const Text(
+                                      'SAVE',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
+
                               const SizedBox(height: 32),
 
                               // Change Password Section Container
@@ -280,45 +288,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          ElevatedButton(
-                                            onPressed: _handlePasswordUpdate,
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
+                                          BlocConsumer<PasswordUpdateBloc, PasswordUpdateState>(
+                                            listener: (context, state) {
+                                              if (state is PasswordUpdateSuccessState) {
+                                                appSnackBar(context, AppColor.green, state.data.message );
+                                                context.go(AppRoute.dashboard.path);
+                                              } else if (state is PasswordUpdateFailureState) {
+                                                appSnackBar(context, AppColor.bright_red, state.message);
+                                              }
+                                            },
+                                            builder: (context, state) {
+                                              final isLoading = state is PasswordUpdateLoadingState;
+
+                                              return ElevatedButton(
+                                                onPressed: isLoading ? null : () => _passwordUpdate(context),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
                                                   const Color(0xFFFA6624),
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
                                                     BorderRadius.circular(20),
-                                              ),
-                                              padding:
+                                                  ),
+                                                  padding:
                                                   const EdgeInsets.symmetric(
                                                       horizontal: 18,
                                                       vertical: 8),
-                                              minimumSize: Size.zero,
-                                              tapTargetSize:
+                                                  minimumSize: Size.zero,
+                                                  tapTargetSize:
                                                   MaterialTapTargetSize
                                                       .shrinkWrap,
-                                              elevation: 0,
-                                            ),
-                                            child: const Text(
-                                              'Update',
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
+                                                  elevation: 0,
+                                                ),
+                                                child: isLoading
+                                                    ? const SizedBox(
+                                                  height: 22,
+                                                  width: 22,
+                                                  child: CircularProgressIndicator(
+                                                    color: Colors.white,
+                                                    strokeWidth: 2.5,
+                                                  ),
+                                                ) : const Text(
+                                                  'Update',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              );
+                                            },
                                           ),
                                         ],
                                       ),
                                       const SizedBox(height: 20),
-                                      ChangePasswordInputWidget(
-                                        oldPasswordController:
-                                            _oldPasswordController,
-                                        newPasswordController:
-                                            _newPasswordController,
-                                        confirmPasswordController:
-                                            _confirmPasswordController,
-                                      ),
+                                      ChangePasswordInputWidget(),
                                     ],
                                   ),
                                 ),

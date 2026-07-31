@@ -1,5 +1,6 @@
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_textfield.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class EditProfileInputWidget extends StatelessWidget {
@@ -21,53 +22,18 @@ class EditProfileInputWidget extends StatelessWidget {
     return Column(
       children: [
         EditProfileTextField(
+          label: "name".tr(),
           controller: nameController,
           prefixIcon: Icons.person_outline_rounded,
           hintText: 'Name',
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your name';
-            }
-            return null;
-          },
         ),
         16.hS,
         EditProfileTextField(
+          label: "mobile_number".tr(),
           controller: phoneController,
           prefixIcon: Icons.phone_android_rounded,
-          hintText: 'Phone Number',
+          hintText: 'Mobile Number',
           keyboardType: TextInputType.phone,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your phone number';
-            }
-            return null;
-          },
-        ),
-        16.hS,
-        EditProfileTextField(
-          controller: emailController,
-          prefixIcon: Icons.email_outlined,
-          hintText: 'Email',
-          keyboardType: TextInputType.emailAddress,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your email';
-            }
-            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-              return 'Please enter a valid email address';
-            }
-            return null;
-          },
-        ),
-        16.hS,
-        EditProfileTextField(
-          controller: locationController,
-          prefixIcon: Icons.location_on_outlined,
-          hintText: 'Location',
-          validator: (value) {
-            return null; // optional field
-          },
         ),
       ],
     );

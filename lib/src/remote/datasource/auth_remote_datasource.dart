@@ -33,7 +33,7 @@ sealed class RemoteDataSource {
   Future<OrderAssignmentResponse> order_assignment(OrderAssignmentParams params, String token);
 
   /// Profile
-  Future<ProfileResponse> profile(String token);
+  Future<LoginResponse> profile(String token);
 
   /// Online Status
   Future<OnlineStatusResponse> online_status(OnlineStatusParams params, String token);
@@ -197,7 +197,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   }
 
   @override
-  Future<ProfileResponse> profile(String token) async {
+  Future<LoginResponse> profile(String token) async {
     try {
       final response = await _helper.execute(
         method: Method.get,
@@ -209,7 +209,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
         ),
       );
 
-      final respData = ProfileResponse.fromJson(response);
+      final respData = LoginResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

@@ -5,6 +5,7 @@ import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
+import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_usecase.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'injector.dart';
@@ -72,6 +73,13 @@ void configureDepedencies() {
 
   getIt.registerFactory(
         () => OrderAssignmentBloc(getIt<OrderAssignmentUseCase>()),
+  );
+  getIt.registerLazySingleton(
+        () => ProfileUseCase(getIt<AuthRepositoryImpl>()),
+  );
+
+  getIt.registerFactory(
+        () => ProfileBloc(getIt<ProfileUseCase>()),
   );
   getIt.registerLazySingleton(
         () => OnlineStatusUseCase(getIt<AuthRepositoryImpl>()),

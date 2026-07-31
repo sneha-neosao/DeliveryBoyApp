@@ -54,15 +54,6 @@ class SessionManager {
     return LoginResponse.fromRawJson(raw);
   }
 
-  // static saveCommunityCode(String code) async {
-  //   final prefs =await SharedPreferences.getInstance();
-  //   prefs.setString("invitationCode", code);
-  // }
-  // static Future<String?> getCommunityCode() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   return prefs.getString("communityCode");
-  // }
-
   static saveFirebaseToken(String? firebasetoken) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setString("firebasetoken", firebasetoken!);

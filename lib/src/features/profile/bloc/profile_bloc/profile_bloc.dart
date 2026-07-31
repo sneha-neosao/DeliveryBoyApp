@@ -1,6 +1,7 @@
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
 import 'package:delivery_boy_app/src/core/utils/logger.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_usecase.dart';
+import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

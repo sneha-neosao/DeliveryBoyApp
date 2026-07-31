@@ -13,7 +13,7 @@ class ProfileInitialState extends ProfileState {}
 class ProfileLoadingState extends ProfileState {}
 
 class ProfileSuccessState extends ProfileState {
-  final ProfileResponse data;
+  final LoginResponse data;
 
   const ProfileSuccessState(this.data);
 

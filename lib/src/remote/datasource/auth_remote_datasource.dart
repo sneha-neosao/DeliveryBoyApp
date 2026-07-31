@@ -228,9 +228,13 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   @override
   Future<OnlineStatusResponse> online_status(OnlineStatusParams params, String token) async {
     try {
+
+      var data = {"is_online": params.is_online};
+
       final response = await _helper.execute(
         method: Method.put,
         url: ApiUrl.onlineStatus,
+        data: data,
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',

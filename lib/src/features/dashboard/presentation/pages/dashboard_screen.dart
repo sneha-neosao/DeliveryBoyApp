@@ -47,159 +47,170 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => getIt<OnlineStatusBloc>(),
-      child: BlocListener<OnlineStatusBloc, OnlineStatusState>(
-        listener: (context, state) {
-          if (state is OnlineStatusLoadingState) {
-            setState(() => _isTogglingStatus = true);
-          } else if (state is OnlineStatusSuccessState) {
-            setState(() => _isTogglingStatus = false);
-            appSnackBar(
-              context,
-              AppColor.green,
-              state.data.message.isNotEmpty
-                  ? state.data.message
-                  : _isOnline
+      create: (_) => getIt<OnlineStatusBloc>(),
+      child: Builder(
+        builder: (blocContext) {
+          return BlocListener<OnlineStatusBloc, OnlineStatusState>(
+            listener: (context, state) {
+              if (state is OnlineStatusLoadingState) {
+                setState(() => _isTogglingStatus = true);
+              } else if (state is OnlineStatusSuccessState) {
+                setState(() => _isTogglingStatus = false);
+
+                appSnackBar(
+                  context,
+                  AppColor.green,
+                  state.data.message.isNotEmpty
+                      ? state.data.message
+                      : _isOnline
                       ? 'You are now Online'
                       : 'You are now Offline',
-            );
-          } else if (state is OnlineStatusFailureState) {
-            // Revert toggle on failure
-            setState(() {
-              _isTogglingStatus = false;
-              _isOnline = !_isOnline;
-            });
-            appSnackBar(context, AppColor.bright_red, state.message);
-          }
-        },
-        child: Scaffold(
-          backgroundColor: const Color(0xFFFFF9F5), // soft cream background
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                // Top Gradient Header with Profile & Online Toggle
-                // Builder gives a child context that sits inside BlocProvider
-                Builder(
-                  builder: (innerContext) => InfoCardWidget(
-                    isOnline: _isOnline,
-                    userName: _userName,
-                    userPhone: _userPhone,
-                    onOnlineToggle: (value) {
-                      setState(() => _isOnline = value);
-                      innerContext.read<OnlineStatusBloc>().add(
-                            OnlineStatusGetEvent(value),
-                          );
-                    },
-                  ),
-                ),
+                );
+              } else if (state is OnlineStatusFailureState) {
+                setState(() {
+                  _isTogglingStatus = false;
+                  _isOnline = !_isOnline;
+                });
 
-                const SizedBox(height: 20),
+                appSnackBar(
+                  context,
+                  AppColor.bright_red,
+                  state.message,
+                );
+              }
+            },
+            child: Scaffold(
+              backgroundColor: const Color(0xFFFFF9F5),
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    InfoCardWidget(
+                      isOnline: _isOnline,
+                      userName: _userName,
+                      userPhone: _userPhone,
+                      onOnlineToggle: (value) {
+                        setState(() => _isOnline = value);
 
-                // Wallet & Earnings Card
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.0),
-                  child: WalletCardWidget(),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Quick Navigation Shortcuts (Delivered, Cancelled, Rejected)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Order History Overview',
-                        style: TextStyle(
-                          color: AppColor.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      OrderHistoryOverviewWidget(),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Active Orders Quick Banner
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFFF2E6), Color(0xFFFFE8D6)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColor.border),
+                        blocContext.read<OnlineStatusBloc>().add(
+                          OnlineStatusGetEvent(value),
+                        );
+                      },
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.shopping_bag_rounded,
-                          color: AppColor.darkOrange,
-                          size: 32,
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'Active Assignment',
-                                style: TextStyle(
-                                  color: AppColor.textPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                'Check active assigned orders and delivery details',
-                                style: TextStyle(
-                                  color: AppColor.textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
+
+                    const SizedBox(height: 20),
+
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: WalletCardWidget(),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Order History Overview',
+                            style: TextStyle(
+                              color: AppColor.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          OrderHistoryOverviewWidget(),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFFFF2E6),
+                              Color(0xFFFFE8D6),
                             ],
                           ),
-                        ),
-                        InkWell(
-                          onTap: () => context.go(AppRoute.orders.path),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColor.darkOrange,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Text(
-                              'View',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColor.border,
                           ),
                         ),
-                      ],
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.shopping_bag_rounded,
+                              color: AppColor.darkOrange,
+                              size: 32,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    'Active Assignment',
+                                    style: TextStyle(
+                                      color: AppColor.textPrimary,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Check active assigned orders and delivery details',
+                                    style: TextStyle(
+                                      color: AppColor.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () =>
+                                  context.go(AppRoute.orders.path),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColor.darkOrange,
+                                  borderRadius:
+                                  BorderRadius.circular(16),
+                                ),
+                                child: const Text(
+                                  'View',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
 
-                const SizedBox(height: 100), // padding for bottom nav clearance
-              ],
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -4,26 +4,31 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class WalletCardWidget extends StatelessWidget {
-  final num? commissionWallet;
-  final num? totalDeliveries;
+  final num? totalEarning;
+  final num? todaysEarning;
   final num? avgRating;
+  final int? totalDeliveries;
 
   const WalletCardWidget({
     super.key,
-    this.commissionWallet,
-    this.totalDeliveries,
+    this.totalEarning,
+    this.todaysEarning,
     this.avgRating,
+    this.totalDeliveries,
   });
 
   @override
   Widget build(BuildContext context) {
-    final walletDisplay = commissionWallet != null
-        ? '₹${commissionWallet!.toStringAsFixed(0)}'
+    final totalDisplay = totalEarning != null
+        ? '₹${totalEarning!.toStringAsFixed(0)}'
+        : '₹0';
+    final todaysDisplay = todaysEarning != null
+        ? '₹${todaysEarning!.toStringAsFixed(0)}'
         : '₹0';
     final deliveriesDisplay =
-        totalDeliveries != null ? totalDeliveries!.toStringAsFixed(0) : '0';
+        totalDeliveries != null ? '$totalDeliveries' : '0';
     final ratingDisplay =
-        avgRating != null ? '${avgRating!.toStringAsFixed(1)} ★' : '0.0 ★';
+        avgRating != null ? avgRating!.toStringAsFixed(1) : '0.0';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -77,7 +82,7 @@ class WalletCardWidget extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            walletDisplay,
+                            totalDisplay,
                             style: const TextStyle(
                               color: AppColor.textPrimary,
                               fontSize: 22,
@@ -93,7 +98,8 @@ class WalletCardWidget extends StatelessWidget {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () {
-                  appSnackBar(context, AppColor.darkOrange, 'Wallet details up to date!');
+                  appSnackBar(
+                      context, AppColor.darkOrange, 'Wallet details up to date!');
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
@@ -126,11 +132,14 @@ class WalletCardWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMetricItem('Today\'s Pay', walletDisplay, Icons.payments_rounded),
+              _buildMetricItem("Today's Pay", todaysDisplay,
+                  Icons.payments_rounded),
               Container(height: 30, width: 1, color: Colors.grey.shade200),
-              _buildMetricItem('Deliveries', deliveriesDisplay, Icons.local_shipping_rounded),
+              _buildMetricItem('Deliveries', deliveriesDisplay,
+                  Icons.local_shipping_rounded),
               Container(height: 30, width: 1, color: Colors.grey.shade200),
-              _buildMetricItem('Rating', ratingDisplay, Icons.star_rounded),
+              _buildMetricItem('Rating', '$ratingDisplay ★',
+                  Icons.star_rounded),
             ],
           ),
         ],

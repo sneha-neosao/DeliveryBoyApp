@@ -18,5 +18,7 @@ class ApiUrl {
 
   static const onlineStatus = "/auth/toggle-online";
 
+  static const dashboard = "/dashboard/";
+
 }
 

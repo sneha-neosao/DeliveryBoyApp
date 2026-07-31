@@ -11,6 +11,7 @@ import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_detail
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
+import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
 import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
@@ -42,6 +43,8 @@ abstract class Repository {
   /// Online Status
   Future<Either<Failure, OnlineStatusResponse>> onlineStatus(OnlineStatusParams params);
 
+  /// Dashboard
+  Future<Either<Failure, DashboardStatsResponse>> dashboard(NoParams params);
 }
 
 class AuthRepositoryImpl implements Repository {
@@ -278,6 +281,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.online_status(params,token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, DashboardStatsResponse>> dashboard(NoParams params) {
+    return _networkInfo.check<DashboardStatsResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.dashboard(token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

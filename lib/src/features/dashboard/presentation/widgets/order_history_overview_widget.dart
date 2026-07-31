@@ -4,7 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class OrderHistoryOverviewWidget extends StatelessWidget {
-  const OrderHistoryOverviewWidget({super.key});
+  final int? deliveredCount;
+  final int? pendingCount;
+  final int? cancelledCount;
+
+  const OrderHistoryOverviewWidget({
+    super.key,
+    this.deliveredCount,
+    this.pendingCount,
+    this.cancelledCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,6 +22,7 @@ class OrderHistoryOverviewWidget extends StatelessWidget {
         Expanded(
           child: _buildShortcutCard(
             title: 'drawer_delivered'.tr(),
+            count: deliveredCount,
             icon: Icons.check_circle_rounded,
             color: const Color(0xFF188510),
             bgColor: const Color(0xFFE8F5E9),
@@ -23,6 +33,7 @@ class OrderHistoryOverviewWidget extends StatelessWidget {
         Expanded(
           child: _buildShortcutCard(
             title: 'drawer_pending'.tr(),
+            count: pendingCount,
             icon: Icons.hourglass_top_rounded,
             color: Colors.orange.shade800,
             bgColor: Colors.orange.shade50,
@@ -33,6 +44,7 @@ class OrderHistoryOverviewWidget extends StatelessWidget {
         Expanded(
           child: _buildShortcutCard(
             title: 'drawer_cancelled'.tr(),
+            count: cancelledCount,
             icon: Icons.cancel_rounded,
             color: const Color(0xFFE62222),
             bgColor: const Color(0xFFFFEBEE),
@@ -49,6 +61,7 @@ class OrderHistoryOverviewWidget extends StatelessWidget {
     required Color color,
     required Color bgColor,
     required VoidCallback onTap,
+    int? count,
   }) {
     return InkWell(
       onTap: onTap,
@@ -62,12 +75,21 @@ class OrderHistoryOverviewWidget extends StatelessWidget {
         child: Column(
           children: [
             Icon(icon, color: color, size: 24),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
+            Text(
+              count != null ? '$count' : '-',
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 2),
             Text(
               title,
               style: TextStyle(
                 color: color,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
               maxLines: 1,

@@ -9,6 +9,7 @@ import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_detail
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
+import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
 import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
@@ -38,6 +39,8 @@ sealed class RemoteDataSource {
   /// Online Status
   Future<OnlineStatusResponse> online_status(OnlineStatusParams params, String token);
 
+  /// Dashboard
+  Future<DashboardStatsResponse> dashboard(String token);
 }
 
 class RemoteDataSourceImpl implements RemoteDataSource {
@@ -243,6 +246,35 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = OnlineStatusResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<DashboardStatsResponse> dashboard(String token) async {
+    try {
+      final response = await _helper.execute(
+        method: Method.get,
+        url: ApiUrl.dashboard,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = DashboardStatsResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

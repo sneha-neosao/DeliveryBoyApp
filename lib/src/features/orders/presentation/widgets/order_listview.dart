@@ -13,6 +13,10 @@ class OrderListView extends StatelessWidget {
   final ScrollController scrollController;
   final String selectedFilter;
   final ValueChanged<String> onFilterChanged;
+  final bool isLoadingInitial;
+  final bool isError;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   const OrderListView({
     super.key,
@@ -21,6 +25,10 @@ class OrderListView extends StatelessWidget {
     required this.scrollController,
     required this.selectedFilter,
     required this.onFilterChanged,
+    this.isLoadingInitial = false,
+    this.isError = false,
+    this.errorMessage,
+    this.onRetry,
   });
 
   Map<String, List<Order>> _groupOrdersByDate(List<Order> orders) {
@@ -51,43 +59,46 @@ class OrderListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final groupedMap = _groupOrdersByDate(filteredOrders);
 
-    return SafeArea(
-      child: RefreshIndicator(
-        color: AppColor.darkOrange,
-        onRefresh: () async {
-          context.read<OrderListBloc>().add(const GetOrderListEvent(page: 1, isRefresh: true));
-        },
-        child: Column(
-          children: [
-            // Screen Header
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x0A000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+    return Column(
+      children: [
+        // ─── Screen Header (always visible) ───────────────────────────
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          decoration: const BoxDecoration(
+            color: AppColor.primary,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'my_orders'.tr(),
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0D121F),
-                        ),
+            ],
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'my_orders'.tr(),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.white,
                       ),
+                    ),
+                    // Show order count badge (hidden while loading)
+                    if (!isLoadingInitial)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF2E6),
                           borderRadius: BorderRadius.circular(20),
@@ -101,129 +112,228 @@ class OrderListView extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  12.hS,
-                  // Status Filter Segmented Control
-                  Row(
-                    children: [
-                      _buildFilterChip('All'),
-                      8.wS,
-                      _buildFilterChip('Active'),
-                      8.wS,
-                      _buildFilterChip('Completed'),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
+                12.hS,
+                // Status Filter Segmented Control
+                Row(
+                  children: [
+                    _buildFilterChip('All'),
+                    8.wS,
+                    _buildFilterChip('Active'),
+                    8.wS,
+                    _buildFilterChip('Completed'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ─── Body: loader / error / list ──────────────────────────────
+        Expanded(
+          child: _buildBody(context, groupedMap),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(
+      BuildContext context, Map<String, List<Order>> groupedMap) {
+    // 1. Initial loading — show centred spinner in list area
+    if (isLoadingInitial) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                color: AppColor.darkOrange,
+                strokeWidth: 3,
               ),
             ),
-
-            // Date-Grouped Orders List
-            Expanded(
-              child: filteredOrders.isEmpty
-                  ? Center(
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              'assets/images/no_order_bg.png',
-                              height: 180,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.inbox_rounded,
-                                size: 64,
-                                color: AppColor.slateGrey,
-                              ),
-                            ),
-                            12.hS,
-                            Text(
-                              'no_orders_found'.tr(),
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      itemCount: groupedMap.keys.length + (state.loadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == groupedMap.keys.length) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: AppColor.darkOrange,
-                                strokeWidth: 2.5,
-                              ),
-                            ),
-                          );
-                        }
-
-                        final dateHeader = groupedMap.keys.elementAt(index);
-                        final ordersInGroup = groupedMap[dateHeader]!;
-
-                        final isToday = dateHeader == 'Today' || dateHeader == 'today'.tr();
-                        final isYesterday = dateHeader == 'Yesterday' || dateHeader == 'yesterday'.tr();
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Date Group Heading
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12, bottom: 8, left: 4),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isToday
-                                        ? Icons.today_rounded
-                                        : isYesterday
-                                            ? Icons.history_rounded
-                                            : Icons.calendar_today_rounded,
-                                    size: 16,
-                                    color: const Color(0xFFFA6624),
-                                  ),
-                                  6.wS,
-                                  Text(
-                                    isToday ? 'today'.tr() : (isYesterday ? 'yesterday'.tr() : dateHeader),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF0D121F),
-                                    ),
-                                  ),
-                                  8.wS,
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      '${ordersInGroup.length}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Order Item Cards
-                            ...ordersInGroup.map((order) => OrderListCardWidget(order: order)),
-                          ],
-                        );
-                      },
-                    ),
+            const SizedBox(height: 16),
+            Text(
+              'fetching_orders'.tr(),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColor.slateGrey,
+              ),
             ),
           ],
         ),
+      );
+    }
+
+    // 2. Error state with no cached orders
+    if (isError) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: AppColor.bright_red,
+              ),
+              12.hS,
+              Text(
+                errorMessage ?? 'Something went wrong',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColor.charcoal,
+                ),
+              ),
+              16.hS,
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.darkOrange,
+                  foregroundColor: AppColor.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text('retry'.tr()),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 3. Empty list (no orders for selected filter)
+    if (filteredOrders.isEmpty) {
+      return Center(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/no_order_bg.png',
+                height: 180,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.inbox_rounded,
+                  size: 64,
+                  color: AppColor.slateGrey,
+                ),
+              ),
+              12.hS,
+              Text(
+                'no_orders_found'.tr(),
+                style: TextStyle(
+                    color: Colors.grey.shade600, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 4. Normal list with optional load-more spinner at bottom
+    return RefreshIndicator(
+      color: AppColor.darkOrange,
+      onRefresh: () async {
+        context
+            .read<OrderListBloc>()
+            .add(const GetOrderListEvent(page: 1, isRefresh: true));
+      },
+      child: ListView.builder(
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        itemCount:
+            groupedMap.keys.length + (state.loadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          // Load-more spinner at the bottom
+          if (index == groupedMap.keys.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppColor.darkOrange,
+                  strokeWidth: 2.5,
+                ),
+              ),
+            );
+          }
+
+          final dateHeader = groupedMap.keys.elementAt(index);
+          final ordersInGroup = groupedMap[dateHeader]!;
+
+          final isToday =
+              dateHeader == 'Today' || dateHeader == 'today'.tr();
+          final isYesterday = dateHeader == 'Yesterday' ||
+              dateHeader == 'yesterday'.tr();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date Group Heading
+              Padding(
+                padding:
+                    const EdgeInsets.only(top: 12, bottom: 8, left: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      isToday
+                          ? Icons.today_rounded
+                          : isYesterday
+                              ? Icons.history_rounded
+                              : Icons.calendar_today_rounded,
+                      size: 16,
+                      color: const Color(0xFFFA6624),
+                    ),
+                    6.wS,
+                    Text(
+                      isToday
+                          ? 'today'.tr()
+                          : (isYesterday
+                              ? 'yesterday'.tr()
+                              : dateHeader),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0D121F),
+                      ),
+                    ),
+                    8.wS,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${ordersInGroup.length}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Order Item Cards
+              ...ordersInGroup
+                  .map((order) => OrderListCardWidget(order: order)),
+            ],
+          );
+        },
       ),
     );
   }
@@ -234,17 +344,22 @@ class OrderListView extends StatelessWidget {
       onTap: () => onFilterChanged(filterName),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFA6624) : Colors.grey.shade100,
+          color: isSelected
+              ? const Color(0xFFFA6624)
+              : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           _getFilterLabel(filterName),
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade700,
+            color:
+                isSelected ? Colors.white : Colors.grey.shade700,
             fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontWeight:
+                isSelected ? FontWeight.bold : FontWeight.w500,
           ),
         ),
       ),

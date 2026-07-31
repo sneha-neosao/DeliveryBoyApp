@@ -2,6 +2,7 @@ import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_list_card_widget.dart';
+import 'package:delivery_boy_app/src/features/widgets/gif_loader_overlay.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -59,116 +60,96 @@ class OrderListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final groupedMap = _groupOrdersByDate(filteredOrders);
 
-    return Column(
+    return Stack(
       children: [
-        // ─── Screen Header (always visible) ───────────────────────────
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          decoration: const BoxDecoration(
-            color: AppColor.primary,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(12),
-              bottomRight: Radius.circular(12),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
+        // ── Main content (header always visible + body) ─────────────
+        Column(
+          children: [
+            // Screen Header — always visible regardless of state
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              decoration: const BoxDecoration(
+                color: AppColor.primary,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x0A000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'my_orders'.tr(),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColor.white,
-                      ),
-                    ),
-                    // Show order count badge (hidden while loading)
-                    if (!isLoadingInitial)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF2E6),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${filteredOrders.length} ${'orders'.tr()}',
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'my_orders'.tr(),
                           style: const TextStyle(
-                            color: Color(0xFFFA6624),
-                            fontSize: 12,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
+                            color: Color(0xFF0D121F),
                           ),
                         ),
-                      ),
+                        // Count badge hidden while loading
+                        if (!isLoadingInitial)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF2E6),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${filteredOrders.length} ${'orders'.tr()}',
+                              style: const TextStyle(
+                                color: Color(0xFFFA6624),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    12.hS,
+                    // Status Filter Chips
+                    Row(
+                      children: [
+                        _buildFilterChip('All'),
+                        8.wS,
+                        _buildFilterChip('Active'),
+                        8.wS,
+                        _buildFilterChip('Completed'),
+                      ],
+                    ),
                   ],
                 ),
-                12.hS,
-                // Status Filter Segmented Control
-                Row(
-                  children: [
-                    _buildFilterChip('All'),
-                    8.wS,
-                    _buildFilterChip('Active'),
-                    8.wS,
-                    _buildFilterChip('Completed'),
-                  ],
-                ),
-              ],
+              )
             ),
-          ),
+
+            // Body area below the header
+            Expanded(
+              child: _buildBody(context, groupedMap),
+            ),
+          ],
         ),
 
-        // ─── Body: loader / error / list ──────────────────────────────
-        Expanded(
-          child: _buildBody(context, groupedMap),
-        ),
+        // ── GIF loader overlay (only during initial load) ───────────
+        if (isLoadingInitial) const GifLoaderOverlay(),
       ],
     );
   }
 
   Widget _buildBody(
       BuildContext context, Map<String, List<Order>> groupedMap) {
-    // 1. Initial loading — show centred spinner in list area
-    if (isLoadingInitial) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(
-              width: 48,
-              height: 48,
-              child: CircularProgressIndicator(
-                color: AppColor.darkOrange,
-                strokeWidth: 3,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'fetching_orders'.tr(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColor.slateGrey,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 2. Error state with no cached orders
+    // Error state with no cached orders
     if (isError) {
       return Center(
         child: Padding(
@@ -210,7 +191,7 @@ class OrderListView extends StatelessWidget {
       );
     }
 
-    // 3. Empty list (no orders for selected filter)
+    // Empty list state
     if (filteredOrders.isEmpty) {
       return Center(
         child: SingleChildScrollView(
@@ -231,8 +212,8 @@ class OrderListView extends StatelessWidget {
               12.hS,
               Text(
                 'no_orders_found'.tr(),
-                style: TextStyle(
-                    color: Colors.grey.shade600, fontSize: 14),
+                style:
+                    TextStyle(color: Colors.grey.shade600, fontSize: 14),
               ),
             ],
           ),
@@ -240,13 +221,12 @@ class OrderListView extends StatelessWidget {
       );
     }
 
-    // 4. Normal list with optional load-more spinner at bottom
+    // Normal scrollable list with pull-to-refresh
     return RefreshIndicator(
       color: AppColor.darkOrange,
       onRefresh: () async {
-        context
-            .read<OrderListBloc>()
-            .add(const GetOrderListEvent(page: 1, isRefresh: true));
+        context.read<OrderListBloc>().add(
+            const GetOrderListEvent(page: 1, isRefresh: true));
       },
       child: ListView.builder(
         controller: scrollController,
@@ -282,8 +262,8 @@ class OrderListView extends StatelessWidget {
             children: [
               // Date Group Heading
               Padding(
-                padding:
-                    const EdgeInsets.only(top: 12, bottom: 8, left: 4),
+                padding: const EdgeInsets.only(
+                    top: 12, bottom: 8, left: 4),
                 child: Row(
                   children: [
                     Icon(
@@ -328,7 +308,7 @@ class OrderListView extends StatelessWidget {
                   ],
                 ),
               ),
-              // Order Item Cards
+              // Order Cards
               ...ordersInGroup
                   .map((order) => OrderListCardWidget(order: order)),
             ],

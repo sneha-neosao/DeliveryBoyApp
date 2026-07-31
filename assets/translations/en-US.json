@@ -88,5 +88,11 @@
   "reject_order": "Reject Order",
   "enter_rejection_reason": "Enter reason for rejection...",
   "please_enter_reason": "Please enter the reason first",
-  "submit": "Submit"
+  "submit": "Submit",
+  "please_enter_old_password": "Please enter the old password",
+  "please_enter_valid_old_password": "Please enter valid old password",
+  "please_enter_new_password": "Please enter the old password",
+  "please_enter_valid_new_password": "Please enter valid old password",
+  "please_enter_confirm_password": "Please enter the old password",
+  "please_enter_valid_confirm_password": "Please enter valid old password"
 }

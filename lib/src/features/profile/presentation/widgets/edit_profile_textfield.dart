@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class EditProfileTextField extends StatelessWidget {
+class EditProfileTextField<T> extends StatelessWidget {
   final TextEditingController controller;
   final IconData prefixIcon;
   final String hintText;
@@ -20,6 +21,9 @@ class EditProfileTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Access the bloc or provider of type T if needed
+    // final formBloc = context.read<T>();
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,

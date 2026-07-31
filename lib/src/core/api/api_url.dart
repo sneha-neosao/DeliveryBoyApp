@@ -20,5 +20,7 @@ class ApiUrl {
 
   static const dashboard = "/dashboard/";
 
+  static const passwordUpdate = "/profile/update-password";
+
 }
 

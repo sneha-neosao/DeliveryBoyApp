@@ -7,6 +7,7 @@ import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
+import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
@@ -41,6 +42,10 @@ sealed class RemoteDataSource {
 
   /// Dashboard
   Future<DashboardStatsResponse> dashboard(String token);
+
+  ///Password Update
+  Future<CommonResponse> password_update(PasswordUpdateParams params, String token);
+
 }
 
 class RemoteDataSourceImpl implements RemoteDataSource {
@@ -275,6 +280,39 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = DashboardStatsResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<CommonResponse> password_update(PasswordUpdateParams params,String token) async {
+    try {
+
+      var data = {"old_password": params.old_password, "new_password": params.new_password, "confirm_password": params.confirm_password};
+
+      final response = await _helper.execute(
+        method: Method.put,
+        url: ApiUrl.passwordUpdate,
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = CommonResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

@@ -9,6 +9,7 @@ import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
+import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
@@ -45,6 +46,9 @@ abstract class Repository {
 
   /// Dashboard
   Future<Either<Failure, DashboardStatsResponse>> dashboard(NoParams params);
+
+  /// Update Password
+  Future<Either<Failure, CommonResponse>> passwordUpdate(PasswordUpdateParams params);
 }
 
 class AuthRepositoryImpl implements Repository {
@@ -314,6 +318,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.dashboard(token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, CommonResponse>> passwordUpdate(PasswordUpdateParams params) {
+    return _networkInfo.check<CommonResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.password_update(params,token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

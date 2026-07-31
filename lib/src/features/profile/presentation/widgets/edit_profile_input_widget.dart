@@ -66,10 +66,7 @@ class EditProfileInputWidget extends StatelessWidget {
           prefixIcon: Icons.location_on_outlined,
           hintText: 'Location',
           validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your location';
-            }
-            return null;
+            return null; // optional field
           },
         ),
       ],

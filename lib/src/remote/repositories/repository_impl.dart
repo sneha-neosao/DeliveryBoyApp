@@ -37,7 +37,7 @@ abstract class Repository {
   Future<Either<Failure, OrderAssignmentResponse>> orderAssignment(OrderAssignmentParams params);
 
   /// Profile
-  Future<Either<Failure, LoginResponse>> profile(NoParams params);
+  Future<Either<Failure, ProfileResponse>> profile(NoParams params);
 
   /// Online Status
   Future<Either<Failure, OnlineStatusResponse>> onlineStatus(OnlineStatusParams params);
@@ -238,8 +238,8 @@ class AuthRepositoryImpl implements Repository {
   }
 
   @override
-  Future<Either<Failure, LoginResponse>> profile(NoParams params) {
-    return _networkInfo.check<LoginResponse>(
+  Future<Either<Failure, ProfileResponse>> profile(NoParams params) {
+    return _networkInfo.check<ProfileResponse>(
       connected: () async {
         try {
           String token = await SessionManager.getAuthToken() ?? "";
@@ -247,7 +247,7 @@ class AuthRepositoryImpl implements Repository {
           final respData = await _remoteDataSource.profile(token);
 
           if (respData.status != 200) {
-            return Left(CredentialFailure(respData.message!));
+            return Left(CredentialFailure(respData.message));
           }
 
           return Right(respData);

@@ -4,10 +4,27 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class WalletCardWidget extends StatelessWidget {
-  const WalletCardWidget({super.key});
+  final num? commissionWallet;
+  final num? totalDeliveries;
+  final num? avgRating;
+
+  const WalletCardWidget({
+    super.key,
+    this.commissionWallet,
+    this.totalDeliveries,
+    this.avgRating,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final walletDisplay = commissionWallet != null
+        ? '₹${commissionWallet!.toStringAsFixed(0)}'
+        : '₹0';
+    final deliveriesDisplay =
+        totalDeliveries != null ? totalDeliveries!.toStringAsFixed(0) : '0';
+    final ratingDisplay =
+        avgRating != null ? '${avgRating!.toStringAsFixed(1)} ★' : '0.0 ★';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -59,9 +76,9 @@ class WalletCardWidget extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
-                            '₹24,580',
-                            style: TextStyle(
+                          Text(
+                            walletDisplay,
+                            style: const TextStyle(
                               color: AppColor.textPrimary,
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
@@ -109,11 +126,11 @@ class WalletCardWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMetricItem('Today\'s Pay', '₹1,250', Icons.payments_rounded),
+              _buildMetricItem('Today\'s Pay', walletDisplay, Icons.payments_rounded),
               Container(height: 30, width: 1, color: Colors.grey.shade200),
-              _buildMetricItem('Deliveries', '148', Icons.local_shipping_rounded),
+              _buildMetricItem('Deliveries', deliveriesDisplay, Icons.local_shipping_rounded),
               Container(height: 30, width: 1, color: Colors.grey.shade200),
-              _buildMetricItem('Rating', '4.9 ★', Icons.star_rounded),
+              _buildMetricItem('Rating', ratingDisplay, Icons.star_rounded),
             ],
           ),
         ],

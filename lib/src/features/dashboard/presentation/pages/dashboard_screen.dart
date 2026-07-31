@@ -24,6 +24,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isTogglingStatus = false;
   String? _userName;
   String? _userPhone;
+  num? _commissionWallet;
+  num? _totalDeliveries;
+  num? _avgRating;
   late final ProfileBloc _profileBloc;
 
   @override
@@ -57,24 +60,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) async {
           if (state is ProfileSuccessState) {
+            final profileData = state.data.data;
+
+            // Update session with fresh profile data
             final session = await SessionManager.getUserSession();
-
-            if (session != null) {
-              session.data?.deliveryBoy?.name = state.data.data?.deliveryBoy?.name;
-              session.data?.deliveryBoy?.phone = state.data.data?.deliveryBoy?.phone;
-              session.data?.deliveryBoy?.email = state.data.data?.deliveryBoy?.email;
-              session.data?.deliveryBoy?.vehicleType = state.data.data?.deliveryBoy?.vehicleType;
-              session.data?.deliveryBoy?.deliveryType = state.data.data?.deliveryBoy?.deliveryType;
-              session.data?.deliveryBoy?.vehicleNumber = state.data.data?.deliveryBoy?.vehicleNumber;
-              session.data?.deliveryBoy?.isActive = state.data.data?.deliveryBoy?.isActive;
-              session.data?.deliveryBoy?.isAvailable = state.data.data?.deliveryBoy?.isAvailable;
-
+            if (session != null && profileData != null) {
+              session.data?.deliveryBoy?.name = profileData.name;
+              session.data?.deliveryBoy?.phone = profileData.phone;
+              session.data?.deliveryBoy?.email = profileData.email;
+              session.data?.deliveryBoy?.vehicleType = profileData.vehicleType;
+              session.data?.deliveryBoy?.vehicleNumber = profileData.vehicleNumber;
+              session.data?.deliveryBoy?.isActive = profileData.isActive;
+              session.data?.deliveryBoy?.isAvailable = profileData.isOnline;
               await SessionManager.saveUserSession(session);
             }
 
             setState(() {
-              _userName = state.data.data?.deliveryBoy?.name;
-              _userPhone = state.data.data?.deliveryBoy?.phone;
+              _userName = profileData?.name;
+              _userPhone = profileData?.phone;
+              _commissionWallet = profileData?.commissionWallet;
+              _totalDeliveries = profileData?.totalReviews;
+              _avgRating = profileData?.avgRating;
+              if (profileData?.isOnline != null) {
+                _isOnline = profileData!.isOnline;
+              }
             });
           }
 
@@ -139,9 +148,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                         const SizedBox(height: 20),
 
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20.0),
-                          child: WalletCardWidget(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          child: WalletCardWidget(
+                            commissionWallet: _commissionWallet,
+                            totalDeliveries: _totalDeliveries,
+                            avgRating: _avgRating,
+                          ),
                         ),
 
                         const SizedBox(height: 20),

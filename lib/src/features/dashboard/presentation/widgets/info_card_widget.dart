@@ -164,7 +164,7 @@ class InfoCardWidget extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          (userName != null && userName!.isNotEmpty) ? userName! : 'Neosao Partner',
+                          (userName != null && userName!.isNotEmpty) ? userName! : '',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -181,7 +181,7 @@ class InfoCardWidget extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              (userPhone != null && userPhone!.isNotEmpty) ? userPhone! : '+91 8482940592',
+                              (userPhone != null && userPhone!.isNotEmpty) ? userPhone! : '',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.9),
                                 fontSize: 13,

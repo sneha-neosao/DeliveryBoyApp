@@ -95,7 +95,7 @@ class OrderListView extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0D121F),
+                            color: AppColor.white,
                           ),
                         ),
                         // Count badge hidden while loading

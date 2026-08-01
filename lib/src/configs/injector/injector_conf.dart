@@ -136,9 +136,9 @@ void configureDepedencies() {
   getIt.registerFactory(
         () => FirebaseTokenUpdateBloc(getIt<FirebaseTokenUpdateUseCase>()),
   );
-  getIt.registerFactory(
-        () => SocketConnectService(),
-  );
+  // getIt.registerFactory(
+  //       () => SocketConnectService(),
+  // );
   /// API Helper
 
   getIt.registerLazySingleton(() => NetworkInfo());

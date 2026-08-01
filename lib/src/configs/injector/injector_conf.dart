@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/dashboard_usecase.dart';
+import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/firebase_token_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/logout_usecase.dart';
@@ -126,7 +127,12 @@ void configureDepedencies() {
   getIt.registerFactory(
         () => ProfileImageUpdateBloc(getIt<ProfileImageUpdateUseCase>()),
   );
-
+  getIt.registerLazySingleton(
+        () => FirebaseTokenUpdateUseCase(getIt<AuthRepositoryImpl>()),
+  );
+  getIt.registerFactory(
+        () => FirebaseTokenUpdateBloc(getIt<FirebaseTokenUpdateUseCase>()),
+  );
   /// API Helper
 
   getIt.registerLazySingleton(() => NetworkInfo());

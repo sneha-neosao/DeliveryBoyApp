@@ -2,6 +2,7 @@ import 'package:delivery_boy_app/src/app.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/constants/list_translation_locale.dart';
 import 'package:delivery_boy_app/src/core/services/notification_service.dart';
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -60,6 +61,12 @@ Future<void> main() async {
         : HydratedStorageDirectory((await getTemporaryDirectory()).path),
   );
 
+  // ✅ Request notification permissions
+  await NoficationService.requestNotificationPermission();
+
+  // ✅ Get the FCM token
+  final firebasetoken = await NoficationService.getToken();
+  SessionManager.saveFirebaseToken(firebasetoken);
 
   // ✅ Initialize local notifications
   NoficationService.initLocalNotifications();

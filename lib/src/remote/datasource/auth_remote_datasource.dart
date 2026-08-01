@@ -2,6 +2,7 @@ import 'package:delivery_boy_app/src/core/api/api_exception.dart';
 import 'package:delivery_boy_app/src/core/api/api_url.dart';
 import 'package:delivery_boy_app/src/core/constants/error_message.dart';
 import 'package:delivery_boy_app/src/core/errors/exceptions.dart';
+import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/firebase_token_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
@@ -11,6 +12,7 @@ import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_up
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_image_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
+import 'package:delivery_boy_app/src/remote/models/auth_model/firebase_token_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
 import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
@@ -30,6 +32,8 @@ sealed class RemoteDataSource {
   Future<LoginResponse> login(LoginParams params);
 
   Future<CommonResponse> logout(String token, String refreshToken);
+
+  Future<FirebaseTokenUpdateResponse> firebase_token_update(FirebaseTokenUpdateParams params, String token);
 
   /// Orders
   Future<OrdersListResponse> order_list(OrderListParams params, String token);
@@ -106,6 +110,35 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = CommonResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<FirebaseTokenUpdateResponse> firebase_token_update(FirebaseTokenUpdateParams params,String token) async {
+    try {
+      final response = await _helper.execute(
+        method: Method.post,
+        url: ApiUrl.firebaseTokenUpdate,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = FirebaseTokenUpdateResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

@@ -4,6 +4,7 @@ import 'package:delivery_boy_app/src/core/errors/failures.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
 import 'package:delivery_boy_app/src/core/utils/failure_converter.dart';
+import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/firebase_token_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
@@ -13,6 +14,7 @@ import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_up
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_image_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
+import 'package:delivery_boy_app/src/remote/models/auth_model/firebase_token_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
 import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
@@ -34,6 +36,8 @@ abstract class Repository {
   Future<Either<Failure, LoginResponse>> login(LoginParams params);
 
   Future<Either<Failure, CommonResponse>> logout(NoParams params);
+
+  Future<Either<Failure, FirebaseTokenUpdateResponse>> firebaseTokenUpdate(FirebaseTokenUpdateParams params);
 
   /// Orders
   Future<Either<Failure, OrdersListResponse>> orderList(OrderListParams params);
@@ -162,6 +166,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.order_list(params, token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, FirebaseTokenUpdateResponse>> firebaseTokenUpdate(FirebaseTokenUpdateParams params) {
+    return _networkInfo.check<FirebaseTokenUpdateResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.firebase_token_update(params, token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

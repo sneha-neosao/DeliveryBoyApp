@@ -8,6 +8,8 @@ class ApiUrl {
 
   static const logout = "/auth/logout";
 
+  static const firebaseTokenUpdate = "/profile/update-firebase-token";
+
   static const orderList = "/orders/list";
 
   static const orderDetails = "/orders/detail";

@@ -4,6 +4,7 @@ import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/change_password_input_widget.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_input_widget.dart';
+import 'package:delivery_boy_app/src/features/profile/presentation/widgets/profile_image_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/app_alert_dialogue_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
@@ -22,8 +23,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordFormKey = GlobalKey<FormState>();
 
-  late String name;
-  late String phone;
+  late String name = '';
+  late String phone = '';
+  String? profileImageUrl; // current profile image URL
 
   late final ProfileBloc _profileBloc;
 
@@ -118,6 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         BlocProvider(create: (_) => getIt<ProfileUpdateFormBloc>()),
         BlocProvider(create: (_) => getIt<AuthLoginBloc>()),
         BlocProvider(create: (_) => _profileBloc),
+        BlocProvider(create: (_) => getIt<ProfileImageUpdateBloc>()),
       ],
       child: Builder(
         builder: (context) {
@@ -126,11 +129,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (state is ProfileSuccessState) {
                 final profileData = state.data.data;
                 if (profileData != null && mounted) {
-                  // Populate controllers with fresh API data
-                  name = profileData.name;
-                  phone = profileData.phone;
-                  // vehicleType can be used as a location proxy or left empty
-                  // since the API doesn't have a city field
+                  setState(() {
+                    name = profileData.name;
+                    phone = profileData.phone;
+                    profileImageUrl = profileData.profileImage; // update image URL
+                  });
                 }
               }
             },
@@ -157,30 +160,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               const SizedBox(height: 20),
 
-                              // Large profile photo with thick orange border and shadow
+                              // Large profile photo with edit icon
                               Center(
-                                child: Container(
-                                  width: 110,
-                                  height: 110,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFFFFEAD9),
-                                    border: Border.all(
-                                        color: const Color(0xFFFA6624), width: 4),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFFFA6624)
-                                            .withValues(alpha: 0.25),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.person_pin_rounded,
-                                    size: 60,
-                                    color: Color(0xFFFA6624),
-                                  ),
+                                child: ProfileImageWidget(
+                                  imageUrl: profileImageUrl,
                                 ),
                               ),
                               const SizedBox(height: 32),

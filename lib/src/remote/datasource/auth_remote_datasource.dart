@@ -385,7 +385,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
     try {
 
       FormData formData = FormData.fromMap({
-        "profile_image ": await MultipartFile.fromFile(
+        "profile_image": await MultipartFile.fromFile(
           params.profile_image,
           filename: "image.png", // or use basename(params.member_photo)
         ),
@@ -396,7 +396,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
         url: ApiUrl.profileImageUpdate,
         data: formData,
         options: Options(
-          // contentType: Headers.formUrlEncodedContentType,
+          contentType: Headers.multipartFormDataContentType,
           headers: {
             'Authorization': 'Bearer $token',
             'accept': 'application/json',

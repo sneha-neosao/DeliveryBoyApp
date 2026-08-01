@@ -22,5 +22,7 @@ class ApiUrl {
 
   static const passwordUpdate = "/profile/update-password";
 
+  static const profileUpdate = "/profile/update";
+
 }
 

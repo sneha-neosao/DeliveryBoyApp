@@ -23,10 +23,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordFormKey = GlobalKey<FormState>();
 
-  late final TextEditingController _nameController;
-  late final TextEditingController _phoneController;
-  late final TextEditingController _emailController;
-  late final TextEditingController _locationController;
+  late String name;
+  late String phone;
 
   late final ProfileBloc _profileBloc;
 
@@ -42,10 +40,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
-    _phoneController = TextEditingController();
-    _emailController = TextEditingController();
-    _locationController = TextEditingController();
 
     // Load cached session data first (immediate display)
     _loadUserData();
@@ -55,30 +49,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileBloc.add(const ProfileGetEvent());
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    _locationController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadUserData() async {
     final session = await SessionManager.getUserSession();
     final deliveryBoy = session?.data?.deliveryBoy;
 
     if (deliveryBoy == null || !mounted) return;
 
-    _nameController.text = deliveryBoy.name ?? '';
-    _phoneController.text = deliveryBoy.phone ?? '';
-    _emailController.text = deliveryBoy.email ?? '';
-  }
-
-  void _handleProfileSave() {
-    if (_formKey.currentState?.validate() ?? false) {
-      appSnackBar(context, const Color(0xFFFA6624), 'Profile details saved successfully!');
-    }
+    setState(() {
+      name = deliveryBoy.name ?? '';
+      phone = deliveryBoy.phone ?? '';
+    });
   }
 
   void _handleLogout(BuildContext parentContext) {
@@ -137,9 +117,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final profileData = state.data.data;
                 if (profileData != null && mounted) {
                   // Populate controllers with fresh API data
-                  _nameController.text = profileData.name;
-                  _phoneController.text = profileData.phone;
-                  _emailController.text = profileData.email;
+                  name = profileData.name;
+                  phone = profileData.phone;
                   // vehicleType can be used as a location proxy or left empty
                   // since the API doesn't have a city field
                 }
@@ -200,10 +179,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Form(
                                 key: _formKey,
                                 child: EditProfileInputWidget(
-                                  nameController: _nameController,
-                                  phoneController: _phoneController,
-                                  emailController: _emailController,
-                                  locationController: _locationController,
+                                  name: name,
+                                  phone: phone,
                                 ),
                               ),
                               const SizedBox(height: 24),

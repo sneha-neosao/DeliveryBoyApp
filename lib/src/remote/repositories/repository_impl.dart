@@ -10,6 +10,7 @@ import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assign
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
+import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
@@ -18,6 +19,7 @@ import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
+import 'package:delivery_boy_app/src/remote/models/profile_model/profile_update_response.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../configs/injector/injector.dart';
@@ -49,6 +51,9 @@ abstract class Repository {
 
   /// Update Password
   Future<Either<Failure, CommonResponse>> passwordUpdate(PasswordUpdateParams params);
+
+  /// Update Profile
+  Future<Either<Failure, ProfileUpdateResponse>> profileUpdate(ProfileUpdateParams params);
 }
 
 class AuthRepositoryImpl implements Repository {
@@ -351,6 +356,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.password_update(params,token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, ProfileUpdateResponse>> profileUpdate(ProfileUpdateParams params) {
+    return _networkInfo.check<ProfileUpdateResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.profile_update(params,token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

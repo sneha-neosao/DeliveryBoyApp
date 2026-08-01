@@ -8,6 +8,7 @@ import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assign
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
+import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
@@ -16,6 +17,7 @@ import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
+import 'package:delivery_boy_app/src/remote/models/profile_model/profile_update_response.dart';
 import 'package:dio/dio.dart';
 
 import '../../configs/injector/injector.dart';
@@ -46,6 +48,8 @@ sealed class RemoteDataSource {
   ///Password Update
   Future<CommonResponse> password_update(PasswordUpdateParams params, String token);
 
+  ///Profile Update
+  Future<ProfileUpdateResponse> profile_update(ProfileUpdateParams params, String token);
 }
 
 class RemoteDataSourceImpl implements RemoteDataSource {
@@ -319,6 +323,44 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = CommonResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<ProfileUpdateResponse> profile_update(ProfileUpdateParams params,String token) async {
+    try {
+
+      var data = {
+        "name": params.name,
+        "phone": params.mobile_number
+      };
+
+      final response = await _helper.execute(
+        method: Method.put,
+        url: ApiUrl.profileUpdate,
+        data: data,
+        options: Options(
+          // contentType: Headers.formUrlEncodedContentType,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'accept': 'application/json',
+          },
+        ),
+      );
+
+      final respData = ProfileUpdateResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

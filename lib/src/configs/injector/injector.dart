@@ -15,5 +15,7 @@ export '../../features/profile/bloc/profile_bloc/profile_bloc.dart';
 export '../../features/dashboard/bloc/dashboard_bloc/dashboard_bloc.dart';
 export '../../features/profile/bloc/password_update_bloc/password_update_bloc.dart';
 export '../../features/profile/bloc/password_update_form/password_update_form_bloc.dart';
+export '../../features/profile/bloc/profile_update_bloc/profile_update_bloc.dart';
+export '../../features/profile/bloc/profile_update_form/profile_update_form_bloc.dart';
 
 

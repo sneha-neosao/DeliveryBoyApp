@@ -66,7 +66,7 @@ class PasswordUpdateFormBloc extends Bloc<PasswordUpdateFormEvent, PasswordUpdat
     if (old_password.isNotEmpty && new_password.isNotEmpty && confirm_password.isNotEmpty) {
       return true;
     }
-    if (old_password.length < 8 || old_password.length < 8 || old_password.length < 8) {
+    if (old_password.length < 8 || new_password.length < 8 || confirm_password.length < 8) {
       return false;
     }
 

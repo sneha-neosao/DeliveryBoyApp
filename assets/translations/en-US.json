@@ -107,5 +107,6 @@
   "confirm_password": "Confirm Password",
   "enter_old_password": "Enter Old Password",
   "enter_new_password": "Enter New Password",
-  "enter_confirm_password": "Enter Confirm Password"
+  "enter_confirm_password": "Enter Confirm Password",
+  "please_select_profile_image": "Please select profile image"
 }

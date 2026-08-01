@@ -2,7 +2,6 @@ import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
-import 'package:delivery_boy_app/src/features/login/bloc/auth_login_bloc/auth_login_bloc.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/change_password_input_widget.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_input_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/app_alert_dialogue_widget.dart';
@@ -34,6 +33,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     context.read<PasswordUpdateBloc>().add(
       PasswordUpdateGetEvent(authForm.old_password.trim(), authForm.new_password.trim(), authForm.confirm_password),
+    );
+  }
+
+  void _profileUpdate(BuildContext context) {
+    primaryFocus?.unfocus();
+    final authForm = context.read<ProfileUpdateFormBloc>().state;
+
+    context.read<ProfileUpdateBloc>().add(
+      ProfileUpdateGetEvent(authForm.name.trim(), authForm.mobile_number.trim()),
     );
   }
 
@@ -106,6 +114,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       providers: [
         BlocProvider(create: (_) => getIt<PasswordUpdateBloc>()),
         BlocProvider(create: (_) => getIt<PasswordUpdateFormBloc>()),
+        BlocProvider(create: (_) => getIt<ProfileUpdateBloc>()),
+        BlocProvider(create: (_) => getIt<ProfileUpdateFormBloc>()),
         BlocProvider(create: (_) => getIt<AuthLoginBloc>()),
         BlocProvider(create: (_) => _profileBloc),
       ],
@@ -186,20 +196,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const SizedBox(height: 24),
 
                               // Save Button
-                              BlocConsumer<PasswordUpdateBloc, PasswordUpdateState>(
+                              BlocConsumer<ProfileUpdateBloc, ProfileUpdateState>(
                                 listener: (context, state) {
-                                  if (state is PasswordUpdateSuccessState) {
+                                  if (state is ProfileUpdateSuccessState) {
                                     appSnackBar(context, AppColor.green, state.data.message );
                                     context.go(AppRoute.dashboard.path);
-                                  } else if (state is PasswordUpdateFailureState) {
+                                  } else if (state is ProfileUpdateFailureState) {
                                     appSnackBar(context, AppColor.bright_red, state.message);
                                   }
                                 },
                                 builder: (context, state) {
-                                  final isLoading = state is PasswordUpdateLoadingState;
+                                  final isLoading = state is ProfileUpdateLoadingState;
 
                                   return ElevatedButton(
-                                    onPressed: isLoading ? null : () => _passwordUpdate(context),
+                                    onPressed: isLoading ? null : () => _profileUpdate(context),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFFFA6624),
                                       foregroundColor: Colors.white,

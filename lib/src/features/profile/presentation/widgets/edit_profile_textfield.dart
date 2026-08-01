@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/extensions/string_validator_extension.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
@@ -52,7 +53,7 @@ class _EditProfileTextFieldState<T> extends State<EditProfileTextField<T>> {
 
   @override
   Widget build(BuildContext context) {
-    // final formBloc = context.read<T>();
+    final formBloc = context.read<T>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,19 +82,19 @@ class _EditProfileTextFieldState<T> extends State<EditProfileTextField<T>> {
           inputFormatters: widget.inputFormatters,
           keyboardType: widget.keyboardType,
           readOnly: widget.readOnly ?? false,
-          // validator: (val) {
-          //   if (formBloc is AuthLoginFormBloc) {
-          //     if (widget.label == "name".tr() && val!.isEmpty) {
-          //       return "please_enter_name".tr();
-          //     } else if (widget.label == "mobile_number".tr() && val!.isEmpty) {
-          //       return "please_enter_password".tr();
-          //     } else if (widget.label == "mobile_number".tr() && !formBloc.state.mo.isMobileNumberValid) {
-          //       return "please_enter_valid_password".tr();
-          //     }
-          //   }
-          //
-          //   return widget.validator?.call(val);
-          // },
+          validator: (val) {
+            if (formBloc is ProfileUpdateFormBloc) {
+              if (widget.label == "name".tr() && val!.isEmpty) {
+                return "please_enter_name".tr();
+              } else if (widget.label == "mobile_number".tr() && val!.isEmpty) {
+                return "please_enter_mobile_number".tr();
+              } else if (widget.label == "mobile_number".tr() && !formBloc.state.mobile_number.isMobileNumberValid) {
+                return "please_enter_valid_mobile_number".tr();
+              }
+            }
+
+            return widget.validator?.call(val);
+          },
           decoration: InputDecoration(
             hintText: widget.hintText,
             prefixIcon: Icon(widget.prefixIcon, color: AppColor.icon),

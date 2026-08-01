@@ -3,6 +3,7 @@ import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 class InfoCardWidget extends StatelessWidget {
   final bool isOnline;
@@ -159,6 +160,10 @@ class InfoCardWidget extends StatelessWidget {
                           ? Image.network(
                               userImageUrl!,
                               fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return _buildShimmer();
+                              },
                               errorBuilder: (context, error, stackTrace) =>
                                   _buildPlaceholder(),
                             )
@@ -224,6 +229,21 @@ class InfoCardWidget extends StatelessWidget {
       Icons.person_pin_rounded,
       size: 40,
       color: AppColor.darkOrange,
+    );
+  }
+
+  Widget _buildShimmer() {
+    return Shimmer.fromColors(
+      baseColor: AppColor.orangeTint2,
+      highlightColor: Colors.white,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+      ),
     );
   }
 }

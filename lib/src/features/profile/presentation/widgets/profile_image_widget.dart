@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// A self-contained widget that shows the profile avatar circle with an edit
 /// icon. Tapping the edit icon opens a bottom sheet (Camera / Gallery), then
@@ -219,11 +220,30 @@ class _ProfileImageWidgetState extends State<ProfileImageWidget> {
       return Image.network(
         networkUrl,
         fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildShimmer();
+        },
         errorBuilder: (_, __, ___) => _placeholder(),
       );
     }
 
     return _placeholder();
+  }
+
+  Widget _buildShimmer() {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFFFEAD9),
+      highlightColor: Colors.white,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
   }
 
   Widget _placeholder() {

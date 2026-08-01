@@ -128,9 +128,13 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   @override
   Future<FirebaseTokenUpdateResponse> firebase_token_update(FirebaseTokenUpdateParams params,String token) async {
     try {
+
+      var data = {"firebase_token": params.firebase_id};
+
       final response = await _helper.execute(
-        method: Method.post,
+        method: Method.put,
         url: ApiUrl.firebaseTokenUpdate,
+        data: data,
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',

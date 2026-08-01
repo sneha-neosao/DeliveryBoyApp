@@ -1,5 +1,6 @@
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
+import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/dashboard/bloc/online_status_bloc/online_status_bloc.dart';
@@ -37,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   late final ProfileBloc _profileBloc;
   late final DashboardBloc _dashboardBloc;
+  late FirebaseTokenUpdateBloc _firebaseTokenUpdateBloc;
 
   @override
   void initState() {
@@ -46,6 +48,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _profileBloc.add(ProfileGetEvent());
     _dashboardBloc = getIt<DashboardBloc>();
     _dashboardBloc.add(DashboardGetEvent());
+    _firebaseTokenUpdateBloc = getIt<FirebaseTokenUpdateBloc>();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sendFirebaseToken();
+    });
   }
 
   Future<void> _loadUserSession() async {
@@ -61,6 +68,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       });
     }
+  }
+
+  /// Fetch and send Firebase token if changed
+  Future<void> _sendFirebaseToken() async {
+    final newToken = await NoficationService.getToken();
+    final savedToken = await SessionManager.getFirebaseToken();
+
+    print("New Firebase token: $newToken");
+    print("Stored Firebase token: ${savedToken ?? null}");
+
+    if (newToken == null) return;
+
+    // if (savedToken == null || savedToken != newToken) {
+      // Send to API only if different
+      _firebaseTokenUpdateBloc.add(FirebaseTokenUpdateGetEvent(newToken));
+
+      // Save only after API call is made
+      await SessionManager.saveFirebaseToken(newToken);
+      print("New Firebase token saved and sent to API");
+    // } else {
+    //   print("Firebase token unchanged. No need to call API.");
+    // }
   }
 
   @override

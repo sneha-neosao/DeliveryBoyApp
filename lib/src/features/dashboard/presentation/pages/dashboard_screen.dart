@@ -24,6 +24,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isTogglingStatus = false;
   String? _userName;
   String? _userPhone;
+  String? _userImageUrl;
 
   // Dashboard stats from /dashboard/ API
   num? _totalEarning;
@@ -54,6 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _userName = deliveryBoy.name;
         _userPhone = deliveryBoy.phone;
+        _userImageUrl = deliveryBoy.profileImage;
         if (deliveryBoy.isAvailable != null) {
           _isOnline = deliveryBoy.isAvailable!;
         }
@@ -84,6 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   session.data?.deliveryBoy?.email = profileData.email;
                   session.data?.deliveryBoy?.vehicleType = profileData.vehicleType;
                   session.data?.deliveryBoy?.vehicleNumber = profileData.vehicleNumber;
+                  session.data?.deliveryBoy?.profileImage = profileData.profileImage;
                   session.data?.deliveryBoy?.isActive = profileData.isActive;
                   session.data?.deliveryBoy?.isAvailable = profileData.isOnline;
                   await SessionManager.saveUserSession(session);
@@ -93,6 +96,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   setState(() {
                     _userName = profileData?.name;
                     _userPhone = profileData?.phone;
+                    _userImageUrl = profileData?.profileImage;
                     if (profileData?.isOnline != null) {
                       _isOnline = profileData!.isOnline;
                     }
@@ -169,6 +173,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           isOnline: _isOnline,
                           userName: _userName,
                           userPhone: _userPhone,
+                          userImageUrl: _userImageUrl,
                           onOnlineToggle: (value) {
                             setState(() => _isOnline = value);
                             blocContext.read<OnlineStatusBloc>().add(

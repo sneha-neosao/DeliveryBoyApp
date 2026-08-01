@@ -68,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       name = deliveryBoy.name ?? '';
       phone = deliveryBoy.phone ?? '';
+      profileImageUrl = deliveryBoy.profileImage;
     });
   }
 

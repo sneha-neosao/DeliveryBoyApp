@@ -9,6 +9,7 @@ class InfoCardWidget extends StatelessWidget {
   final ValueChanged<bool> onOnlineToggle;
   final String? userName;
   final String? userPhone;
+  final String? userImageUrl;
 
   const InfoCardWidget({
     super.key,
@@ -16,6 +17,7 @@ class InfoCardWidget extends StatelessWidget {
     required this.onOnlineToggle,
     this.userName,
     this.userPhone,
+    this.userImageUrl,
   });
 
   @override
@@ -152,10 +154,15 @@ class InfoCardWidget extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.person_pin_rounded,
-                      size: 40,
-                      color: AppColor.darkOrange,
+                    child: ClipOval(
+                      child: (userImageUrl != null && userImageUrl!.isNotEmpty)
+                          ? Image.network(
+                              userImageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildPlaceholder(),
+                            )
+                          : _buildPlaceholder(),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -209,6 +216,14 @@ class InfoCardWidget extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return const Icon(
+      Icons.person_pin_rounded,
+      size: 40,
+      color: AppColor.darkOrange,
     );
   }
 }

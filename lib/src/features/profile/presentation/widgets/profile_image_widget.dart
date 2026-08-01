@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -111,6 +112,7 @@ class _ProfileImageWidgetState extends State<ProfileImageWidget> {
               _uploadedImageUrl = url;
               _localImage = null; // clear local file; use network URL now
             });
+            _updateSessionImage(url);
           }
           appSnackBar(context, AppColor.green, state.data.message);
         } else if (state is ProfileImageUpdateFailureState) {
@@ -174,6 +176,14 @@ class _ProfileImageWidgetState extends State<ProfileImageWidget> {
         );
       },
     );
+  }
+
+  Future<void> _updateSessionImage(String url) async {
+    final session = await SessionManager.getUserSession();
+    if (session != null && session.data?.deliveryBoy != null) {
+      session.data!.deliveryBoy!.profileImage = url;
+      await SessionManager.saveUserSession(session);
+    }
   }
 
   /// Returns the correct child for the avatar circle depending on state.

@@ -24,5 +24,7 @@ class ApiUrl {
 
   static const profileUpdate = "/profile/update";
 
+  static const profileImageUpdate = "/profile/update-image";
+
 }
 

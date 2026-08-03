@@ -7,6 +7,7 @@ import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_status_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_image_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
@@ -135,6 +136,12 @@ void configureDepedencies() {
   );
   getIt.registerFactory(
         () => FirebaseTokenUpdateBloc(getIt<FirebaseTokenUpdateUseCase>()),
+  );
+  getIt.registerLazySingleton(
+        () => OrderStatusUpdateUseCase(getIt<AuthRepositoryImpl>()),
+  );
+  getIt.registerFactory(
+        () => OrderStatusUpdateBloc(getIt<OrderStatusUpdateUseCase>()),
   );
   // getIt.registerFactory(
   //       () => SocketConnectService(),

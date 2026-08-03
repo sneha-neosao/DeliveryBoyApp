@@ -476,16 +476,23 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
         ),
 
         // ── Sticky bottom area ─────────────────────────────────────────────
-        // PREPARING  → Reject + Accept buttons
-        // Accepted (READY_FOR_PICKUP pending) → inactive PICKED UP button
-        // READY_FOR_PICKUP → active PICKED UP button
+        // PREPARING        → Reject + Accept buttons
+        // DEL_ACCEPTED     → inactive PICKED UP button
+        // ACCEPTED         → inactive PICKED UP button
+        // READY_FOR_PICKUP → active   PICKED UP button
+        // PICKED_UP        → active   ON THE WAY button
+        // ON_THE_WAY       → active   DELIVERED button
         if (orderDetails.orderStatus == 'PREPARING' && !_isAccepted)
           _buildPrepairingButtons(context, orderDetails)
         else if (_isAccepted ||
             orderDetails.orderStatus == 'READY_FOR_PICKUP' ||
             orderDetails.orderStatus == 'ACCEPTED' ||
             orderDetails.orderStatus == 'DEL_ACCEPTED')
-          _buildPickedUpButton(context, orderDetails),
+          _buildPickedUpButton(context, orderDetails)
+        else if (orderDetails.orderStatus == 'PICKED_UP')
+          _buildOnTheWayButton(context, orderDetails)
+        else if (orderDetails.orderStatus == 'ON_THE_WAY')
+          _buildDeliveredButton(context, orderDetails),
 
       ],
     );
@@ -666,6 +673,116 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── ON THE WAY button (shown when status is PICKED_UP) ────────────────────
+  Widget _buildOnTheWayButton(BuildContext context, OrderDetails orderDetails) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: _isLoading
+              ? null
+              : () {
+                  _pendingAction = 'on_the_way';
+                  context.read<OrderAssignmentBloc>().add(
+                    OrderAssignmentGetEvent(
+                      orderDetails.uuId,
+                      'on_the_way',
+                      null,
+                    ),
+                  );
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColor.darkOrange,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(25),
+            ),
+            elevation: 3,
+            shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.delivery_dining_rounded, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'ON THE WAY',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── DELIVERED button (shown when status is ON_THE_WAY) ───────────────────
+  Widget _buildDeliveredButton(BuildContext context, OrderDetails orderDetails) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: _isLoading
+              ? null
+              : () {
+                  _pendingAction = 'delivered';
+                  context.read<OrderAssignmentBloc>().add(
+                    OrderAssignmentGetEvent(
+                      orderDetails.uuId,
+                      'delivered',
+                      null,
+                    ),
+                  );
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColor.darkOrange,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(25),
+            ),
+            elevation: 3,
+            shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check_circle_rounded, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'DELIVERED',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

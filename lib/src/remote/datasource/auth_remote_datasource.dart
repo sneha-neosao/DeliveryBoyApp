@@ -8,6 +8,7 @@ import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_status_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_image_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
@@ -19,6 +20,7 @@ import 'package:delivery_boy_app/src/remote/models/online_status_model/online_st
 import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/order_status_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_image_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_update_response.dart';
@@ -41,6 +43,8 @@ sealed class RemoteDataSource {
   Future<OrderDetailsResponse> order_details(OrderDetailsParams params, String token);
 
   Future<OrderAssignmentResponse> order_assignment(OrderAssignmentParams params, String token);
+
+  Future<OrderStatusUpdateResponse> order_status_update(OrderStatusUpdateParams params, String token);
 
   /// Profile
   Future<ProfileResponse> profile(String token);
@@ -234,6 +238,39 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = OrderAssignmentResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<OrderStatusUpdateResponse> order_status_update(OrderStatusUpdateParams params,String token) async {
+    try {
+
+      var data = {"order_status": params.status, "note": params.note};
+
+      final response = await _helper.execute(
+        method: Method.put,
+        url: "${ApiUrl.orderStatusUpdate}?${params.uu_id}",
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = OrderStatusUpdateResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

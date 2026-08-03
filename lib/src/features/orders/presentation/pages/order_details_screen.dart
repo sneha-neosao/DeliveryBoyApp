@@ -158,6 +158,13 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
   double _scrollOffset = 0.0;
   bool _isLoading = false;
 
+  /// Tracks whether the delivery boy has accepted this order.
+  /// When true, the Accept/Reject buttons are replaced by the PICKED UP button.
+  bool _isAccepted = false;
+
+  /// Stores the last action dispatched so the listener knows what happened.
+  String _pendingAction = '';
+
   @override
   void initState() {
     super.initState();
@@ -202,10 +209,21 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
           setState(() => _isLoading = true);
         } else if (state is OrderAssignmentSuccessState) {
           setState(() => _isLoading = false);
-          appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
-              ? state.data.message
-              : 'order_accepted'.tr());
-          context.pop();
+
+          // Use _pendingAction to know whether this was accept or reject/pickup.
+          if (_pendingAction == 'accept') {
+            // Stay on screen — switch UI to the PICKED UP button (inactive).
+            setState(() => _isAccepted = true);
+            appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
+                ? state.data.message
+                : 'order_accepted'.tr());
+          } else {
+            // Reject or picked_up — go back to the list.
+            appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
+                ? state.data.message
+                : 'order_accepted'.tr());
+            context.pop();
+          }
         } else if (state is OrderAssignmentFailureState) {
           setState(() => _isLoading = false);
           appSnackBar(context, AppColor.bright_red, state.message);
@@ -457,89 +475,202 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
           ),
         ),
 
-        // ── Sticky bottom buttons (only shown when order is PREPARING) ─────
-        if (orderDetails.orderStatus == 'PREPARING')
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Reject button
-                Expanded(
-                  child: SizedBox(
-                    height: 50,
-                    child: OutlinedButton(
-                      onPressed: _isLoading ? null : () => _showRejectDialog(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColor.bright_red,
-                        side: const BorderSide(color: AppColor.bright_red, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                      ),
-                      child: Text(
-                        'reject'.tr(),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                    ),
-                  ),
-                ),
-                12.wS,
-                // Accept button
-                Expanded(
-                  child: SizedBox(
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => context.read<OrderAssignmentBloc>().add(
-                                OrderAssignmentGetEvent(
-                                  orderDetails.uuId,
-                                  'accept',
-                                  null,
-                                ),
-                              ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColor.darkOrange,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        elevation: 3,
-                        shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'accept_order'.tr(),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.arrow_forward_rounded, size: 18),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // ── Sticky bottom area ─────────────────────────────────────────────
+        // PREPARING  → Reject + Accept buttons
+        // Accepted (READY_FOR_PICKUP pending) → inactive PICKED UP button
+        // READY_FOR_PICKUP → active PICKED UP button
+        if (orderDetails.orderStatus == 'PREPARING' && !_isAccepted)
+          _buildPrepairingButtons(context, orderDetails)
+        else if (_isAccepted ||
+            orderDetails.orderStatus == 'READY_FOR_PICKUP' ||
+            orderDetails.orderStatus == 'ACCEPTED' ||
+            orderDetails.orderStatus == 'DEL_ACCEPTED')
+          _buildPickedUpButton(context, orderDetails),
 
       ],
     );
   }
 
-  // ── Reject dialog ──────────────────────────────────────────────────────────
+
+  // ── Reject + Accept buttons (shown when status is PREPARING) ───────────────
+  Widget _buildPrepairingButtons(BuildContext context, OrderDetails orderDetails) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Reject button
+          Expanded(
+            child: SizedBox(
+              height: 50,
+              child: OutlinedButton(
+                onPressed: _isLoading ? null : () => _showRejectDialog(context),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColor.bright_red,
+                  side: const BorderSide(color: AppColor.bright_red, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+                child: Text(
+                  'reject'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+            ),
+          ),
+          12.wS,
+          // Accept button
+          Expanded(
+            child: SizedBox(
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        _pendingAction = 'accept';
+                        context.read<OrderAssignmentBloc>().add(
+                          OrderAssignmentGetEvent(
+                            orderDetails.uuId,
+                            'accept',
+                            null,
+                          ),
+                        );
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.darkOrange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  elevation: 3,
+                  shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'accept_order'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.arrow_forward_rounded, size: 18),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── PICKED UP button (shown after accept, active only when READY_FOR_PICKUP) ─
+  Widget _buildPickedUpButton(BuildContext context, OrderDetails orderDetails) {
+    // Button is inactive for DEL_ACCEPTED; becomes active only when READY_FOR_PICKUP.
+    final bool isReadyForPickup =
+        orderDetails.orderStatus.toUpperCase() == 'READY_FOR_PICKUP';
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Hint label shown while waiting for READY_FOR_PICKUP
+          if (!isReadyForPickup)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.access_time_rounded,
+                      size: 14, color: Color(0xFFCA8A04)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Waiting for restaurant to mark order ready...',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          // PICKED UP button
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              // Active only when order is READY_FOR_PICKUP
+              onPressed: (isReadyForPickup && !_isLoading)
+                  ? () {
+                      _pendingAction = 'picked_up';
+                      context.read<OrderAssignmentBloc>().add(
+                        OrderAssignmentGetEvent(
+                          orderDetails.uuId,
+                          'picked_up',
+                          null,
+                        ),
+                      );
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                // Orange when active, gray when inactive
+                backgroundColor:
+                    isReadyForPickup ? AppColor.darkOrange : Colors.grey.shade300,
+                foregroundColor:
+                    isReadyForPickup ? Colors.white : Colors.grey.shade500,
+                disabledBackgroundColor: Colors.grey.shade300,
+                disabledForegroundColor: Colors.grey.shade500,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                elevation: isReadyForPickup ? 3 : 0,
+                shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_bag_rounded,
+                    size: 18,
+                    color: isReadyForPickup ? Colors.white : Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'PICKED UP',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Reject dialog ─────────────────────────────────────────────────────────
   void _showRejectDialog(BuildContext context) {
     final TextEditingController _reasonCtrl = TextEditingController();
     final _formKey = GlobalKey<FormState>();
@@ -643,6 +774,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                           if (!_formKey.currentState!.validate()) return;
                           final reason = _reasonCtrl.text.trim();
                           Navigator.of(dialogCtx).pop();
+                          _pendingAction = 'reject';
                           context.read<OrderAssignmentBloc>().add(
                                 OrderAssignmentGetEvent(
                                   widget.orderDetails.uuId,

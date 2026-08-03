@@ -261,7 +261,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
       final response = await _helper.execute(
         method: Method.put,
-        url: "${ApiUrl.orderStatusUpdate}?${params.uu_id}",
+        url: '${ApiUrl.orderStatusUpdate}?uu_id=${params.uu_id}',
         data: data,
         options: Options(
           headers: {

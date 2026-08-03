@@ -2,6 +2,7 @@ import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_details_bloc/order_details_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/delivery_address_card_widget.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_details_widget.dart';
@@ -56,6 +57,9 @@ class OrderDetailsScreen extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => getIt<OrderAssignmentBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => getIt<OrderStatusUpdateBloc>(),
         ),
       ],
       child: Scaffold(
@@ -203,32 +207,55 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
     final orderDetails = widget.orderDetails;
     final fallbackOrder = widget.fallbackOrder;
 
-    return BlocListener<OrderAssignmentBloc, OrderAssignmentState>(
-      listener: (context, state) {
-        if (state is OrderAssignmentLoadingState) {
-          setState(() => _isLoading = true);
-        } else if (state is OrderAssignmentSuccessState) {
-          setState(() => _isLoading = false);
+    return MultiBlocListener(
+      listeners: [
+        // ── Accept / Reject (OrderAssignmentBloc) ──────────────────────────
+        BlocListener<OrderAssignmentBloc, OrderAssignmentState>(
+          listener: (context, state) {
+            if (state is OrderAssignmentLoadingState) {
+              setState(() => _isLoading = true);
+            } else if (state is OrderAssignmentSuccessState) {
+              setState(() => _isLoading = false);
 
-          // Use _pendingAction to know whether this was accept or reject/pickup.
-          if (_pendingAction == 'accept') {
-            // Stay on screen — switch UI to the PICKED UP button (inactive).
-            setState(() => _isAccepted = true);
-            appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
-                ? state.data.message
-                : 'order_accepted'.tr());
-          } else {
-            // Reject or picked_up — go back to the list.
-            appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
-                ? state.data.message
-                : 'order_accepted'.tr());
-            context.pop();
-          }
-        } else if (state is OrderAssignmentFailureState) {
-          setState(() => _isLoading = false);
-          appSnackBar(context, AppColor.bright_red, state.message);
-        }
-      },
+              if (_pendingAction == 'accept') {
+                // Stay on screen — switch UI to the inactive PICKED UP button.
+                setState(() => _isAccepted = true);
+                appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
+                    ? state.data.message
+                    : 'order_accepted'.tr());
+              } else {
+                // Reject — go back to the list.
+                appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
+                    ? state.data.message
+                    : 'order_accepted'.tr());
+                context.pop();
+              }
+            } else if (state is OrderAssignmentFailureState) {
+              setState(() => _isLoading = false);
+              appSnackBar(context, AppColor.bright_red, state.message);
+            }
+          },
+        ),
+        // ── Status update: PICKED_UP / ON_THE_WAY / DELIVERED ──────────────
+        BlocListener<OrderStatusUpdateBloc, OrderStatusUpdateState>(
+          listener: (context, state) {
+            if (state is OrderStatusUpdateLoadingState) {
+              setState(() => _isLoading = true);
+            } else if (state is OrderStatusUpdateSuccessState) {
+              setState(() => _isLoading = false);
+              appSnackBar(
+                context,
+                AppColor.green,
+                state.data.message.isNotEmpty ? state.data.message : 'Status updated',
+              );
+              context.pop();
+            } else if (state is OrderStatusUpdateFailureState) {
+              setState(() => _isLoading = false);
+              appSnackBar(context, AppColor.bright_red, state.message);
+            }
+          },
+        ),
+      ],
       child: Stack(
         children: [
           _buildBody(context),
@@ -631,11 +658,10 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
               // Active only when order is READY_FOR_PICKUP
               onPressed: (isReadyForPickup && !_isLoading)
                   ? () {
-                      _pendingAction = 'picked_up';
-                      context.read<OrderAssignmentBloc>().add(
-                        OrderAssignmentGetEvent(
+                      context.read<OrderStatusUpdateBloc>().add(
+                        OrderStatusUpdateGetEvent(
                           orderDetails.uuId,
-                          'picked_up',
+                          'PICKED_UP',
                           null,
                         ),
                       );
@@ -698,11 +724,10 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
           onPressed: _isLoading
               ? null
               : () {
-                  _pendingAction = 'on_the_way';
-                  context.read<OrderAssignmentBloc>().add(
-                    OrderAssignmentGetEvent(
+                  context.read<OrderStatusUpdateBloc>().add(
+                    OrderStatusUpdateGetEvent(
                       orderDetails.uuId,
-                      'on_the_way',
+                      'ON_THE_WAY',
                       null,
                     ),
                   );
@@ -753,11 +778,10 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
           onPressed: _isLoading
               ? null
               : () {
-                  _pendingAction = 'delivered';
-                  context.read<OrderAssignmentBloc>().add(
-                    OrderAssignmentGetEvent(
+                  context.read<OrderStatusUpdateBloc>().add(
+                    OrderStatusUpdateGetEvent(
                       orderDetails.uuId,
-                      'delivered',
+                      'DELIVERED',
                       null,
                     ),
                   );

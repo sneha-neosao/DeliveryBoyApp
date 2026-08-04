@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gif_view/gif_view.dart';
+import 'safe_gif_controller.dart';
 
 /// A full-screen blurred overlay with the loader.gif playing in a circle.
 /// Drop this on top of any widget using a Stack.
@@ -12,12 +13,12 @@ class GifLoaderOverlay extends StatefulWidget {
 }
 
 class _GifLoaderOverlayState extends State<GifLoaderOverlay> {
-  late final GifController _gifController;
+  late final SafeGifController _gifController;
 
   @override
   void initState() {
     super.initState();
-    _gifController = GifController(loop: true);
+    _gifController = SafeGifController(loop: true);
   }
 
   @override

@@ -1,8 +1,10 @@
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 class OrderListCardWidget extends StatelessWidget {
@@ -20,17 +22,74 @@ class OrderListCardWidget extends StatelessWidget {
     final String displayId = order.uuId.isNotEmpty
         ? '#${order.uuId.substring(0, order.uuId.length > 8 ? 8 : order.uuId.length)}'
         : '#ORD-${order.id}';
-    final String statusText = order.orderStatus.isNotEmpty
-        ? order.orderStatus
-        : (order.isAssigned ? 'assigned'.tr() : 'pending'.tr());
-    final bool isAssigned = statusText.toLowerCase() == 'assigned' || order.isAssigned;
-    final String customer = order.customerName.isNotEmpty ? order.customerName : order.deliveryName;
-    final String timeStr = order.slotStartTime.isNotEmpty
+    // Map raw API status → human-readable label
+    String _statusLabel(String raw) {
+      switch (raw.toUpperCase()) {
+        case 'DEL_ACCEPTED':      return 'DELIVERY ACCEPTED';
+        case 'ON_THE_WAY':        return 'ON THE WAY';
+        case 'PICKED_UP':         return 'PICKED UP';
+        case 'READY_FOR_PICKUP':  return 'READY FOR PICK UP';
+        case 'PREPARING':         return 'PREPARING';
+        case 'DELIVERED':         return 'DELIVERED';
+        case 'ACCEPTED':          return 'ACCEPTED';
+        case 'PLACED':            return 'PLACED';
+        case 'PENDING':           return 'PENDING';
+        case 'ASSIGNED':          return 'ASSIGNED';
+        default:                  return raw.isNotEmpty ? raw : (order.isAssigned ? 'ASSIGNED' : 'PENDING');
+      }
+    }
+
+    // Badge background + text colour per status
+    Color _badgeBg(String raw) {
+      switch (raw.toUpperCase()) {
+        case 'DEL_ACCEPTED':      return const Color(0xFFE0F2FE); // light blue
+        case 'ON_THE_WAY':        return const Color(0xFFEDE9FE); // light purple
+        case 'PICKED_UP':         return const Color(0xFFEDE9FE); // light purple
+        case 'READY_FOR_PICKUP':  return const Color(0xFFFEF9C3); // light yellow
+        case 'PREPARING':         return const Color(0xFFFEF9C3); // light yellow
+        case 'DELIVERED':         return const Color(0xFFDCFCE7); // light green
+        case 'ACCEPTED':          return const Color(0xFFDCFCE7); // light green
+        default:                  return const Color(0xFFFFF2E6); // default orange tint
+      }
+    }
+
+    Color _badgeFg(String raw) {
+      switch (raw.toUpperCase()) {
+        case 'DEL_ACCEPTED':      return const Color(0xFF0284C7); // blue
+        case 'ON_THE_WAY':        return const Color(0xFF7C3AED); // purple
+        case 'PICKED_UP':         return const Color(0xFF7C3AED); // purple
+        case 'READY_FOR_PICKUP':  return const Color(0xFFCA8A04); // amber
+        case 'PREPARING':         return const Color(0xFFCA8A04); // amber
+        case 'DELIVERED':         return const Color(0xFF16A34A); // green
+        case 'ACCEPTED':          return const Color(0xFF16A34A); // green
+        default:                  return const Color(0xFFFA6624); // orange
+      }
+    }
+
+    final String rawStatus = order.orderStatus;
+    final String statusLabel = _statusLabel(rawStatus);
+    final Color badgeBg     = _badgeBg(rawStatus);
+    final Color badgeFg     = _badgeFg(rawStatus);
+    final String customer   = order.customerName.isNotEmpty ? order.customerName : order.deliveryName;
+    final String timeStr    = order.slotStartTime.isNotEmpty
         ? '${order.slotStartTime} - ${order.slotEndTime}'
         : order.deliveryDate;
 
     return GestureDetector(
-      onTap: onTap ?? () => context.push(AppRoute.orderDetails.path, extra: order),
+      onTap: onTap ??
+          () async {
+            final result = await context.push<bool>(
+              AppRoute.orderDetails.path,
+              extra: order,
+            );
+            // If the detail screen popped with true it means a status update
+            // succeeded — refresh the order list from page 1.
+            if (result == true && context.mounted) {
+              context
+                  .read<OrderListBloc>()
+                  .add(const GetOrderListEvent(page: 1));
+            }
+          },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -64,13 +123,13 @@ class OrderListCardWidget extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isAssigned ? const Color(0xFFFFF2E6) : const Color(0xFFE8F5E9),
+                    color: badgeBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    statusText,
+                    statusLabel,
                     style: TextStyle(
-                      color: isAssigned ? const Color(0xFFFA6624) : const Color(0xFF2E7D32),
+                      color: badgeFg,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),

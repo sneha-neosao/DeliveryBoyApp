@@ -32,17 +32,6 @@ class OrderListView extends StatelessWidget {
     this.onRetry,
   });
 
-  Map<String, List<Order>> _groupOrdersByDate(List<Order> orders) {
-    final Map<String, List<Order>> groups = {};
-    for (final order in orders) {
-      final key = order.deliveryDate.isNotEmpty
-          ? order.deliveryDate
-          : 'today'.tr();
-      groups.putIfAbsent(key, () => []).add(order);
-    }
-    return groups;
-  }
-
   String _getFilterLabel(String filterName) {
     switch (filterName) {
       case 'All':
@@ -58,8 +47,6 @@ class OrderListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final groupedMap = _groupOrdersByDate(filteredOrders);
-
     return Stack(
       children: [
         // ── Main content (header always visible + body) ─────────────
@@ -136,7 +123,7 @@ class OrderListView extends StatelessWidget {
 
             // Body area below the header
             Expanded(
-              child: _buildBody(context, groupedMap),
+              child: _buildBody(context),
             ),
           ],
         ),
@@ -147,8 +134,7 @@ class OrderListView extends StatelessWidget {
     );
   }
 
-  Widget _buildBody(
-      BuildContext context, Map<String, List<Order>> groupedMap) {
+  Widget _buildBody(BuildContext context) {
     // Error state with no cached orders
     if (isError) {
       return Center(
@@ -221,99 +207,37 @@ class OrderListView extends StatelessWidget {
       );
     }
 
-    // Normal scrollable list with pull-to-refresh
+    // Normal scrollable flat list with pull-to-refresh
     return RefreshIndicator(
       color: AppColor.darkOrange,
       onRefresh: () async {
         context.read<OrderListBloc>().add(
             const GetOrderListEvent(page: 1, isRefresh: true));
       },
-      child: ListView.builder(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount:
-            groupedMap.keys.length + (state.loadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          // Load-more spinner at the bottom
-          if (index == groupedMap.keys.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: AppColor.darkOrange,
-                  strokeWidth: 2.5,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 32.0),
+        child: ListView.builder(
+          controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          itemCount: filteredOrders.length + (state.loadingMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            // Load-more spinner at the bottom
+            if (index == filteredOrders.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColor.darkOrange,
+                    strokeWidth: 2.5,
+                  ),
                 ),
-              ),
-            );
-          }
-
-          final dateHeader = groupedMap.keys.elementAt(index);
-          final ordersInGroup = groupedMap[dateHeader]!;
-
-          final isToday =
-              dateHeader == 'Today' || dateHeader == 'today'.tr();
-          final isYesterday = dateHeader == 'Yesterday' ||
-              dateHeader == 'yesterday'.tr();
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date Group Heading
-              Padding(
-                padding: const EdgeInsets.only(
-                    top: 12, bottom: 8, left: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      isToday
-                          ? Icons.today_rounded
-                          : isYesterday
-                              ? Icons.history_rounded
-                              : Icons.calendar_today_rounded,
-                      size: 16,
-                      color: const Color(0xFFFA6624),
-                    ),
-                    6.wS,
-                    Text(
-                      isToday
-                          ? 'today'.tr()
-                          : (isYesterday
-                              ? 'yesterday'.tr()
-                              : dateHeader),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0D121F),
-                      ),
-                    ),
-                    8.wS,
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${ordersInGroup.length}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Order Cards
-              ...ordersInGroup
-                  .map((order) => OrderListCardWidget(order: order)),
-            ],
-          );
-        },
+              );
+            }
+            return OrderListCardWidget(order: filteredOrders[index]);
+          },
+        ),
       ),
     );
   }

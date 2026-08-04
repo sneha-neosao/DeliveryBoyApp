@@ -248,7 +248,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                 AppColor.green,
                 state.data.message.isNotEmpty ? state.data.message : 'Status updated',
               );
-              context.pop();
+              context.pop(true); // signal the orders screen to refresh
             } else if (state is OrderStatusUpdateFailureState) {
               setState(() => _isLoading = false);
               appSnackBar(context, AppColor.bright_red, state.message);
@@ -503,23 +503,28 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
         ),
 
         // ── Sticky bottom area ─────────────────────────────────────────────
+        // REJECTED         → no button
+        // DELIVERED        → no button
         // PREPARING        → Reject + Accept buttons
         // DEL_ACCEPTED     → inactive PICKED UP button
         // ACCEPTED         → inactive PICKED UP button
         // READY_FOR_PICKUP → active   PICKED UP button
         // PICKED_UP        → active   ON THE WAY button
         // ON_THE_WAY       → active   DELIVERED button
-        if (orderDetails.orderStatus == 'PREPARING' && !_isAccepted)
-          _buildPrepairingButtons(context, orderDetails)
-        else if (_isAccepted ||
-            orderDetails.orderStatus == 'READY_FOR_PICKUP' ||
-            orderDetails.orderStatus == 'ACCEPTED' ||
-            orderDetails.orderStatus == 'DEL_ACCEPTED')
-          _buildPickedUpButton(context, orderDetails)
-        else if (orderDetails.orderStatus == 'PICKED_UP')
-          _buildOnTheWayButton(context, orderDetails)
-        else if (orderDetails.orderStatus == 'ON_THE_WAY')
-          _buildDeliveredButton(context, orderDetails),
+        if (orderDetails.orderStatus != 'REJECTED' &&
+            orderDetails.orderStatus != 'DELIVERED') ...[
+          if (orderDetails.orderStatus == 'PREPARING' && !_isAccepted)
+            _buildPrepairingButtons(context, orderDetails)
+          else if (_isAccepted ||
+              orderDetails.orderStatus == 'READY_FOR_PICKUP' ||
+              orderDetails.orderStatus == 'ACCEPTED' ||
+              orderDetails.orderStatus == 'DEL_ACCEPTED')
+            _buildPickedUpButton(context, orderDetails)
+          else if (orderDetails.orderStatus == 'PICKED_UP')
+            _buildOnTheWayButton(context, orderDetails)
+          else if (orderDetails.orderStatus == 'ON_THE_WAY')
+            _buildDeliveredButton(context, orderDetails),
+        ],
 
       ],
     );
@@ -830,7 +835,8 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
               top: 24,
               bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
             ),
-            child: Form(
+            child: SingleChildScrollView(
+              child: Form(
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -951,9 +957,10 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                   ),
                 ],
               ),
-            ),
-          ),
-        );
+            ),   // closes Form
+          ),     // closes SingleChildScrollView
+        ),       // closes Padding
+      );
       },
     ).then((_) => _reasonCtrl.dispose());
   }

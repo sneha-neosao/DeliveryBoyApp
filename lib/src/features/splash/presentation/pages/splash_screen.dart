@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
+import 'package:delivery_boy_app/src/features/widgets/safe_gif_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,14 +16,53 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  late final GifController _gifController;
+  late final SafeGifController _gifController;
+  bool _authCheckDone = false;
+  bool _gifPlayDone = false;
+  bool _hasNavigated = false;
+  AuthLoginState? _authState;
 
   @override
   void initState() {
     super.initState();
-    _gifController = GifController(
+    _gifController = SafeGifController(
       loop: false,
+      onFinish: () {
+        if (mounted) {
+          setState(() {
+            _gifPlayDone = true;
+          });
+          _navigateIfReady();
+        }
+      },
     );
+
+    // Fallback timer to ensure we don't get stuck on splash screen if the GIF fails to play
+    Future.delayed(const Duration(seconds: 8), () {
+      if (mounted && !_gifPlayDone) {
+        setState(() {
+          _gifPlayDone = true;
+        });
+        _navigateIfReady();
+      }
+    });
+  }
+
+  void _navigateIfReady() {
+    if (_authCheckDone && _gifPlayDone && _authState != null && !_hasNavigated) {
+      _hasNavigated = true;
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.edgeToEdge,
+        overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
+      );
+
+      if (_authState is AuthCheckSignInStatusSuccessState) {
+        debugPrint("UserData: ${(_authState as AuthCheckSignInStatusSuccessState).data}");
+        context.goNamed(AppRoute.dashboard.name);
+      } else {
+        context.goNamed(AppRoute.getStarted.name);
+      }
+    }
   }
 
   @override
@@ -44,21 +84,13 @@ class _SplashScreenState extends State<SplashScreen> {
         listenWhen: (_, current) =>
             current is AuthCheckSignInStatusSuccessState || current is AuthCheckSignInStatusFailureState,
         listener: (context, state) {
-          Future.delayed(const Duration(milliseconds: 2000), () {
-            if (!context.mounted) return;
-
-            SystemChrome.setEnabledSystemUIMode(
-              SystemUiMode.edgeToEdge,
-              overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
-            );
-
-            if (state is AuthCheckSignInStatusSuccessState) {
-              debugPrint("UserData: ${state.data}");
-              context.goNamed(AppRoute.dashboard.name);
-            } else {
-              context.goNamed(AppRoute.getStarted.name);
-            }
-          });
+          if (mounted) {
+            setState(() {
+              _authCheckDone = true;
+              _authState = state;
+            });
+            _navigateIfReady();
+          }
         },
         child: Scaffold(
           backgroundColor: Colors.white,

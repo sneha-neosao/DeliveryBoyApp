@@ -18,6 +18,10 @@ class ApiUrl {
 
   static const orderStatusUpdate = "/orders/update-status";
 
+  static const orderCurrentAssignment = "/orders/current-assignment";
+
+  static const orderStartAssignment = "/orders/start";
+
   static const profile = "/profile/details";
 
   static const onlineStatus = "/auth/toggle-online";
@@ -29,8 +33,6 @@ class ApiUrl {
   static const profileUpdate = "/profile/update";
 
   static const profileImageUpdate = "/profile/update-image";
-
-  static const orderCurrentAssignment = "/orders/current-assignment";
 
 }
 

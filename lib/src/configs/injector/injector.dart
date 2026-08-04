@@ -21,3 +21,4 @@ export '../../features/profile/bloc/profile_image_update_bloc/profile_image_upda
 export '../../features/dashboard/bloc/firebase_token_update_bloc/firebase_token_update_bloc.dart';
 export '../../features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
 export '../../features/orders/bloc/order_current_assignment_bloc/order_current_assignment_bloc.dart';
+export '../../features/orders/bloc/order_start_assignment_bloc/order_start_assignment_bloc.dart';

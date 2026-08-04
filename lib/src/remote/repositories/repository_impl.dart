@@ -10,6 +10,7 @@ import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_start_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_status_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_image_update_usecase.dart';
@@ -23,6 +24,7 @@ import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_
 import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/order_start_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_status_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_image_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
@@ -52,6 +54,8 @@ abstract class Repository {
   Future<Either<Failure, OrderStatusUpdateResponse>> orderStatusUpdate(OrderStatusUpdateParams params);
 
   Future<Either<Failure, OrderCurrentAssignmentResponse>> orderCurrentAssignment(NoParams params);
+
+  Future<Either<Failure, OrderStartAssignmentResponse>> orderStartAssignment(OrderStartAssignmentParams params);
 
   /// Profile
   Future<Either<Failure, ProfileResponse>> profile(NoParams params);
@@ -339,6 +343,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.order_current_assignment(token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, OrderStartAssignmentResponse>> orderStartAssignment(OrderStartAssignmentParams params) {
+    return _networkInfo.check<OrderStartAssignmentResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.order_start_assignment(params, token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

@@ -48,14 +48,10 @@ class BottomNav extends StatelessWidget {
   });
 
   Alignment _getItemAlignment(int index) {
-    if (index == 0) return Alignment.centerLeft;
-    if (index == navItems.length - 1) return Alignment.centerRight;
     return Alignment.center;
   }
 
   EdgeInsets _getItemMargin(int index) {
-    if (index == 0) return const EdgeInsets.only(left: 6);
-    if (index == navItems.length - 1) return const EdgeInsets.only(right: 6);
     return EdgeInsets.zero;
   }
 
@@ -116,12 +112,12 @@ class BottomNav extends StatelessWidget {
                         clipBehavior: Clip.antiAlias,
                         padding: EdgeInsets.symmetric(
                           horizontal: isSelected ? 12 : 8,
-                          vertical: 6,
+                          vertical: isSelected ? 4 : 6,
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppColor.orangeTint
-                              : Colors.transparent,
+                              : AppColor.orangeTint.withValues(alpha: 0.0),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: isSelected
                               ? [
@@ -137,8 +133,9 @@ class BottomNav extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.center,
-                          child: Row(
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               // Animated Glowing Icon Container
                               AnimatedScale(
@@ -179,21 +176,29 @@ class BottomNav extends StatelessWidget {
                               ),
 
                               // Animated Text Label when selected
-                              if (isSelected)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 6),
-                                  child: Text(
-                                    item.labelKey.tr(),
-                                    style: const TextStyle(
-                                      color: AppColor.darkOrange,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.2,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeInOut,
+                                child: isSelected
+                                    ? Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            item.labelKey.tr(),
+                                            style: const TextStyle(
+                                              color: AppColor.darkOrange,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 0.2,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
                             ],
                           ),
                         ),

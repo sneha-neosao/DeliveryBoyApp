@@ -11,6 +11,7 @@ class InfoCardWidget extends StatelessWidget {
   final String? userName;
   final String? userPhone;
   final String? userImageUrl;
+  final bool isLoading;
 
   const InfoCardWidget({
     super.key,
@@ -19,6 +20,7 @@ class InfoCardWidget extends StatelessWidget {
     this.userName,
     this.userPhone,
     this.userImageUrl,
+    this.isLoading = false,
   });
 
   @override
@@ -80,55 +82,68 @@ class InfoCardWidget extends StatelessWidget {
                   const SizedBox(width: 10),
 
                   // Online / Offline Status Toggle Button
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColor.white.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColor.black.withValues(alpha: 0.1),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          isOnline
-                              ? 'home_status_online'.tr()
-                              : 'home_status_offline'.tr(),
-                          style: TextStyle(
-                            color: isOnline
-                                ? const Color(0xFFFA6624)
-                                : const Color(0xFF7A869A),
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                  isLoading
+                      ? Shimmer.fromColors(
+                          baseColor: Colors.white.withValues(alpha: 0.3),
+                          highlightColor: Colors.white.withValues(alpha: 0.6),
+                          child: Container(
+                            width: 105,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColor.white.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColor.black.withValues(alpha: 0.1),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                isOnline
+                                    ? 'home_status_online'.tr()
+                                    : 'home_status_offline'.tr(),
+                                style: TextStyle(
+                                  color: isOnline
+                                      ? const Color(0xFFFA6624)
+                                      : const Color(0xFF7A869A),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                height: 30,
+                                child: Switch(
+                                  value: isOnline,
+                                  onChanged: onOnlineToggle,
+                                  activeThumbColor: AppColor.primary,
+                                  activeTrackColor:
+                                      AppColor.primaryDark.withValues(alpha: 0.3),
+                                  inactiveThumbColor: AppColor.gray,
+                                  inactiveTrackColor: AppColor.white,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          height: 30,
-                          child: Switch(
-                            value: isOnline,
-                            onChanged: onOnlineToggle,
-                            activeThumbColor: AppColor.primary,
-                            activeTrackColor:
-                                AppColor.primaryDark.withValues(alpha: 0.3),
-                            inactiveThumbColor: AppColor.gray,
-                            inactiveTrackColor: AppColor.white,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
 
@@ -156,18 +171,20 @@ class InfoCardWidget extends StatelessWidget {
                       ],
                     ),
                     child: ClipOval(
-                      child: (userImageUrl != null && userImageUrl!.isNotEmpty)
-                          ? Image.network(
-                              userImageUrl!,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return _buildShimmer();
-                              },
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildPlaceholder(),
-                            )
-                          : _buildPlaceholder(),
+                      child: isLoading
+                          ? _buildShimmer()
+                          : (userImageUrl != null && userImageUrl!.isNotEmpty)
+                              ? Image.network(
+                                  userImageUrl!,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return _buildShimmer();
+                                  },
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _buildPlaceholder(),
+                                )
+                              : _buildPlaceholder(),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -175,46 +192,62 @@ class InfoCardWidget extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          (userName != null && userName!.isNotEmpty) ? userName! : '',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.phone_android_rounded,
-                              size: 14,
-                              color: Colors.white.withValues(alpha: 0.85),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              (userPhone != null && userPhone!.isNotEmpty) ? userPhone! : '',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                        isLoading
+                            ? Shimmer.fromColors(
+                                baseColor: Colors.white.withValues(alpha: 0.3),
+                                highlightColor: Colors.white.withValues(alpha: 0.6),
+                                child: Container(
+                                  width: 120,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                (userName != null && userName!.isNotEmpty) ? userName! : '',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(height: 4),
+                        isLoading
+                            ? Shimmer.fromColors(
+                                baseColor: Colors.white.withValues(alpha: 0.3),
+                                highlightColor: Colors.white.withValues(alpha: 0.6),
+                                child: Container(
+                                  width: 90,
+                                  height: 13,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  Icon(
+                                    Icons.phone_android_rounded,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    (userPhone != null && userPhone!.isNotEmpty) ? userPhone! : '',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ],
                     ),
                   ),
-                  // IconButton(
-                  //   onPressed: () {
-                  //     context.go(AppRoute.profile.path);
-                  //   },
-                  //   icon: const Icon(
-                  //     Icons.edit_note_rounded,
-                  //     color: Colors.white,
-                  //     size: 26,
-                  //   ),
-                  // ),
                 ],
               ),
             ],

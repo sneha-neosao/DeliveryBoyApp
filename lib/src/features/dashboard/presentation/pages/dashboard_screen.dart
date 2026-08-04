@@ -198,16 +198,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   body: SingleChildScrollView(
                     child: Column(
                       children: [
-                        InfoCardWidget(
-                          isOnline: _isOnline,
-                          userName: _userName,
-                          userPhone: _userPhone,
-                          userImageUrl: _userImageUrl,
-                          onOnlineToggle: (value) {
-                            setState(() => _isOnline = value);
-                            blocContext.read<OnlineStatusBloc>().add(
-                                  OnlineStatusGetEvent(value),
-                                );
+                        BlocBuilder<ProfileBloc, ProfileState>(
+                          builder: (context, profileState) {
+                            final isProfileLoading = profileState is ProfileLoadingState;
+                            return InfoCardWidget(
+                              isOnline: _isOnline,
+                              userName: _userName,
+                              userPhone: _userPhone,
+                              userImageUrl: _userImageUrl,
+                              isLoading: isProfileLoading,
+                              onOnlineToggle: (value) {
+                                setState(() => _isOnline = value);
+                                blocContext.read<OnlineStatusBloc>().add(
+                                      OnlineStatusGetEvent(value),
+                                    );
+                              },
+                            );
                           },
                         ),
 

@@ -2,6 +2,7 @@ import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 class OrderHistoryOverviewWidget extends StatelessWidget {
   final int? deliveredCount;
@@ -76,14 +77,27 @@ class OrderHistoryOverviewWidget extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 4),
-            Text(
-              count != null ? '$count' : '-',
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            count != null
+                ? Text(
+                    '$count',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  )
+                : Shimmer.fromColors(
+                    baseColor: color.withValues(alpha: 0.2),
+                    highlightColor: Colors.white,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
             const SizedBox(height: 2),
             Text(
               title,

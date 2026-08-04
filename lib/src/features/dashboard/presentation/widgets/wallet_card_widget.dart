@@ -2,6 +2,7 @@ import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 class WalletCardWidget extends StatelessWidget {
   final num? totalEarning;
@@ -81,14 +82,27 @@ class WalletCardWidget extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            totalDisplay,
-                            style: const TextStyle(
-                              color: AppColor.textPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          totalEarning != null
+                              ? Text(
+                                  totalDisplay,
+                                  style: const TextStyle(
+                                    color: AppColor.textPrimary,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                )
+                              : Shimmer.fromColors(
+                                  baseColor: Colors.grey.shade200,
+                                  highlightColor: Colors.white,
+                                  child: Container(
+                                    width: 70,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade300,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ),
                         ],
                       ),
                     ),
@@ -132,14 +146,26 @@ class WalletCardWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMetricItem("Today's Pay", todaysDisplay,
-                  Icons.payments_rounded),
+              _buildMetricItem(
+                "Today's Pay",
+                todaysDisplay,
+                Icons.payments_rounded,
+                todaysEarning == null,
+              ),
               Container(height: 30, width: 1, color: Colors.grey.shade200),
-              _buildMetricItem('Deliveries', deliveriesDisplay,
-                  Icons.local_shipping_rounded),
+              _buildMetricItem(
+                'Deliveries',
+                deliveriesDisplay,
+                Icons.local_shipping_rounded,
+                totalDeliveries == null,
+              ),
               Container(height: 30, width: 1, color: Colors.grey.shade200),
-              _buildMetricItem('Rating', '$ratingDisplay ★',
-                  Icons.star_rounded),
+              _buildMetricItem(
+                'Rating',
+                '$ratingDisplay ★',
+                Icons.star_rounded,
+                avgRating == null,
+              ),
             ],
           ),
         ],
@@ -147,21 +173,39 @@ class WalletCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricItem(String label, String value, IconData icon) {
+  Widget _buildMetricItem(
+    String label,
+    String value,
+    IconData icon,
+    bool isLoading,
+  ) {
     return Column(
       children: [
         Row(
           children: [
             Icon(icon, size: 14, color: AppColor.darkOrange),
             const SizedBox(width: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColor.textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            isLoading
+                ? Shimmer.fromColors(
+                    baseColor: Colors.grey.shade200,
+                    highlightColor: Colors.white,
+                    child: Container(
+                      width: 45,
+                      height: 15,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  )
+                : Text(
+                    value,
+                    style: const TextStyle(
+                      color: AppColor.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ],
         ),
         const SizedBox(height: 2),

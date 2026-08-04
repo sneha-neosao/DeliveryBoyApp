@@ -9,6 +9,7 @@ import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/ord
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/wallet_card_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -38,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   late final ProfileBloc _profileBloc;
   late final DashboardBloc _dashboardBloc;
+  late final OrderCurrentAssignmentBloc _orderCurrentAssignmentBloc;
   late FirebaseTokenUpdateBloc _firebaseTokenUpdateBloc;
 
   @override
@@ -48,6 +50,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _profileBloc.add(ProfileGetEvent());
     _dashboardBloc = getIt<DashboardBloc>();
     _dashboardBloc.add(DashboardGetEvent());
+    _orderCurrentAssignmentBloc = getIt<OrderCurrentAssignmentBloc>();
+    _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
     _firebaseTokenUpdateBloc = getIt<FirebaseTokenUpdateBloc>();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -98,6 +102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       providers: [
         BlocProvider(create: (_) => _profileBloc),
         BlocProvider(create: (_) => _dashboardBloc),
+        BlocProvider(create: (_) => _orderCurrentAssignmentBloc),
       ],
       child: MultiBlocListener(
         listeners: [
@@ -160,6 +165,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }
 
               if (state is DashboardFailureState) {
+                appSnackBar(context, AppColor.bright_red, state.message);
+              }
+            },
+          ),
+          BlocListener<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+            listener: (context, state) {
+              if (state is OrderCurrentAssignmentFailureState) {
                 appSnackBar(context, AppColor.bright_red, state.message);
               }
             },
@@ -261,80 +273,134 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(height: 20),
 
                         // Active Assignment Banner
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 20.0),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFFFFF2E6),
-                                  Color(0xFFFFE8D6),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColor.border),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.shopping_bag_rounded,
-                                  color: AppColor.darkOrange,
-                                  size: 32,
+                        BlocBuilder<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+                          builder: (context, state) {
+                            if (state is OrderCurrentAssignmentLoadingState || state is OrderCurrentAssignmentInitialState) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                                child: Shimmer.fromColors(
+                                  baseColor: Colors.grey.shade300,
+                                  highlightColor: Colors.grey.shade100,
+                                  child: Container(
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(width: 14),
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                              );
+                            }
+
+                            if (state is OrderCurrentAssignmentSuccessState) {
+                              final assignment = state.data.data;
+                              if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              final orderCount = assignment.orderCount;
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFFFF2E6),
+                                        Color(0xFFFFE8D6),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: AppColor.border),
+                                  ),
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        'Active Assignment',
-                                        style: TextStyle(
-                                          color: AppColor.textPrimary,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
+                                      const Icon(
+                                        Icons.shopping_bag_rounded,
+                                        color: AppColor.darkOrange,
+                                        size: 32,
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Active Assignment ($orderCount)',
+                                              style: const TextStyle(
+                                                color: AppColor.textPrimary,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            // Orange button with text START and icon at left
+                                            InkWell(
+                                              onTap: () => context.go(AppRoute.orders.path),
+                                              borderRadius: BorderRadius.circular(16),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 24,
+                                                  vertical: 6,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColor.darkOrange,
+                                                  borderRadius: BorderRadius.circular(16),
+                                                ),
+                                                child: const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.play_arrow_rounded,
+                                                      color: Colors.white,
+                                                      size: 16,
+                                                    ),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      'START',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      SizedBox(height: 2),
-                                      Text(
-                                        'Check active assigned orders and delivery details',
-                                        style: TextStyle(
-                                          color: AppColor.textSecondary,
-                                          fontSize: 12,
+                                      const SizedBox(width: 10),
+                                      // navigation icon button in circle with orange border and white color bg and navigation icon in orange colro
+                                      InkWell(
+                                        onTap: () => context.go(AppRoute.orders.path),
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: AppColor.darkOrange,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.near_me_rounded,
+                                            color: AppColor.darkOrange,
+                                            size: 20,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                InkWell(
-                                  onTap: () =>
-                                      context.go(AppRoute.orders.path),
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColor.darkOrange,
-                                      borderRadius:
-                                          BorderRadius.circular(16),
-                                    ),
-                                    child: const Text(
-                                      'View',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                              );
+                            }
+
+                            return const SizedBox.shrink();
+                          },
                         ),
 
                         const SizedBox(height: 100),

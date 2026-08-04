@@ -48,10 +48,14 @@ class BottomNav extends StatelessWidget {
   });
 
   Alignment _getItemAlignment(int index) {
+    if (index == 0) return Alignment.centerLeft;
+    if (index == navItems.length - 1) return Alignment.centerRight;
     return Alignment.center;
   }
 
   EdgeInsets _getItemMargin(int index) {
+    if (index == 0) return const EdgeInsets.only(left: 12);
+    if (index == navItems.length - 1) return const EdgeInsets.only(right: 12);
     return EdgeInsets.zero;
   }
 
@@ -119,16 +123,14 @@ class BottomNav extends StatelessWidget {
                               ? AppColor.orangeTint
                               : AppColor.orangeTint.withValues(alpha: 0.0),
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: AppColor.darkOrange
-                                        .withValues(alpha: 0.15),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ]
-                              : [],
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColor.darkOrange
+                                  .withValues(alpha: isSelected ? 0.15 : 0.0),
+                              blurRadius: isSelected ? 10 : 0,
+                              offset: isSelected ? const Offset(0, 3) : Offset.zero,
+                            ),
+                          ],
                         ),
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
@@ -142,29 +144,29 @@ class BottomNav extends StatelessWidget {
                                 scale: isSelected ? 1.08 : 1.0,
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeOutBack,
-                                child: Container(
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOutCubic,
                                   padding: const EdgeInsets.all(5),
-                                  decoration: isSelected
-                                      ? BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          gradient: const LinearGradient(
-                                            colors: [
-                                              AppColor.darkOrange,
-                                              AppColor.primaryLight2,
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppColor.darkOrange
-                                                  .withValues(alpha: 0.35),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        )
-                                      : null,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColor.darkOrange.withValues(alpha: isSelected ? 1.0 : 0.0),
+                                        AppColor.primaryLight2.withValues(alpha: isSelected ? 1.0 : 0.0),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColor.darkOrange
+                                            .withValues(alpha: isSelected ? 0.35 : 0.0),
+                                        blurRadius: isSelected ? 6 : 0,
+                                        offset: isSelected ? const Offset(0, 2) : Offset.zero,
+                                      ),
+                                    ],
+                                  ),
                                   child: Icon(
                                     isSelected ? item.selectedIcon : item.icon,
                                     size: 20,

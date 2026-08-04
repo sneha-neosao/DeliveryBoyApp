@@ -30,7 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final mediaQuery = MediaQuery.of(context);
+    final size = mediaQuery.size;
+    final screenHeight = size.height + mediaQuery.viewInsets.bottom;
 
     return MultiBlocProvider(
       providers: [
@@ -46,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
         body: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: size.height,
+              minHeight: screenHeight,
             ),
             child: IntrinsicHeight(
               child: Stack(
@@ -65,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(height: size.height * 0.48), // Spacing to start forms below the upper graphic portion
+                          SizedBox(height: screenHeight * 0.48), // Spacing to start forms below the upper graphic portion
                           Text(
                             'login_title'.tr(),
                             style: const TextStyle(
@@ -90,27 +92,27 @@ class _LoginScreenState extends State<LoginScreen> {
                           6.hS,
 
                           // Forgot Password Link
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                // Action
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                'login_forgot_password'.tr(),
-                                style: const TextStyle(
-                                  color: AppColor.darkOrange,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
+                          // Align(
+                          //   alignment: Alignment.centerRight,
+                          //   child: TextButton(
+                          //     onPressed: () {
+                          //       // Action
+                          //     },
+                          //     style: TextButton.styleFrom(
+                          //       padding: EdgeInsets.zero,
+                          //       minimumSize: Size.zero,
+                          //       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          //     ),
+                          //     child: Text(
+                          //       'login_forgot_password'.tr(),
+                          //       style: const TextStyle(
+                          //         color: AppColor.darkOrange,
+                          //         fontWeight: FontWeight.bold,
+                          //         fontSize: 13,
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ),
                           20.hS,
 
                           // Login Action Button with BlocConsumer

@@ -179,29 +179,70 @@ class OrderListView extends StatelessWidget {
 
     // Empty list state
     if (filteredOrders.isEmpty) {
-      return Center(
+      String emptyTextKey = 'no_orders_yet';
+      String emptySubtitleKey = 'home_no_orders_subtitle';
+      IconData emptyIcon = Icons.shopping_bag_outlined;
+
+      if (selectedFilter == 'Active') {
+        emptyTextKey = 'no_active_orders';
+        emptySubtitleKey = 'no_active_orders_subtitle';
+        emptyIcon = Icons.local_shipping_outlined;
+      } else if (selectedFilter == 'Completed') {
+        emptyTextKey = 'no_delivered_orders';
+        emptySubtitleKey = 'no_delivered_orders_subtitle';
+        emptyIcon = Icons.assignment_turned_in_outlined;
+      }
+
+      return RefreshIndicator(
+        color: AppColor.darkOrange,
+        onRefresh: () async {
+          context.read<OrderListBloc>().add(
+              const GetOrderListEvent(page: 1, isRefresh: true));
+        },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/no_order_bg.png',
-                height: 180,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.inbox_rounded,
-                  size: 64,
-                  color: AppColor.slateGrey,
+          child: Container(
+            height: MediaQuery.of(context).size.height - 220,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColor.orangeTint.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    emptyIcon,
+                    size: 64,
+                    color: AppColor.darkOrange,
+                  ),
                 ),
-              ),
-              12.hS,
-              Text(
-                'no_orders_found'.tr(),
-                style:
-                    TextStyle(color: Colors.grey.shade600, fontSize: 14),
-              ),
-            ],
+                20.hS,
+                Text(
+                  emptyTextKey.tr(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColor.charcoal,
+                    height: 1.4,
+                  ),
+                ),
+                8.hS,
+                Text(
+                  emptySubtitleKey.tr(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );

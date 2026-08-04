@@ -30,5 +30,7 @@ class ApiUrl {
 
   static const profileImageUpdate = "/profile/update-image";
 
+  static const orderCurrentAssignment = "/orders/current-assignment";
+
 }
 

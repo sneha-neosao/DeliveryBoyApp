@@ -18,6 +18,7 @@ import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
 import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_status_update_response.dart';
@@ -45,6 +46,8 @@ sealed class RemoteDataSource {
   Future<OrderAssignmentResponse> order_assignment(OrderAssignmentParams params, String token);
 
   Future<OrderStatusUpdateResponse> order_status_update(OrderStatusUpdateParams params, String token);
+
+  Future<OrderCurrentAssignmentResponse> order_current_assignment(String token);
 
   /// Profile
   Future<ProfileResponse> profile(String token);
@@ -271,6 +274,36 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = OrderStatusUpdateResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<OrderCurrentAssignmentResponse> order_current_assignment(String token) async {
+    try {
+
+      final response = await _helper.execute(
+        method: Method.get,
+        url: ApiUrl.orderCurrentAssignment,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = OrderCurrentAssignmentResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

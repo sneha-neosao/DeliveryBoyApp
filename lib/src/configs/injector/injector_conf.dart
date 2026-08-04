@@ -5,6 +5,7 @@ import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/logout_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
+import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_current_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_status_update_usecase.dart';
@@ -142,6 +143,12 @@ void configureDepedencies() {
   );
   getIt.registerFactory(
         () => OrderStatusUpdateBloc(getIt<OrderStatusUpdateUseCase>()),
+  );
+  getIt.registerLazySingleton(
+        () => OrderCurrentAssignmentUseCase(getIt<AuthRepositoryImpl>()),
+  );
+  getIt.registerFactory(
+        () => OrderCurrentAssignmentBloc(getIt<OrderCurrentAssignmentUseCase>()),
   );
   // getIt.registerFactory(
   //       () => SocketConnectService(),

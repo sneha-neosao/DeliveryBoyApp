@@ -20,4 +20,4 @@ export '../../features/profile/bloc/profile_update_form/profile_update_form_bloc
 export '../../features/profile/bloc/profile_image_update_bloc/profile_image_update_bloc.dart';
 export '../../features/dashboard/bloc/firebase_token_update_bloc/firebase_token_update_bloc.dart';
 export '../../features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
-
+export '../../features/orders/bloc/order_current_assignment_bloc/order_current_assignment_bloc.dart';

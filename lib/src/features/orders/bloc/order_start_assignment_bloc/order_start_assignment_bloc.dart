@@ -1,7 +1,5 @@
 import 'package:delivery_boy_app/src/core/utils/logger.dart';
-import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_start_assignment_usecase.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_start_assignment_response.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,7 +23,8 @@ class OrderStartAssignmentBloc extends Bloc<OrderStartAssignmentEvent, OrderStar
 
     final result = await _orderStartAssignmentUseCase.call(
       OrderStartAssignmentParams(
-        uu_id: event.uu_id
+        uu_id: event.uu_id,
+        status: event.status
       ),
     );
 

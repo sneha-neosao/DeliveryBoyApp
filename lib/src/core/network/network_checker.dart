@@ -44,8 +44,8 @@ class NetworkInfo {
   Future<bool> _pingServer() async {
     try {
       final response = await http
-          .get(Uri.parse('https://backend.inorotech.in'))
-          .timeout(const Duration(seconds: 3));
+          .get(Uri.parse('https://web.neosao.co.in'))
+          .timeout(const Duration(seconds: 10));
       print("ping : $response");
       return response.statusCode == 200;
     } catch (_) {

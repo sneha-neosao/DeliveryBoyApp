@@ -23,11 +23,13 @@ class OrderStartAssignmentUseCase implements UseCase<OrderStartAssignmentRespons
 
 class OrderStartAssignmentParams extends Equatable {
   final String uu_id ;
+  final String status;
 
   const OrderStartAssignmentParams({
     required this.uu_id ,
+    required this.status
   });
 
   @override
-  List<Object?> get props => [uu_id];
+  List<Object?> get props => [uu_id, status];
 }

@@ -24,6 +24,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isOnline = false;
   bool _isTogglingStatus = false;
+  bool _isStartingAssignment = false;
   String? _userName;
   String? _userPhone;
   String? _userImageUrl;
@@ -40,6 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late final ProfileBloc _profileBloc;
   late final DashboardBloc _dashboardBloc;
   late final OrderCurrentAssignmentBloc _orderCurrentAssignmentBloc;
+  late final OrderStartAssignmentBloc _orderStartAssignmentBloc;
   late FirebaseTokenUpdateBloc _firebaseTokenUpdateBloc;
 
   @override
@@ -52,6 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _dashboardBloc.add(DashboardGetEvent());
     _orderCurrentAssignmentBloc = getIt<OrderCurrentAssignmentBloc>();
     _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
+    _orderStartAssignmentBloc = getIt<OrderStartAssignmentBloc>();
     _firebaseTokenUpdateBloc = getIt<FirebaseTokenUpdateBloc>();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -103,6 +106,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         BlocProvider(create: (_) => _profileBloc),
         BlocProvider(create: (_) => _dashboardBloc),
         BlocProvider(create: (_) => _orderCurrentAssignmentBloc),
+        BlocProvider(create: (_) => _orderStartAssignmentBloc),
       ],
       child: MultiBlocListener(
         listeners: [
@@ -176,6 +180,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }
             },
           ),
+          BlocListener<OrderStartAssignmentBloc, OrderStartAssignmentState>(
+            listener: (context, state) {
+              if (state is OrderStartAssignmentLoadingState) {
+                setState(() => _isStartingAssignment = true);
+              } else if (state is OrderStartAssignmentSuccessState) {
+                setState(() => _isStartingAssignment = false);
+                appSnackBar(
+                  context,
+                  AppColor.green,
+                  state.data.message.isNotEmpty
+                      ? state.data.message
+                      : 'Assignment updated successfully',
+                );
+                // Refresh current assignment and dashboard stats
+                _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
+                _dashboardBloc.add(DashboardGetEvent());
+              } else if (state is OrderStartAssignmentFailureState) {
+                setState(() => _isStartingAssignment = false);
+                appSnackBar(context, AppColor.bright_red, state.message);
+              }
+            },
+          ),
         ],
         child: BlocProvider(
           create: (_) => getIt<OnlineStatusBloc>(),
@@ -207,7 +233,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
                 child: Scaffold(
                   backgroundColor: const Color(0xFFFFF9F5),
-                  body: SingleChildScrollView(
+                  body: Stack(
+                    children: [
+                      SingleChildScrollView(
                     child: Column(
                       children: [
                         BlocBuilder<ProfileBloc, ProfileState>(
@@ -336,7 +364,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             const SizedBox(height: 6),
                                             // Orange button with text START and icon at left
                                             InkWell(
-                                              onTap: () => context.go(AppRoute.orders.path),
+                                              onTap: () {
+                                                if (assignment.isStart) {
+                                                  context.read<OrderStartAssignmentBloc>().add(
+                                                        OrderStartAssignmentGetEvent(
+                                                          assignment.uuid,
+                                                          'PICKED_UP',
+                                                        ),
+                                                      );
+                                                } else {
+                                                  context.read<OrderStartAssignmentBloc>().add(
+                                                        OrderStartAssignmentGetEvent(
+                                                          assignment.uuid,
+                                                          'DEL_ACCEPTED',
+                                                        ),
+                                                      );
+                                                }
+                                              },
                                               borderRadius: BorderRadius.circular(16),
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(
@@ -347,18 +391,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   color: AppColor.darkOrange,
                                                   borderRadius: BorderRadius.circular(16),
                                                 ),
-                                                child: const Row(
+                                                child: Row(
                                                   mainAxisSize: MainAxisSize.min,
                                                   children: [
                                                     Icon(
-                                                      Icons.play_arrow_rounded,
+                                                      assignment.isStart
+                                                          ? Icons.shopping_bag_rounded
+                                                          : Icons.play_arrow_rounded,
                                                       color: Colors.white,
                                                       size: 16,
                                                     ),
-                                                    SizedBox(width: 4),
+                                                    const SizedBox(width: 4),
                                                     Text(
-                                                      'START',
-                                                      style: TextStyle(
+                                                      assignment.isStart
+                                                          ? 'PICKED UP'
+                                                          : 'START',
+                                                      style: const TextStyle(
                                                         color: Colors.white,
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.bold,
@@ -406,6 +454,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(height: 100),
                       ],
                     ),
+                  ),
+                      if (_isStartingAssignment || _isTogglingStatus)
+                        Container(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColor.darkOrange,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               );

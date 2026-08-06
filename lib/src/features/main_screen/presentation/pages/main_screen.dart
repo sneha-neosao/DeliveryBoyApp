@@ -77,21 +77,30 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
 
-    return Scaffold(
-      extendBody: true,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: _onScrollNotification,
-        child: widget.child,
-      ),
-      bottomNavigationBar: AnimatedSlide(
-        offset: _showBottomNav ? Offset.zero : const Offset(0, 1.4),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        child: IgnorePointer(
-          ignoring: !_showBottomNav,
-          child: BottomNav(
-            selectedIndex: selectedIndex,
-            onTap: (index) => _onItemTapped(index, context),
+    return PopScope(
+      canPop: selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (selectedIndex != 0) {
+          context.go(BottomNav.navItems[0].path);
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: NotificationListener<ScrollNotification>(
+          onNotification: _onScrollNotification,
+          child: widget.child,
+        ),
+        bottomNavigationBar: AnimatedSlide(
+          offset: _showBottomNav ? Offset.zero : const Offset(0, 1.4),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          child: IgnorePointer(
+            ignoring: !_showBottomNav,
+            child: BottomNav(
+              selectedIndex: selectedIndex,
+              onTap: (index) => _onItemTapped(index, context),
+            ),
           ),
         ),
       ),

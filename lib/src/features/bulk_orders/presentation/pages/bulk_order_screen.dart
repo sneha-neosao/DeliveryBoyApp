@@ -9,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 
 class BulkOrderScreen extends StatefulWidget {
   final AssignmentBatch? assignment;
@@ -445,7 +446,11 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
         ? '${order.slotStartTime} - ${order.slotEndTime}'
         : order.deliveryDate;
 
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        context.push(AppRoute.orderDetails.path, extra: order);
+      },
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -625,6 +630,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
             ),
           ],
         ],
+      ),
       ),
     );
   }

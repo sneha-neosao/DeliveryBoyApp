@@ -24,14 +24,27 @@ class BulkOrderScreen extends StatefulWidget {
   State<BulkOrderScreen> createState() => _BulkOrderScreenState();
 }
 
-class _BulkOrderScreenState extends State<BulkOrderScreen> {
+class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProviderStateMixin {
   AssignmentBatch? _assignment;
   bool _isStatusUpdating = false;
+  late final AnimationController _animController;
+  int _prevBulkOrdersLength = 0;
+  int _prevActiveIndex = -2;
 
   @override
   void initState() {
     super.initState();
     _assignment = widget.assignment;
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
   }
 
   String _statusLabel(Order order, String raw) {
@@ -248,6 +261,25 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> {
                     );
                   }
 
+                  // Compute the active card dynamically (first non-completed order)
+                  final activeIndex = bulkOrders.indexWhere((o) {
+                    final status = o.orderStatus.toUpperCase();
+                    return status != 'DELIVERED' && status != 'REJECTED';
+                  });
+
+                  // Check if we need to start/restart the animation
+                  if (bulkOrders.isNotEmpty &&
+                      (_prevBulkOrdersLength != bulkOrders.length ||
+                          _prevActiveIndex != activeIndex)) {
+                    _prevBulkOrdersLength = bulkOrders.length;
+                    _prevActiveIndex = activeIndex;
+                    _animController.reset();
+                    _animController.forward();
+                  }
+
+                  final targetActiveIndex = activeIndex == -1 ? bulkOrders.length - 1 : activeIndex;
+                  final double totalSteps = (2 * targetActiveIndex + 1).toDouble();
+
                   return RefreshIndicator(
                     color: AppColor.darkOrange,
                     onRefresh: () async {
@@ -258,38 +290,64 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> {
                             const OrderCurrentAssignmentGetEvent(),
                           );
                     },
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: bulkOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = bulkOrders[index];
+                    child: AnimatedBuilder(
+                      animation: _animController,
+                      builder: (context, child) {
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: bulkOrders.length,
+                          itemBuilder: (context, index) {
+                            final order = bulkOrders[index];
 
-                        // Compute the active card dynamically (first non-completed order)
-                        final activeIndex = bulkOrders.indexWhere((o) {
-                          final status = o.orderStatus.toUpperCase();
-                          return status != 'DELIVERED' && status != 'REJECTED';
-                        });
-                        final bool isActive = index == (activeIndex == -1 ? 0 : activeIndex);
+                            final bool isActive = index == (activeIndex == -1 ? 0 : activeIndex);
 
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (index > 0)
-                              Center(
-                                child: Container(
-                                  width: 6, // Thick connector
-                                  height: 30,
-                                  decoration: BoxDecoration(
-                                    color: (activeIndex != -1 && index <= activeIndex)
-                                        ? AppColor.darkOrange
-                                        : Colors.grey.shade300,
-                                    borderRadius: BorderRadius.circular(3),
+                            // Calculate progress for line
+                            double lineProgress = 0.0;
+                            if (index > 0 && (activeIndex == -1 || index <= targetActiveIndex) && totalSteps > 0) {
+                              final double start = (2 * index - 1) / totalSteps;
+                              final double end = (2 * index) / totalSteps;
+                              if (_animController.value >= end) {
+                                lineProgress = 1.0;
+                              } else if (_animController.value <= start) {
+                                lineProgress = 0.0;
+                              } else {
+                                lineProgress = Curves.easeInOut.transform((_animController.value - start) / (end - start));
+                              }
+                            }
+
+                            // Calculate progress for card border
+                            double cardProgress = 0.0;
+                            if ((activeIndex == -1 || index <= targetActiveIndex) && totalSteps > 0) {
+                              final double start = (2 * index) / totalSteps;
+                              final double end = (2 * index + 1) / totalSteps;
+                              if (_animController.value >= end) {
+                                cardProgress = 1.0;
+                              } else if (_animController.value <= start) {
+                                cardProgress = 0.0;
+                              } else {
+                                cardProgress = Curves.easeInOut.transform((_animController.value - start) / (end - start));
+                              }
+                            }
+
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (index > 0)
+                                  Center(
+                                    child: Container(
+                                      width: 6, // Thick connector
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        color: Color.lerp(Colors.grey.shade300, AppColor.darkOrange, lineProgress),
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            _buildOrderCard(context, order, isActive, index, activeIndex),
-                          ],
+                                _buildOrderCard(context, order, isActive, index, activeIndex, cardProgress),
+                              ],
+                            );
+                          },
                         );
                       },
                     ),
@@ -371,7 +429,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> {
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, Order order, bool isActive, int index, int activeIndex) {
+  Widget _buildOrderCard(BuildContext context, Order order, bool isActive, int index, int activeIndex, double cardProgress) {
     final String displayId = order.uuId.isNotEmpty
         ? '#${order.uuId.substring(0, order.uuId.length > 8 ? 8 : order.uuId.length)}'
         : '#ORD-${order.id}';
@@ -400,8 +458,8 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> {
           ),
         ],
         border: Border.all(
-          color: (activeIndex == -1 || index <= activeIndex) ? AppColor.darkOrange : Colors.grey.shade200,
-          width: (activeIndex == -1 || index <= activeIndex) ? 2.0 : 1.0,
+          color: Color.lerp(Colors.grey.shade200, AppColor.darkOrange, cardProgress)!,
+          width: 1.0 + cardProgress,
         ),
       ),
       child: Column(

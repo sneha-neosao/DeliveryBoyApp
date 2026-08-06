@@ -303,9 +303,12 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
 
                             final bool isActive = index == (activeIndex == -1 ? 0 : activeIndex);
 
+                            final bool prevDelivered = index > 0 && bulkOrders[index - 1].orderStatus.toUpperCase() == 'DELIVERED';
+                            final bool currentDelivered = bulkOrders[index].orderStatus.toUpperCase() == 'DELIVERED';
+
                             // Calculate progress for line
                             double lineProgress = 0.0;
-                            if (index > 0 && (activeIndex == -1 || index <= targetActiveIndex) && totalSteps > 0) {
+                            if (index > 0 && prevDelivered && currentDelivered && totalSteps > 0) {
                               final double start = (2 * index - 1) / totalSteps;
                               final double end = (2 * index) / totalSteps;
                               if (_animController.value >= end) {
@@ -319,7 +322,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
 
                             // Calculate progress for card border
                             double cardProgress = 0.0;
-                            if ((activeIndex == -1 || index <= targetActiveIndex) && totalSteps > 0) {
+                            if (currentDelivered && totalSteps > 0) {
                               final double start = (2 * index) / totalSteps;
                               final double end = (2 * index + 1) / totalSteps;
                               if (_animController.value >= end) {

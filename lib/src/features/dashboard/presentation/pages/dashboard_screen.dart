@@ -488,10 +488,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       const SizedBox(width: 10),
                                       // navigation icon button in circle with orange border and white color bg and navigation icon in orange colro
                                       InkWell(
-                                        onTap: () => context.push(
-                                          AppRoute.bulkOrder.path,
-                                          extra: assignment,
-                                        ),
+                                        onTap: () {
+                                          context.go(AppRoute.orders.path);
+                                        },
                                         borderRadius: BorderRadius.circular(20),
                                         child: Container(
                                           padding: const EdgeInsets.all(8),

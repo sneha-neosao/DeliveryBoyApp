@@ -12,10 +12,12 @@ import 'package:go_router/go_router.dart';
 
 class BulkOrderScreen extends StatefulWidget {
   final AssignmentBatch? assignment;
+  final bool isFromTab;
 
   const BulkOrderScreen({
     super.key,
     this.assignment,
+    this.isFromTab = false,
   });
 
   @override
@@ -328,28 +330,29 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> {
         child: SafeArea(
           child: Stack(
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: InkWell(
-                    onTap: () => context.pop(),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 22,
+              if (!widget.isFromTab)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: InkWell(
+                      onTap: () => context.pop(),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
               Center(
                 child: Text(
                   displayId,

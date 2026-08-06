@@ -64,7 +64,7 @@ class AppRouteConf {
           GoRoute(
             path: AppRoute.orders.path,
             name: AppRoute.orders.name,
-            pageBuilder: (context, state) => _fadePage(const OrdersScreen()),
+            pageBuilder: (context, state) => _fadePage(const OrdersTabWrapper()),
           ),
           GoRoute(
             path: AppRoute.profile.path,

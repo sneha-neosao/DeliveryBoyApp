@@ -373,12 +373,6 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final String displayId = _assignment != null
-        ? (_assignment!.uuid.isNotEmpty
-            ? '#${_assignment!.uuid.substring(0, _assignment!.uuid.length > 8 ? 8 : _assignment!.uuid.length)}'
-            : '#BATCH-${_assignment!.id}')
-        : 'Bulk Orders';
-
     return PreferredSize(
       preferredSize: const Size.fromHeight(80),
       child: Container(
@@ -417,7 +411,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                 ),
               Center(
                 child: Text(
-                  displayId,
+                  'my_orders'.tr(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,

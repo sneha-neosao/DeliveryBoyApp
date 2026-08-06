@@ -32,103 +32,11 @@ class OrderListView extends StatelessWidget {
     this.onRetry,
   });
 
-  String _getFilterLabel(String filterName) {
-    switch (filterName) {
-      case 'All':
-        return 'all'.tr();
-      case 'Active':
-        return 'active'.tr();
-      case 'Completed':
-        return 'completed'.tr();
-      default:
-        return filterName;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // ── Main content (header always visible + body) ─────────────
-        Column(
-          children: [
-            // Screen Header — always visible regardless of state
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              decoration: const BoxDecoration(
-                color: AppColor.primary,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x0A000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'my_orders'.tr(),
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: AppColor.white,
-                          ),
-                        ),
-                        // Count badge hidden while loading
-                        if (!isLoadingInitial)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF2E6),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${filteredOrders.length} ${'orders'.tr()}',
-                              style: const TextStyle(
-                                color: Color(0xFFFA6624),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    12.hS,
-                    // Status Filter Chips
-                    Row(
-                      children: [
-                        _buildFilterChip('All'),
-                        8.wS,
-                        _buildFilterChip('Active'),
-                        8.wS,
-                        _buildFilterChip('Completed'),
-                      ],
-                    ),
-                  ],
-                ),
-              )
-            ),
-
-            // Body area below the header
-            Expanded(
-              child: _buildBody(context),
-            ),
-          ],
-        ),
-
-        // ── GIF loader overlay (only during initial load) ───────────
+        _buildBody(context),
         if (isLoadingInitial) const GifLoaderOverlay(),
       ],
     );
@@ -283,31 +191,4 @@ class OrderListView extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterChip(String filterName) {
-    final bool isSelected = selectedFilter == filterName;
-    return GestureDetector(
-      onTap: () => onFilterChanged(filterName),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFFA6624)
-              : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          _getFilterLabel(filterName),
-          style: TextStyle(
-            color:
-                isSelected ? Colors.white : Colors.grey.shade700,
-            fontSize: 13,
-            fontWeight:
-                isSelected ? FontWeight.bold : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
 }

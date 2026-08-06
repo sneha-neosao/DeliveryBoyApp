@@ -6,6 +6,7 @@ import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
@@ -87,6 +88,31 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFFFF9F5),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColor.darkOrange,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+            ),
+          ),
+          child: SafeArea(
+            child: Center(
+              child: Text(
+                'my_orders'.tr(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       body: BlocConsumer<OrderListBloc, OrderListState>(
         listener: (context, state) {
           if (state is OrderListFailureState) {
@@ -110,7 +136,7 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
             selectedFilter: _selectedFilter,
             isLoadingInitial: isLoadingInitial,
             isError: isError,
-            errorMessage: isError && state is OrderListFailureState
+            errorMessage: state is OrderListFailureState && orders.isEmpty
                 ? state.message
                 : null,
             onFilterChanged: (filter) {

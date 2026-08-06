@@ -5,6 +5,7 @@ import 'package:delivery_boy_app/src/core/errors/exceptions.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/firebase_token_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
+import 'package:delivery_boy_app/src/features/bulk_orders/domain/usecase/current_assignment_order_list_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
@@ -18,6 +19,7 @@ import 'package:delivery_boy_app/src/remote/models/auth_model/firebase_token_upd
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
 import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/current_assignment_order_list_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
@@ -52,6 +54,8 @@ sealed class RemoteDataSource {
   Future<OrderCurrentAssignmentResponse> order_current_assignment(String token);
 
   Future<OrderStartAssignmentResponse> order_start_assignment(OrderStartAssignmentParams params, String token);
+
+  Future<CurrentAssignmentOrderListResponse> current_assignment_orders(CurrentAssignmentOrderListParams params, String token);
 
   /// Profile
   Future<ProfileResponse> profile(String token);
@@ -337,6 +341,35 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = OrderStartAssignmentResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<CurrentAssignmentOrderListResponse> current_assignment_orders(CurrentAssignmentOrderListParams params,String token) async {
+    try {
+      final response = await _helper.execute(
+        method: Method.get,
+        url: "${ApiUrl.currentAssignmentOrders}?uu_id=${params.uuid}&page=${params.page}&limit=${params.page}",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = CurrentAssignmentOrderListResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

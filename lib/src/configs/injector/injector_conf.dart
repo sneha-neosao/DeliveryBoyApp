@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/features/bulk_orders/domain/usecase/current_assignment_order_list_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/dashboard_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/firebase_token_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
@@ -156,6 +157,12 @@ void configureDepedencies() {
   );
   getIt.registerFactory(
         () => OrderStartAssignmentBloc(getIt<OrderStartAssignmentUseCase>()),
+  );
+  getIt.registerLazySingleton(
+        () => CurrentAssignmentOrderListUseCase(getIt<AuthRepositoryImpl>()),
+  );
+  getIt.registerFactory(
+        () => CurrentAssignmentOrdersBloc(getIt<CurrentAssignmentOrderListUseCase>()),
   );
   // getIt.registerFactory(
   //       () => SocketConnectService(),

@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:delivery_boy_app/src/features/main_screen/presentation/pages/main_screen.dart';
@@ -37,6 +38,15 @@ class AppRouteConf {
         pageBuilder: (context, state) {
           final order = state.extra as Order?;
           return _fadePage(OrderDetailsScreen(order: order));
+        },
+      ),
+
+      GoRoute(
+        path: AppRoute.bulkOrder.path,
+        name: AppRoute.bulkOrder.name,
+        pageBuilder: (context, state) {
+          final assignment = state.extra as AssignmentBatch?;
+          return _fadePage(BulkOrderScreen(assignment: assignment));
         },
       ),
 

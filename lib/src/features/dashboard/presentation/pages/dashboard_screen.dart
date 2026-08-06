@@ -326,6 +326,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 return const SizedBox.shrink();
                               }
                               final orderCount = assignment.orderCount;
+                              final assignmentStatus = assignment.status.toUpperCase();
+
+                              final bool showStart = assignmentStatus == 'PREPAIRING' || assignmentStatus == 'PREPARING';
+                              final bool showInactivePickedUp = assignmentStatus == 'DEL_ACCEPTED';
+                              final bool showActivePickedUp = assignmentStatus == 'READY_FOR_PICKUP';
+                              final bool showButton = showStart || showInactivePickedUp || showActivePickedUp;
 
                               return Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -361,61 +367,121 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            const SizedBox(height: 6),
-                                            // Orange button with text START and icon at left
-                                            InkWell(
-                                              onTap: () {
-                                                if (assignment.isStart) {
-                                                  context.read<OrderStartAssignmentBloc>().add(
-                                                        OrderStartAssignmentGetEvent(
-                                                          assignment.uuid,
-                                                          'PICKED_UP',
-                                                        ),
-                                                      );
-                                                } else {
-                                                  context.read<OrderStartAssignmentBloc>().add(
-                                                        OrderStartAssignmentGetEvent(
-                                                          assignment.uuid,
-                                                          'DEL_ACCEPTED',
-                                                        ),
-                                                      );
-                                                }
-                                              },
-                                              borderRadius: BorderRadius.circular(16),
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 24,
-                                                  vertical: 6,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColor.darkOrange,
+                                            if (showButton) ...[
+                                              const SizedBox(height: 6),
+                                              if (showStart)
+                                                InkWell(
+                                                  onTap: () {
+                                                    context.read<OrderStartAssignmentBloc>().add(
+                                                          OrderStartAssignmentGetEvent(
+                                                            assignment.uuid,
+                                                            'DEL_ACCEPTED',
+                                                          ),
+                                                        );
+                                                  },
                                                   borderRadius: BorderRadius.circular(16),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      assignment.isStart
-                                                          ? Icons.shopping_bag_rounded
-                                                          : Icons.play_arrow_rounded,
-                                                      color: Colors.white,
-                                                      size: 16,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 24,
+                                                      vertical: 6,
                                                     ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      assignment.isStart
-                                                          ? 'PICKED UP'
-                                                          : 'START',
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.bold,
+                                                    decoration: BoxDecoration(
+                                                      color: AppColor.darkOrange,
+                                                      borderRadius: BorderRadius.circular(16),
+                                                    ),
+                                                    child: const Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.play_arrow_rounded,
+                                                          color: Colors.white,
+                                                          size: 16,
+                                                        ),
+                                                        SizedBox(width: 4),
+                                                        Text(
+                                                          'START',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                )
+                                              else if (showInactivePickedUp)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 24,
+                                                    vertical: 6,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey.shade300,
+                                                    borderRadius: BorderRadius.circular(16),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.shopping_bag_rounded,
+                                                        color: Colors.grey.shade500,
+                                                        size: 16,
                                                       ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        'PICKED UP',
+                                                        style: TextStyle(
+                                                          color: Colors.grey.shade500,
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                              else if (showActivePickedUp)
+                                                InkWell(
+                                                  onTap: () {
+                                                    context.read<OrderStartAssignmentBloc>().add(
+                                                          OrderStartAssignmentGetEvent(
+                                                            assignment.uuid,
+                                                            'PICKED_UP',
+                                                          ),
+                                                        );
+                                                  },
+                                                  borderRadius: BorderRadius.circular(16),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 24,
+                                                      vertical: 6,
                                                     ),
-                                                  ],
+                                                    decoration: BoxDecoration(
+                                                      color: AppColor.darkOrange,
+                                                      borderRadius: BorderRadius.circular(16),
+                                                    ),
+                                                    child: const Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.shopping_bag_rounded,
+                                                          color: Colors.white,
+                                                          size: 16,
+                                                        ),
+                                                        SizedBox(width: 4),
+                                                        Text(
+                                                          'PICKED UP',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
+                                            ],
                                           ],
                                         ),
                                       ),

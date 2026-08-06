@@ -62,9 +62,8 @@ class BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      minimum: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: Container(
           height: 64,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),

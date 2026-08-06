@@ -331,8 +331,8 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   Future<OrderStartAssignmentResponse> order_start_assignment(OrderStartAssignmentParams params,String token) async {
     try {
       final response = await _helper.execute(
-        method: Method.get,
-        url: "${ApiUrl.orderStartAssignment}?uuid=${params.uu_id}",
+        method: Method.post,
+        url: "${ApiUrl.orderStartAssignment}?uuid=${params.uu_id}&status=${params.status}",
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',

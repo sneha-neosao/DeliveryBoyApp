@@ -37,6 +37,7 @@ class AssignmentBatch {
   final int deliveryBoyId;
   final int orderCount;
   final bool isStart;
+  final String status;
   final List<int> orderIds;
   final String createdAt;
   final String updatedAt;
@@ -47,6 +48,7 @@ class AssignmentBatch {
     required this.deliveryBoyId,
     required this.orderCount,
     required this.isStart,
+    required this.status,
     required this.orderIds,
     required this.createdAt,
     required this.updatedAt,
@@ -58,6 +60,7 @@ class AssignmentBatch {
     deliveryBoyId: json["delivery_boy_id"] ?? 0,
     orderCount: json["order_count"] ?? 0,
     isStart: json["is_start"] ?? false,
+    status: json["status"] ?? "",
     orderIds: (json["order_ids"] as List? ?? [])
         .map((x) => (x ?? 0) as int)
         .toList(),
@@ -71,6 +74,7 @@ class AssignmentBatch {
     "delivery_boy_id": deliveryBoyId,
     "order_count": orderCount,
     "is_start": isStart,
+    "status": status,
     "order_ids": orderIds,
     "created_at": createdAt,
     "updated_at": updatedAt,

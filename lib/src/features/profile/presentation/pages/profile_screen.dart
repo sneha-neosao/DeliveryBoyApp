@@ -173,6 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Form(
                                 key: _formKey,
                                 child: EditProfileInputWidget(
+                                  key: ValueKey('$name-$phone'),
                                   name: name,
                                   phone: phone,
                                 ),

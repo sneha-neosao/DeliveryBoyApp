@@ -148,11 +148,13 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
       final response = await _helper.execute(
         method: Method.put,
-        url: ApiUrl.firebaseTokenUpdate,
+        url: "${ApiUrl.firebaseTokenUpdate}?firebase_token=${Uri.encodeQueryComponent(params.firebase_id)}",
         data: data,
         options: Options(
+          contentType: Headers.formUrlEncodedContentType,
           headers: {
             'Authorization': 'Bearer $token',
+            'accept': 'application/json',
           },
         ),
       );

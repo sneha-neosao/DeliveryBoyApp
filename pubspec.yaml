@@ -65,6 +65,7 @@ dependencies:
   http: ^1.4.0
   package_info_plus: ^8.3.0
   gif_view: ^0.4.3
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:

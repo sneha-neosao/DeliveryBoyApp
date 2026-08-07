@@ -193,6 +193,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ? state.data.message
                       : 'Assignment updated successfully',
                 );
+                
+                final updatedOrders = state.data.data?.updatedOrders ?? [];
+                final isPickedUp = updatedOrders.any((o) => o.toStatus.toUpperCase() == 'PICKED_UP');
+                if (isPickedUp && updatedOrders.isNotEmpty) {
+                  final firstOrderId = updatedOrders.first.uuId.toString();
+                  
+                  SessionManager.getAuthToken().then((token) {
+                    if (token != null && token.isNotEmpty) {
+                      final uri = Uri.parse(ApiUrl.baseUrl);
+                      final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+                      final wsUrl = '$wsScheme://${uri.authority}/api/v1/ws?token=$token';
+                      
+                      logger.i("DashboardScreen: Connecting to Socket at $wsUrl");
+                      getIt<TrackingSocketService>().startTracking(
+                        socketUrl: wsUrl,
+                        orderId: firstOrderId,
+                      );
+                    } else {
+                      logger.w("DashboardScreen: Auth token is empty, cannot connect socket.");
+                    }
+                  });
+                }
+
                 // Refresh current assignment and dashboard stats
                 _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
                 _dashboardBloc.add(DashboardGetEvent());

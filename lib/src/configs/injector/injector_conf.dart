@@ -15,10 +15,9 @@ import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_up
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_image_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_usecase.dart';
-import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
-import 'injector.dart';
+import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 
 final getIt = GetIt.I;
 
@@ -42,8 +41,6 @@ void configureDepedencies() {
   getIt.registerLazySingleton(() => TranslateBloc());
 
   getIt.registerLazySingleton(() => AppRouteConf());
-
-  getIt.registerLazySingleton(() => SocketConnectService());
 
   // getIt.registerFactory(() => BottomNav4Bloc());
   //
@@ -164,9 +161,9 @@ void configureDepedencies() {
   getIt.registerFactory(
         () => CurrentAssignmentOrdersBloc(getIt<CurrentAssignmentOrderListUseCase>()),
   );
-  // getIt.registerFactory(
-  //       () => SocketConnectService(),
-  // );
+  getIt.registerLazySingleton(
+        () => TrackingSocketService(),
+  );
   /// API Helper
 
   getIt.registerLazySingleton(() => NetworkInfo());

@@ -122,7 +122,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => getIt<OrderListBloc>()..add(const GetOrderListEvent(page: 1, limit: 100)),
+          create: (_) => getIt<OrderListBloc>(),
         ),
         BlocProvider(
           create: (_) => getIt<OrderCurrentAssignmentBloc>()..add(const OrderCurrentAssignmentGetEvent()),
@@ -144,6 +144,13 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                       setState(() {
                         _assignment = state.data.data;
                       });
+                      if (state.data.data != null &&
+                          state.data.data!.orderIds.isNotEmpty &&
+                          context.read<OrderListBloc>().state is OrderListInitialState) {
+                        context.read<OrderListBloc>().add(
+                              const GetOrderListEvent(page: 1, limit: 100),
+                            );
+                      }
                     }
                   },
                 ),
@@ -186,9 +193,58 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
               ],
               child: BlocBuilder<OrderListBloc, OrderListState>(
                 builder: (context, state) {
-                  if (_assignment == null) {
+                  final currentAssignmentState = context.watch<OrderCurrentAssignmentBloc>().state;
+                  if (currentAssignmentState is OrderCurrentAssignmentLoadingState ||
+                      currentAssignmentState is OrderCurrentAssignmentInitialState) {
                     return const Center(
                       child: CircularProgressIndicator(color: AppColor.darkOrange),
+                    );
+                  }
+
+                  if (_assignment == null || _assignment!.orderCount == 0 || _assignment!.orderIds.isEmpty) {
+                    return RefreshIndicator(
+                      color: AppColor.darkOrange,
+                      onRefresh: () async {
+                        context.read<OrderCurrentAssignmentBloc>().add(
+                              const OrderCurrentAssignmentGetEvent(),
+                            );
+                      },
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Container(
+                          height: MediaQuery.of(context).size.height - 180,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: AppColor.orangeTint.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.shopping_bag_outlined,
+                                  size: 64,
+                                  color: AppColor.darkOrange,
+                                ),
+                              ),
+                              20.hS,
+                              const Text(
+                                'No orders found',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColor.charcoal,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   }
 

@@ -1,6 +1,6 @@
+import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
-import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_listview.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
@@ -16,7 +16,10 @@ class OrdersScreen extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => getIt<OrderListBloc>()..add(const GetOrderListEvent(page: 1)),
+          create: (_) => getIt<OrderCurrentAssignmentBloc>()..add(const OrderCurrentAssignmentGetEvent()),
+        ),
+        BlocProvider(
+          create: (_) => getIt<OrderListBloc>(),
         ),
       ],
       child: const _OrdersScreenContent(),
@@ -113,44 +116,130 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
           ),
         ),
       ),
-      body: BlocConsumer<OrderListBloc, OrderListState>(
-        listener: (context, state) {
-          if (state is OrderListFailureState) {
-            appSnackBar(context, AppColor.bright_red, state.message);
-          }
-        },
-        builder: (context, state) {
-          final orders = state.orders ?? [];
-          final isLoadingInitial =
-              state is OrderListLoadingState && orders.isEmpty;
-          final isError = state is OrderListFailureState && orders.isEmpty;
-
-          final filteredOrders = _getFilteredOrders(orders);
-
-          // Always render the full layout (header + content area).
-          // The header stays visible during loading; only the body area changes.
-          return OrderListView(
-            filteredOrders: filteredOrders,
-            state: state,
-            scrollController: _scrollController,
-            selectedFilter: _selectedFilter,
-            isLoadingInitial: isLoadingInitial,
-            isError: isError,
-            errorMessage: state is OrderListFailureState && orders.isEmpty
-                ? state.message
-                : null,
-            onFilterChanged: (filter) {
-              setState(() {
-                _selectedFilter = filter;
-              });
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+            listener: (context, currentAssignmentState) {
+              if (currentAssignmentState is OrderCurrentAssignmentSuccessState) {
+                final assignment = currentAssignmentState.data.data;
+                if (assignment != null &&
+                    assignment.orderIds.isNotEmpty &&
+                    context.read<OrderListBloc>().state is OrderListInitialState) {
+                  context.read<OrderListBloc>().add(const GetOrderListEvent(page: 1));
+                }
+              }
             },
-            onRetry: () {
-              context
-                  .read<OrderListBloc>()
-                  .add(const GetOrderListEvent(page: 1));
+          ),
+          BlocListener<OrderListBloc, OrderListState>(
+            listener: (context, state) {
+              if (state is OrderListFailureState) {
+                appSnackBar(context, AppColor.bright_red, state.message);
+              }
             },
-          );
-        },
+          ),
+        ],
+        child: BlocBuilder<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+          builder: (context, currentAssignmentState) {
+            if (currentAssignmentState is OrderCurrentAssignmentLoadingState ||
+                currentAssignmentState is OrderCurrentAssignmentInitialState) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColor.darkOrange),
+              );
+            }
+
+            final assignment = (currentAssignmentState is OrderCurrentAssignmentSuccessState)
+                ? currentAssignmentState.data.data
+                : null;
+
+            if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
+              return RefreshIndicator(
+                color: AppColor.darkOrange,
+                onRefresh: () async {
+                  context.read<OrderCurrentAssignmentBloc>().add(
+                        const OrderCurrentAssignmentGetEvent(),
+                      );
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    height: MediaQuery.of(context).size.height - 220,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: AppColor.orangeTint.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 64,
+                            color: AppColor.darkOrange,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'no_orders_yet'.tr(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColor.charcoal,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'home_no_orders_subtitle'.tr(),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade500,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return BlocBuilder<OrderListBloc, OrderListState>(
+              builder: (context, state) {
+                final orders = state.orders ?? [];
+                final isLoadingInitial =
+                    state is OrderListLoadingState && orders.isEmpty;
+                final isError = state is OrderListFailureState && orders.isEmpty;
+
+                final filteredOrders = _getFilteredOrders(orders);
+
+                return OrderListView(
+                  filteredOrders: filteredOrders,
+                  state: state,
+                  scrollController: _scrollController,
+                  selectedFilter: _selectedFilter,
+                  isLoadingInitial: isLoadingInitial,
+                  isError: isError,
+                  errorMessage: state is OrderListFailureState && orders.isEmpty
+                      ? state.message
+                      : null,
+                  onFilterChanged: (filter) {
+                    setState(() {
+                      _selectedFilter = filter;
+                    });
+                  },
+                  onRetry: () {
+                    context.read<OrderListBloc>().add(const GetOrderListEvent(page: 1));
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
+import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
-import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_list_card_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/gif_loader_overlay.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
@@ -104,6 +104,10 @@ class OrderListView extends StatelessWidget {
       return RefreshIndicator(
         color: AppColor.darkOrange,
         onRefresh: () async {
+          try {
+            context.read<OrderCurrentAssignmentBloc>().add(
+                const OrderCurrentAssignmentGetEvent());
+          } catch (_) {}
           context.read<OrderListBloc>().add(
               const GetOrderListEvent(page: 1, isRefresh: true));
         },
@@ -160,6 +164,10 @@ class OrderListView extends StatelessWidget {
     return RefreshIndicator(
       color: AppColor.darkOrange,
       onRefresh: () async {
+        try {
+          context.read<OrderCurrentAssignmentBloc>().add(
+              const OrderCurrentAssignmentGetEvent());
+        } catch (_) {}
         context.read<OrderListBloc>().add(
             const GetOrderListEvent(page: 1, isRefresh: true));
       },

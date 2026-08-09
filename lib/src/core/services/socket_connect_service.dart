@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:geolocator/geolocator.dart';
-import '../utils/logger.dart';
+import 'package:flutter/material.dart';
+import '../../configs/injector/injector.dart';
+import '../../features/widgets/snackbar_widget.dart';
 
 class TrackingSocketService {
   WebSocket? _socket;
@@ -146,7 +148,7 @@ class TrackingSocketService {
       _positionSubscription = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.best,
-          distanceFilter: 5,
+          distanceFilter: 1,
         ),
       ).listen(
         (Position position) {
@@ -204,6 +206,11 @@ class TrackingSocketService {
       logger.d(
         "TrackingSocketService Sent Location: ${jsonEncode(payload)}",
       );
+
+      final context = globalNavigator.currentContext;
+      if (context != null) {
+        appSnackBar(context, Colors.green, "Location updated");
+      }
     } catch (e) {
       logger.e(
         "TrackingSocketService: Failed to send location: $e",

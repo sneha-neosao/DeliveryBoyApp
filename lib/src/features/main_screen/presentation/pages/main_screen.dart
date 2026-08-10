@@ -16,6 +16,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   bool _showBottomNav = true;
+  int _lastSelectedIndex = -1;
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.path;
@@ -35,6 +36,11 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index, BuildContext context) {
+    if (!_showBottomNav) {
+      setState(() {
+        _showBottomNav = true;
+      });
+    }
     final targetPath = BottomNav.navItems[index].path;
     context.go(targetPath);
   }
@@ -77,11 +83,21 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
 
+    if (_lastSelectedIndex != -1 && _lastSelectedIndex != selectedIndex) {
+      _showBottomNav = true;
+    }
+    _lastSelectedIndex = selectedIndex;
+
     return PopScope(
       canPop: selectedIndex == 0,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (selectedIndex != 0) {
+          if (!_showBottomNav) {
+            setState(() {
+              _showBottomNav = true;
+            });
+          }
           context.go(BottomNav.navItems[0].path);
         }
       },

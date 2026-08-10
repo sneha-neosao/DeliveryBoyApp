@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/features/map/presentation/pages/map_screen.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
 import 'package:flutter/widgets.dart';
@@ -47,6 +48,14 @@ class AppRouteConf {
         pageBuilder: (context, state) {
           final assignment = state.extra as AssignmentBatch?;
           return _fadePage(BulkOrderScreen(assignment: assignment));
+        },
+      ),
+      GoRoute(
+        path: AppRoute.map.path,
+        name: AppRoute.map.name,
+        pageBuilder: (context, state) {
+          final orders = state.extra as List<Order>?;
+          return _fadePage(MapScreen(orders: orders ?? []));
         },
       ),
 

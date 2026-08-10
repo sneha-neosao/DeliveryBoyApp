@@ -131,304 +131,309 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
           create: (_) => getIt<OrderStatusUpdateBloc>(),
         ),
       ],
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFFF9F5),
-        appBar: _buildAppBar(context),
-        body: Stack(
-          children: [
-            MultiBlocListener(
-              listeners: [
-                BlocListener<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
-                  listener: (context, state) {
-                    if (state is OrderCurrentAssignmentSuccessState) {
-                      setState(() {
-                        _assignment = state.data.data;
-                      });
-                      if (state.data.data != null &&
-                          state.data.data!.orderIds.isNotEmpty &&
-                          context.read<OrderListBloc>().state is OrderListInitialState) {
-                        context.read<OrderListBloc>().add(
-                              const GetOrderListEvent(page: 1, limit: 100),
-                            );
-                      }
-                    }
-                  },
-                ),
-                BlocListener<OrderListBloc, OrderListState>(
-                  listener: (context, state) {
-                    if (state is OrderListFailureState) {
-                      appSnackBar(context, AppColor.bright_red, state.message);
-                    }
-                  },
-                ),
-                BlocListener<OrderStatusUpdateBloc, OrderStatusUpdateState>(
-                  listener: (context, state) {
-                    if (state is OrderStatusUpdateLoadingState) {
-                      setState(() {
-                        _isStatusUpdating = true;
-                      });
-                    } else if (state is OrderStatusUpdateSuccessState) {
-                      setState(() {
-                        _isStatusUpdating = false;
-                      });
-                      appSnackBar(
-                        context,
-                        AppColor.green,
-                        state.data.message.isNotEmpty ? state.data.message : 'Status updated',
-                      );
-                      context.read<OrderListBloc>().add(
-                            const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
-                          );
-                      context.read<OrderCurrentAssignmentBloc>().add(
-                            const OrderCurrentAssignmentGetEvent(),
-                          );
-                    } else if (state is OrderStatusUpdateFailureState) {
-                      setState(() {
-                        _isStatusUpdating = false;
-                      });
-                      appSnackBar(context, AppColor.bright_red, state.message);
-                    }
-                  },
-                ),
-              ],
-              child: BlocBuilder<OrderListBloc, OrderListState>(
-                builder: (context, state) {
-                  final currentAssignmentState = context.watch<OrderCurrentAssignmentBloc>().state;
-                  if (currentAssignmentState is OrderCurrentAssignmentLoadingState ||
-                      currentAssignmentState is OrderCurrentAssignmentInitialState) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: AppColor.darkOrange),
-                    );
-                  }
+      child: BlocBuilder<OrderListBloc, OrderListState>(
+        builder: (context, orderListState) {
+          final allOrders = orderListState.orders ?? [];
+          final bulkOrders = _assignment != null 
+              ? allOrders.where((o) => _assignment!.orderIds.contains(o.id)).toList()
+              : <Order>[];
 
-                  if (_assignment == null || _assignment!.orderCount == 0 || _assignment!.orderIds.isEmpty) {
-                    return RefreshIndicator(
-                      color: AppColor.darkOrange,
-                      onRefresh: () async {
-                        context.read<OrderCurrentAssignmentBloc>().add(
-                              const OrderCurrentAssignmentGetEvent(),
-                            );
-                      },
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: Container(
-                          height: MediaQuery.of(context).size.height - 180,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(
-                                  color: AppColor.orangeTint.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.shopping_bag_outlined,
-                                  size: 64,
-                                  color: AppColor.darkOrange,
-                                ),
-                              ),
-                              20.hS,
-                              const Text(
-                                'No orders found',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColor.charcoal,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
+          if (_assignment != null && bulkOrders.isNotEmpty) {
+             bulkOrders.sort((a, b) {
+                final indexA = _assignment!.orderIds.indexOf(a.id);
+                final indexB = _assignment!.orderIds.indexOf(b.id);
+                return indexA.compareTo(indexB);
+              });
+          }
 
-                  final allOrders = state.orders ?? [];
-                  final bulkOrders = allOrders
-                      .where((o) => _assignment!.orderIds.contains(o.id))
-                      .toList();
-
-                  // Sort bulkOrders to match the order of IDs in assignment.orderIds
-                  bulkOrders.sort((a, b) {
-                    final indexA = _assignment!.orderIds.indexOf(a.id);
-                    final indexB = _assignment!.orderIds.indexOf(b.id);
-                    return indexA.compareTo(indexB);
-                  });
-
-                  final isLoading = state is OrderListLoadingState && allOrders.isEmpty;
-
-                  if (isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: AppColor.darkOrange),
-                    );
-                  }
-
-                  if (bulkOrders.isEmpty) {
-                    return RefreshIndicator(
-                      color: AppColor.darkOrange,
-                      onRefresh: () async {
-                        context.read<OrderListBloc>().add(
-                              const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
-                            );
-                        context.read<OrderCurrentAssignmentBloc>().add(
-                              const OrderCurrentAssignmentGetEvent(),
-                            );
-                      },
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: Container(
-                          height: MediaQuery.of(context).size.height - 180,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(
-                                  color: AppColor.orangeTint.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.local_shipping_outlined,
-                                  size: 64,
-                                  color: AppColor.darkOrange,
-                                ),
-                              ),
-                              20.hS,
-                              const Text(
-                                'No active orders found in this assignment',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColor.charcoal,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  // Compute the active card dynamically (first non-completed order)
-                  final activeIndex = bulkOrders.indexWhere((o) {
-                    final status = o.orderStatus.toUpperCase();
-                    return status != 'DELIVERED' && status != 'REJECTED';
-                  });
-
-                  // Check if we need to start/restart the animation
-                  if (bulkOrders.isNotEmpty &&
-                      (_prevBulkOrdersLength != bulkOrders.length ||
-                          _prevActiveIndex != activeIndex)) {
-                    _prevBulkOrdersLength = bulkOrders.length;
-                    _prevActiveIndex = activeIndex;
-                    _animController.reset();
-                    _animController.forward();
-                  }
-
-                  final targetActiveIndex = activeIndex == -1 ? bulkOrders.length - 1 : activeIndex;
-                  final double totalSteps = (2 * targetActiveIndex + 1).toDouble();
-
-                  return RefreshIndicator(
-                    color: AppColor.darkOrange,
-                    onRefresh: () async {
-                      context.read<OrderListBloc>().add(
-                            const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
-                          );
-                      context.read<OrderCurrentAssignmentBloc>().add(
-                            const OrderCurrentAssignmentGetEvent(),
-                          );
-                    },
-                    child: AnimatedBuilder(
-                      animation: _animController,
-                      builder: (context, child) {
-                        return ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: bulkOrders.length,
-                          itemBuilder: (context, index) {
-                            final order = bulkOrders[index];
-
-                            final bool isActive = index == (activeIndex == -1 ? 0 : activeIndex);
-
-                            final bool prevDelivered = index > 0 && bulkOrders[index - 1].orderStatus.toUpperCase() == 'DELIVERED';
-                            final bool currentDelivered = bulkOrders[index].orderStatus.toUpperCase() == 'DELIVERED';
-
-                            // Calculate progress for line
-                            double lineProgress = 0.0;
-                            if (index > 0 && prevDelivered && currentDelivered && totalSteps > 0) {
-                              final double start = (2 * index - 1) / totalSteps;
-                              final double end = (2 * index) / totalSteps;
-                              if (_animController.value >= end) {
-                                lineProgress = 1.0;
-                              } else if (_animController.value <= start) {
-                                lineProgress = 0.0;
-                              } else {
-                                lineProgress = Curves.easeInOut.transform((_animController.value - start) / (end - start));
-                              }
-                            }
-
-                            // Calculate progress for card border
-                            double cardProgress = 0.0;
-                            if (currentDelivered && totalSteps > 0) {
-                              final double start = (2 * index) / totalSteps;
-                              final double end = (2 * index + 1) / totalSteps;
-                              if (_animController.value >= end) {
-                                cardProgress = 1.0;
-                              } else if (_animController.value <= start) {
-                                cardProgress = 0.0;
-                              } else {
-                                cardProgress = Curves.easeInOut.transform((_animController.value - start) / (end - start));
-                              }
-                            }
-
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (index > 0)
-                                  Center(
-                                    child: Container(
-                                      width: 6, // Thick connector
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        color: Color.lerp(Colors.grey.shade300, AppColor.darkOrange, lineProgress),
-                                        borderRadius: BorderRadius.circular(3),
-                                      ),
-                                    ),
-                                  ),
-                                _buildOrderCard(context, order, isActive, index, activeIndex, cardProgress),
-                              ],
-                            );
-                          },
-                        );
+          return Scaffold(
+            backgroundColor: const Color(0xFFFFF9F5),
+            appBar: _buildAppBar(context, bulkOrders),
+            body: Stack(
+              children: [
+                MultiBlocListener(
+                  listeners: [
+                    BlocListener<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+                      listener: (context, state) {
+                        if (state is OrderCurrentAssignmentSuccessState) {
+                          setState(() {
+                            _assignment = state.data.data;
+                          });
+                          if (state.data.data != null &&
+                              state.data.data!.orderIds.isNotEmpty &&
+                              context.read<OrderListBloc>().state is OrderListInitialState) {
+                            context.read<OrderListBloc>().add(
+                                  const GetOrderListEvent(page: 1, limit: 100),
+                                );
+                          }
+                        }
                       },
                     ),
-                  );
-                },
-              ),
-            ),
-            if (_isStatusUpdating)
-              Container(
-                color: Colors.black.withValues(alpha: 0.35),
-                child: const Center(
-                  child: CircularProgressIndicator(color: AppColor.darkOrange),
+                    BlocListener<OrderListBloc, OrderListState>(
+                      listener: (context, state) {
+                        if (state is OrderListFailureState) {
+                          appSnackBar(context, AppColor.bright_red, state.message);
+                        }
+                      },
+                    ),
+                    BlocListener<OrderStatusUpdateBloc, OrderStatusUpdateState>(
+                      listener: (context, state) {
+                        if (state is OrderStatusUpdateLoadingState) {
+                          setState(() {
+                            _isStatusUpdating = true;
+                          });
+                        } else if (state is OrderStatusUpdateSuccessState) {
+                          setState(() {
+                            _isStatusUpdating = false;
+                          });
+                          appSnackBar(
+                            context,
+                            AppColor.green,
+                            state.data.message.isNotEmpty ? state.data.message : 'Status updated',
+                          );
+                          context.read<OrderListBloc>().add(
+                                const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
+                              );
+                          context.read<OrderCurrentAssignmentBloc>().add(
+                                const OrderCurrentAssignmentGetEvent(),
+                              );
+                        } else if (state is OrderStatusUpdateFailureState) {
+                          setState(() {
+                            _isStatusUpdating = false;
+                          });
+                          appSnackBar(context, AppColor.bright_red, state.message);
+                        }
+                      },
+                    ),
+                  ],
+                  child: Builder(
+                    builder: (context) {
+                      final currentAssignmentState = context.watch<OrderCurrentAssignmentBloc>().state;
+                      if (currentAssignmentState is OrderCurrentAssignmentLoadingState ||
+                          currentAssignmentState is OrderCurrentAssignmentInitialState) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: AppColor.darkOrange),
+                        );
+                      }
+
+                      if (_assignment == null || _assignment!.orderCount == 0 || _assignment!.orderIds.isEmpty) {
+                        return RefreshIndicator(
+                          color: AppColor.darkOrange,
+                          onRefresh: () async {
+                            context.read<OrderCurrentAssignmentBloc>().add(
+                                  const OrderCurrentAssignmentGetEvent(),
+                                );
+                          },
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: Container(
+                              height: MediaQuery.of(context).size.height - 180,
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(horizontal: 32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: AppColor.orangeTint.withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.shopping_bag_outlined,
+                                      size: 64,
+                                      color: AppColor.darkOrange,
+                                    ),
+                                  ),
+                                  20.hS,
+                                  const Text(
+                                    'No orders found',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColor.charcoal,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final isLoading = orderListState is OrderListLoadingState && allOrders.isEmpty;
+
+                      if (isLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: AppColor.darkOrange),
+                        );
+                      }
+
+                      if (bulkOrders.isEmpty) {
+                        return RefreshIndicator(
+                          color: AppColor.darkOrange,
+                          onRefresh: () async {
+                            context.read<OrderListBloc>().add(
+                                  const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
+                                );
+                            context.read<OrderCurrentAssignmentBloc>().add(
+                                  const OrderCurrentAssignmentGetEvent(),
+                                );
+                          },
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: Container(
+                              height: MediaQuery.of(context).size.height - 180,
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(horizontal: 32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: AppColor.orangeTint.withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.local_shipping_outlined,
+                                      size: 64,
+                                      color: AppColor.darkOrange,
+                                    ),
+                                  ),
+                                  20.hS,
+                                  const Text(
+                                    'No active orders found in this assignment',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColor.charcoal,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Compute the active card dynamically (first non-completed order)
+                      final activeIndex = bulkOrders.indexWhere((o) {
+                        final status = o.orderStatus.toUpperCase();
+                        return status != 'DELIVERED' && status != 'REJECTED';
+                      });
+
+                      // Check if we need to start/restart the animation
+                      if (bulkOrders.isNotEmpty &&
+                          (_prevBulkOrdersLength != bulkOrders.length ||
+                              _prevActiveIndex != activeIndex)) {
+                        _prevBulkOrdersLength = bulkOrders.length;
+                        _prevActiveIndex = activeIndex;
+                        _animController.reset();
+                        _animController.forward();
+                      }
+
+                      final targetActiveIndex = activeIndex == -1 ? bulkOrders.length - 1 : activeIndex;
+                      final double totalSteps = (2 * targetActiveIndex + 1).toDouble();
+
+                      return RefreshIndicator(
+                        color: AppColor.darkOrange,
+                        onRefresh: () async {
+                          context.read<OrderListBloc>().add(
+                                const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
+                              );
+                          context.read<OrderCurrentAssignmentBloc>().add(
+                                const OrderCurrentAssignmentGetEvent(),
+                              );
+                        },
+                        child: AnimatedBuilder(
+                          animation: _animController,
+                          builder: (context, child) {
+                            return ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: bulkOrders.length,
+                              itemBuilder: (context, index) {
+                                final order = bulkOrders[index];
+
+                                final bool isActive = index == (activeIndex == -1 ? 0 : activeIndex);
+
+                                final bool prevDelivered = index > 0 && bulkOrders[index - 1].orderStatus.toUpperCase() == 'DELIVERED';
+                                final bool currentDelivered = bulkOrders[index].orderStatus.toUpperCase() == 'DELIVERED';
+
+                                // Calculate progress for line
+                                double lineProgress = 0.0;
+                                if (index > 0 && prevDelivered && currentDelivered && totalSteps > 0) {
+                                  final double start = (2 * index - 1) / totalSteps;
+                                  final double end = (2 * index) / totalSteps;
+                                  if (_animController.value >= end) {
+                                    lineProgress = 1.0;
+                                  } else if (_animController.value <= start) {
+                                    lineProgress = 0.0;
+                                  } else {
+                                    lineProgress = Curves.easeInOut.transform((_animController.value - start) / (end - start));
+                                  }
+                                }
+
+                                // Calculate progress for card border
+                                double cardProgress = 0.0;
+                                if (currentDelivered && totalSteps > 0) {
+                                  final double start = (2 * index) / totalSteps;
+                                  final double end = (2 * index + 1) / totalSteps;
+                                  if (_animController.value >= end) {
+                                    cardProgress = 1.0;
+                                  } else if (_animController.value <= start) {
+                                    cardProgress = 0.0;
+                                  } else {
+                                    cardProgress = Curves.easeInOut.transform((_animController.value - start) / (end - start));
+                                  }
+                                }
+
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (index > 0)
+                                      Center(
+                                        child: Container(
+                                          width: 6, // Thick connector
+                                          height: 30,
+                                          decoration: BoxDecoration(
+                                            color: Color.lerp(Colors.grey.shade300, AppColor.darkOrange, lineProgress),
+                                            borderRadius: BorderRadius.circular(3),
+                                          ),
+                                        ),
+                                      ),
+                                    _buildOrderCard(context, order, isActive, index, activeIndex, cardProgress),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-          ],
-        ),
+                if (_isStatusUpdating)
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    child: const Center(
+                      child: CircularProgressIndicator(color: AppColor.darkOrange),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, List<Order> bulkOrders) {
     return PreferredSize(
       preferredSize: const Size.fromHeight(80),
       child: Container(
@@ -476,6 +481,31 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                   ),
                 ),
               ),
+              if (_assignment != null && bulkOrders.isNotEmpty)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: InkWell(
+                      onTap: () {
+                        context.push(AppRoute.map.path, extra: bulkOrders);
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.map_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

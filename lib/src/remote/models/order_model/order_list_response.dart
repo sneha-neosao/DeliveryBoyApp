@@ -62,6 +62,8 @@ class Order {
   final String assignedDeliveryBoyName;
   final String assignedDeliveryBoyPhone;
   final String assignmentStatus;
+  final double deliveryLat;
+  final double deliveryLng;
 
   Order({
     required this.id,
@@ -86,6 +88,8 @@ class Order {
     required this.assignedDeliveryBoyName,
     required this.assignedDeliveryBoyPhone,
     required this.assignmentStatus,
+    required this.deliveryLat,
+    required this.deliveryLng,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) => Order(
@@ -111,6 +115,8 @@ class Order {
     assignedDeliveryBoyName: json["assigned_delivery_boy_name"] ?? "",
     assignedDeliveryBoyPhone: json["assigned_delivery_boy_phone"] ?? "",
     assignmentStatus: json["assignment_status"] ?? "",
+    deliveryLat: (json["delivery_lat"] ?? 0).toDouble(),
+    deliveryLng: (json["delivery_lng"] ?? 0).toDouble(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -136,6 +142,8 @@ class Order {
     "assigned_delivery_boy_name": assignedDeliveryBoyName,
     "assigned_delivery_boy_phone": assignedDeliveryBoyPhone,
     "assignment_status": assignmentStatus,
+    "delivery_lat": deliveryLat,
+    "delivery_lng": deliveryLng,
   };
 }
 

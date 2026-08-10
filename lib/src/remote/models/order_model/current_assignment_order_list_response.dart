@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'order_list_response.dart';
 
 class CurrentAssignmentOrderListResponse {
   final int status;
@@ -56,6 +57,8 @@ class AssignmentOrder {
   final String deliveryPincode;
   final double? deliveryLat;
   final double? deliveryLng;
+  final double? storeLatitude;
+  final double? storeLongitude;
   final String slotStartTime;
   final String slotEndTime;
   final String deliveryDate;
@@ -82,6 +85,8 @@ class AssignmentOrder {
     required this.deliveryPincode,
     this.deliveryLat,
     this.deliveryLng,
+    this.storeLatitude,
+    this.storeLongitude,
     required this.slotStartTime,
     required this.slotEndTime,
     required this.deliveryDate,
@@ -113,6 +118,12 @@ class AssignmentOrder {
     deliveryLng: (json["delivery_lng"] != null)
         ? (json["delivery_lng"] as num).toDouble()
         : null,
+    storeLatitude: (json["store_latitude"] != null)
+        ? (json["store_latitude"] as num).toDouble()
+        : null,
+    storeLongitude: (json["store_longitude"] != null)
+        ? (json["store_longitude"] as num).toDouble()
+        : null,
     slotStartTime: json["slot_start_time"] ?? "",
     slotEndTime: json["slot_end_time"] ?? "",
     deliveryDate: json["delivery_date"] ?? "",
@@ -140,6 +151,8 @@ class AssignmentOrder {
     "delivery_pincode": deliveryPincode,
     "delivery_lat": deliveryLat,
     "delivery_lng": deliveryLng,
+    "store_latitude": storeLatitude,
+    "store_longitude": storeLongitude,
     "slot_start_time": slotStartTime,
     "slot_end_time": slotEndTime,
     "delivery_date": deliveryDate,
@@ -149,6 +162,35 @@ class AssignmentOrder {
     "assigned_delivery_boy_phone": assignedDeliveryBoyPhone,
     "assignment_status": assignmentStatus,
   };
+
+  Order toOrder() => Order(
+    id: id,
+    uuId: uuId,
+    orderStatus: orderStatus,
+    paymentMode: paymentMode,
+    paymentStatus: paymentStatus,
+    grandTotal: grandTotal,
+    platformCharges: platformCharges,
+    totalItems: totalItems,
+    customerName: customerName,
+    customerContact: customerContact,
+    deliveryAddress: deliveryAddress,
+    deliveryName: deliveryName,
+    deliveryPhone: deliveryPhone,
+    deliveryPincode: deliveryPincode,
+    slotStartTime: slotStartTime,
+    slotEndTime: slotEndTime,
+    deliveryDate: deliveryDate,
+    isAssigned: isAssigned,
+    assignedDeliveryBoyId: assignedDeliveryBoyId,
+    assignedDeliveryBoyName: assignedDeliveryBoyName,
+    assignedDeliveryBoyPhone: assignedDeliveryBoyPhone,
+    assignmentStatus: assignmentStatus,
+    deliveryLat: deliveryLat ?? 0.0,
+    deliveryLng: deliveryLng ?? 0.0,
+    storeLatitude: storeLatitude,
+    storeLongitude: storeLongitude,
+  );
 }
 
 class Pagination {

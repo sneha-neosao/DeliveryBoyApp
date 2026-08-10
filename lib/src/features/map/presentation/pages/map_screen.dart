@@ -17,6 +17,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   late GoogleMapController _mapController;
   final Map<MarkerId, Marker> _markers = {};
+  final Set<Polyline> _polylines = {};
   bool _isLoading = true;
 
   @override
@@ -26,19 +27,57 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _createMarkers() {
+    _markers.clear();
+    _polylines.clear();
+
+    List<LatLng> polylinePoints = [];
+
+    // Add store marker if available (taking from first order)
+    if (widget.orders.isNotEmpty) {
+      final firstOrder = widget.orders.first;
+      if (firstOrder.storeLatitude != null && firstOrder.storeLongitude != null) {
+        final storeLatLng = LatLng(firstOrder.storeLatitude!, firstOrder.storeLongitude!);
+        const markerId = MarkerId('store');
+        final marker = Marker(
+          markerId: markerId,
+          position: storeLatLng,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: const InfoWindow(title: 'Store Location'),
+        );
+        _markers[markerId] = marker;
+        polylinePoints.add(storeLatLng);
+      }
+    }
+
     for (var order in widget.orders) {
       if (order.deliveryLat != 0 && order.deliveryLng != 0) {
         final markerId = MarkerId(order.id.toString());
+        final latLng = LatLng(order.deliveryLat, order.deliveryLng);
         final marker = Marker(
           markerId: markerId,
-          position: LatLng(order.deliveryLat, order.deliveryLng),
+          position: latLng,
           infoWindow: InfoWindow(
             title: order.customerName,
             snippet: order.deliveryAddress,
           ),
         );
         _markers[markerId] = marker;
+        polylinePoints.add(latLng);
       }
+    }
+
+    if (polylinePoints.length > 1) {
+      _polylines.add(
+        Polyline(
+          polylineId: const PolylineId('delivery_path'),
+          points: polylinePoints,
+          color: AppColor.darkOrange,
+          width: 4,
+          jointType: JointType.round,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+        ),
+      );
     }
   }
 
@@ -49,18 +88,16 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _setInitialLocation() async {
     try {
-      // Get position with best possible accuracy to shrink the accuracy circle
       Position? position = await _determinePosition();
       
-      if (position != null) {
+      if (_markers.isNotEmpty) {
+        // Prioritize showing all markers (Store + Orders)
+        _fitBounds(position);
+      } else if (position != null) {
         final userLatLng = LatLng(position.latitude, position.longitude);
-        
-        // Use moveCamera for instant focus on your location
         _mapController.moveCamera(
-          CameraUpdate.newLatLngZoom(userLatLng, 19.0),
+          CameraUpdate.newLatLngZoom(userLatLng, 15.0),
         );
-      } else if (_markers.isNotEmpty) {
-        _fitBounds(null);
       }
     } finally {
       if (mounted) {
@@ -126,7 +163,7 @@ class _MapScreenState extends State<MapScreen> {
               southwest: LatLng(minLat, minLng),
               northeast: LatLng(maxLat, maxLng),
             ),
-            50.0,
+            70.0, // Increased padding
           ),
         );
       }
@@ -138,7 +175,7 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Orders Map',
+          'Delivery Path',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColor.darkOrange,
@@ -154,10 +191,11 @@ class _MapScreenState extends State<MapScreen> {
             initialCameraPosition: CameraPosition(
               target: _markers.isNotEmpty 
                   ? _markers.values.first.position 
-                  : const LatLng(20.5937, 78.9629), // Default to center of India instead of 0,0
+                  : const LatLng(20.5937, 78.9629),
               zoom: 12,
             ),
             markers: Set<Marker>.of(_markers.values),
+            polylines: _polylines,
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
           ),

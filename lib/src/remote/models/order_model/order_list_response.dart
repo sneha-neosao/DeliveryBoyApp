@@ -64,6 +64,8 @@ class Order {
   final String assignmentStatus;
   final double deliveryLat;
   final double deliveryLng;
+  final double? storeLatitude;
+  final double? storeLongitude;
 
   Order({
     required this.id,
@@ -90,6 +92,8 @@ class Order {
     required this.assignmentStatus,
     required this.deliveryLat,
     required this.deliveryLng,
+    this.storeLatitude,
+    this.storeLongitude,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) => Order(
@@ -117,6 +121,8 @@ class Order {
     assignmentStatus: json["assignment_status"] ?? "",
     deliveryLat: (json["delivery_lat"] ?? 0).toDouble(),
     deliveryLng: (json["delivery_lng"] ?? 0).toDouble(),
+    storeLatitude: (json["store_latitude"] != null) ? (json["store_latitude"] as num).toDouble() : null,
+    storeLongitude: (json["store_longitude"] != null) ? (json["store_longitude"] as num).toDouble() : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -144,6 +150,8 @@ class Order {
     "assignment_status": assignmentStatus,
     "delivery_lat": deliveryLat,
     "delivery_lng": deliveryLng,
+    "store_latitude": storeLatitude,
+    "store_longitude": storeLongitude,
   };
 }
 

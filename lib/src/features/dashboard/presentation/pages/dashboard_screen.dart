@@ -526,7 +526,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           child: const Icon(
-                                            Icons.near_me_rounded,
+                                            Icons.info_rounded,
                                             color: AppColor.darkOrange,
                                             size: 20,
                                           ),

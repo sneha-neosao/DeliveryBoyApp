@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
@@ -5,6 +7,11 @@ import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_current_assignment_bloc/order_current_assignment_bloc.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/current_assignment_order_list_response.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -122,7 +129,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => getIt<OrderListBloc>(),
+          create: (_) => getIt<CurrentAssignmentOrdersBloc>(),
         ),
         BlocProvider(
           create: (_) => getIt<OrderCurrentAssignmentBloc>()..add(const OrderCurrentAssignmentGetEvent()),
@@ -131,19 +138,11 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
           create: (_) => getIt<OrderStatusUpdateBloc>(),
         ),
       ],
-      child: BlocBuilder<OrderListBloc, OrderListState>(
-        builder: (context, orderListState) {
-          final allOrders = orderListState.orders ?? [];
-          final bulkOrders = _assignment != null 
-              ? allOrders.where((o) => _assignment!.orderIds.contains(o.id)).toList()
-              : <Order>[];
-
-          if (_assignment != null && bulkOrders.isNotEmpty) {
-             bulkOrders.sort((a, b) {
-                final indexA = _assignment!.orderIds.indexOf(a.id);
-                final indexB = _assignment!.orderIds.indexOf(b.id);
-                return indexA.compareTo(indexB);
-              });
+      child: BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+        builder: (context, ordersState) {
+          List<Order> bulkOrders = [];
+          if (ordersState is CurrentAssignmentOrdersSuccessState) {
+            bulkOrders = ordersState.data.data.map((e) => e.toOrder()).toList();
           }
 
           return Scaffold(
@@ -159,19 +158,17 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                           setState(() {
                             _assignment = state.data.data;
                           });
-                          if (state.data.data != null &&
-                              state.data.data!.orderIds.isNotEmpty &&
-                              context.read<OrderListBloc>().state is OrderListInitialState) {
-                            context.read<OrderListBloc>().add(
-                                  const GetOrderListEvent(page: 1, limit: 100),
+                          if (state.data.data != null) {
+                            context.read<CurrentAssignmentOrdersBloc>().add(
+                                  CurrentAssignmentOrdersGetEvent(state.data.data!.uuid, 1, 100),
                                 );
                           }
                         }
                       },
                     ),
-                    BlocListener<OrderListBloc, OrderListState>(
+                    BlocListener<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
                       listener: (context, state) {
-                        if (state is OrderListFailureState) {
+                        if (state is CurrentAssignmentOrdersFailureState) {
                           appSnackBar(context, AppColor.bright_red, state.message);
                         }
                       },
@@ -191,9 +188,6 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                             AppColor.green,
                             state.data.message.isNotEmpty ? state.data.message : 'Status updated',
                           );
-                          context.read<OrderListBloc>().add(
-                                const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
-                              );
                           context.read<OrderCurrentAssignmentBloc>().add(
                                 const OrderCurrentAssignmentGetEvent(),
                               );
@@ -263,7 +257,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                         );
                       }
 
-                      final isLoading = orderListState is OrderListLoadingState && allOrders.isEmpty;
+                      final isLoading = ordersState is CurrentAssignmentOrdersLoadingState && bulkOrders.isEmpty;
 
                       if (isLoading) {
                         return const Center(
@@ -275,9 +269,6 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                         return RefreshIndicator(
                           color: AppColor.darkOrange,
                           onRefresh: () async {
-                            context.read<OrderListBloc>().add(
-                                  const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
-                                );
                             context.read<OrderCurrentAssignmentBloc>().add(
                                   const OrderCurrentAssignmentGetEvent(),
                                 );
@@ -343,9 +334,6 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                       return RefreshIndicator(
                         color: AppColor.darkOrange,
                         onRefresh: () async {
-                          context.read<OrderListBloc>().add(
-                                const GetOrderListEvent(page: 1, limit: 100, isRefresh: true),
-                              );
                           context.read<OrderCurrentAssignmentBloc>().add(
                                 const OrderCurrentAssignmentGetEvent(),
                               );
@@ -494,18 +482,25 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.map_rounded,
                           color: Colors.white,
-                          size: 22,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColor.darkOrange,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Transform.rotate(
+                          angle: math.pi / 4, // 45° towards upper-right
+                          child: const Icon(
+                            Icons.navigation,
+                            color: AppColor.darkOrange,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                )
             ],
           ),
         ),

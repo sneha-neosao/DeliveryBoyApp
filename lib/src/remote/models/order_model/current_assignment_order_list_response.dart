@@ -54,6 +54,8 @@ class AssignmentOrder {
   final String deliveryName;
   final String deliveryPhone;
   final String deliveryPincode;
+  final double? deliveryLat;
+  final double? deliveryLng;
   final String slotStartTime;
   final String slotEndTime;
   final String deliveryDate;
@@ -78,6 +80,8 @@ class AssignmentOrder {
     required this.deliveryName,
     required this.deliveryPhone,
     required this.deliveryPincode,
+    this.deliveryLat,
+    this.deliveryLng,
     required this.slotStartTime,
     required this.slotEndTime,
     required this.deliveryDate,
@@ -103,6 +107,12 @@ class AssignmentOrder {
     deliveryName: json["delivery_name"] ?? "",
     deliveryPhone: json["delivery_phone"] ?? "",
     deliveryPincode: json["delivery_pincode"] ?? "",
+    deliveryLat: (json["delivery_lat"] != null)
+        ? (json["delivery_lat"] as num).toDouble()
+        : null,
+    deliveryLng: (json["delivery_lng"] != null)
+        ? (json["delivery_lng"] as num).toDouble()
+        : null,
     slotStartTime: json["slot_start_time"] ?? "",
     slotEndTime: json["slot_end_time"] ?? "",
     deliveryDate: json["delivery_date"] ?? "",
@@ -128,6 +138,8 @@ class AssignmentOrder {
     "delivery_name": deliveryName,
     "delivery_phone": deliveryPhone,
     "delivery_pincode": deliveryPincode,
+    "delivery_lat": deliveryLat,
+    "delivery_lng": deliveryLng,
     "slot_start_time": slotStartTime,
     "slot_end_time": slotEndTime,
     "delivery_date": deliveryDate,

@@ -5,6 +5,7 @@ import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/dashboard/bloc/online_status_bloc/online_status_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
+import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/info_card_widget.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/order_history_overview_widget.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/wallet_card_widget.dart';
@@ -45,6 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late final ProfileBloc _profileBloc;
   late final DashboardBloc _dashboardBloc;
   late final OrderCurrentAssignmentBloc _orderCurrentAssignmentBloc;
+  late final CurrentAssignmentOrdersBloc _currentAssignmentOrdersBloc;
   late final FoodOrderCurrentAssignmentBloc _foodOrderCurrentAssignmentBloc;
   late final OrderListBloc _orderListBloc;
   late final OrderStartAssignmentBloc _orderStartAssignmentBloc;
@@ -60,6 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _dashboardBloc = getIt<DashboardBloc>();
     _dashboardBloc.add(DashboardGetEvent());
     _orderCurrentAssignmentBloc = getIt<OrderCurrentAssignmentBloc>();
+    _currentAssignmentOrdersBloc = getIt<CurrentAssignmentOrdersBloc>();
     _foodOrderCurrentAssignmentBloc = getIt<FoodOrderCurrentAssignmentBloc>();
     _orderListBloc = getIt<OrderListBloc>();
     _orderStartAssignmentBloc = getIt<OrderStartAssignmentBloc>();
@@ -123,6 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         BlocProvider(create: (_) => _profileBloc),
         BlocProvider(create: (_) => _dashboardBloc),
         BlocProvider(create: (_) => _orderCurrentAssignmentBloc),
+        BlocProvider(create: (_) => _currentAssignmentOrdersBloc),
         BlocProvider(create: (_) => _foodOrderCurrentAssignmentBloc),
         BlocProvider(create: (_) => _orderListBloc),
         BlocProvider(create: (_) => _orderStartAssignmentBloc),
@@ -195,6 +199,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           BlocListener<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
             listener: (context, state) {
+              if (state is OrderCurrentAssignmentSuccessState) {
+                final assignment = state.data.data;
+                if (assignment != null && assignment.uuid.isNotEmpty) {
+                  _currentAssignmentOrdersBloc.add(
+                    CurrentAssignmentOrdersGetEvent(assignment.uuid, 1, 10),
+                  );
+                }
+              }
               if (state is OrderCurrentAssignmentFailureState) {
                 appSnackBar(context, AppColor.bright_red, state.message);
               }
@@ -421,10 +433,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
                                       return const SizedBox.shrink();
                                     }
-                                    return VegetableOrderActiveAssignmentWidget(
-                                      orderCount: assignment.orderCount,
-                                      status: assignment.status,
-                                      uuid: assignment.uuid,
+                                    return BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+                                      builder: (context, ordersState) {
+                                        String paymentMode = '';
+                                        if (ordersState is CurrentAssignmentOrdersSuccessState && ordersState.data.data.isNotEmpty) {
+                                          paymentMode = ordersState.data.data.first.paymentMode;
+                                        }
+                                        return VegetableOrderActiveAssignmentWidget(
+                                          orderCount: assignment.orderCount,
+                                          status: assignment.status,
+                                          uuid: assignment.uuid,
+                                          paymentMode: paymentMode,
+                                        );
+                                      },
                                     );
                                   }
 
@@ -459,6 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       assignmentStatus: activeOrder.assignmentStatus,
                                       orderStatus: activeOrder.orderStatus,
                                       uuid: activeOrder.uuId,
+                                      paymentMode: activeOrder.paymentMode,
                                     );
                                   }
 

@@ -5,11 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-class FoodOrderActiveAssignmentWidget extends StatelessWidget {
+class FoodOrderActiveAssignmentWidget extends StatefulWidget {
   final int orderCount;
   final String assignmentStatus;
   final String orderStatus;
   final String uuid;
+  final String paymentMode;
 
   const FoodOrderActiveAssignmentWidget({
     super.key,
@@ -17,149 +18,199 @@ class FoodOrderActiveAssignmentWidget extends StatelessWidget {
     required this.assignmentStatus,
     required this.orderStatus,
     required this.uuid,
+    required this.paymentMode,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final aStatus = assignmentStatus.toUpperCase();
-    final oStatus = orderStatus.toUpperCase();
+  State<FoodOrderActiveAssignmentWidget> createState() => _FoodOrderActiveAssignmentWidgetState();
+}
 
-    // Logic as requested:
-    // in food one if order status is PREPAIRING show the buttons RELEASE and ACCEPT
-    // and other all statuses do not show any button
-    // (Checking both assignmentStatus and orderStatus to be safe, as they might be used interchangeably)
+class _FoodOrderActiveAssignmentWidgetState extends State<FoodOrderActiveAssignmentWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _checkAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant FoodOrderActiveAssignmentWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _checkAnimation();
+  }
+
+  void _checkAnimation() {
+    final aStatus = widget.assignmentStatus.toUpperCase();
+    final oStatus = widget.orderStatus.toUpperCase();
+    bool shouldAnimate = aStatus == 'PREPAIRING' || aStatus == 'PREPARING' || 
+                         oStatus == 'PREPAIRING' || oStatus == 'PREPARING';
+    
+    if (shouldAnimate) {
+      if (!_controller.isAnimating) {
+        _controller.repeat(reverse: true);
+      }
+    } else {
+      _controller.stop();
+      _controller.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final aStatus = widget.assignmentStatus.toUpperCase();
+    final oStatus = widget.orderStatus.toUpperCase();
+
     final bool showFoodActions = aStatus == 'PREPAIRING' || aStatus == 'PREPARING' || 
                                  oStatus == 'PREPAIRING' || oStatus == 'PREPARING';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFFFF2E6),
-              Color(0xFFFFE8D6),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColor.border),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.shopping_bag_rounded,
-              color: AppColor.darkOrange,
-              size: 32,
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFFFF2E6),
+                Color(0xFFFFE8D6),
+              ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Active Assignment ($orderCount)',
-                    style: const TextStyle(
-                      color: AppColor.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColor.border),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.shopping_bag_rounded,
+                color: AppColor.darkOrange,
+                size: 32,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Active Assignment (${widget.orderCount})',
+                      style: const TextStyle(
+                        color: AppColor.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (showFoodActions) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => _showReleaseDialog(context, widget.uuid),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColor.bright_red,
+                              side: const BorderSide(
+                                color: AppColor.bright_red,
+                                width: 1.2,
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              minimumSize: const Size(0, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'RELEASE',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<OrderAssignmentBloc>().add(
+                                    OrderAssignmentGetEvent(
+                                      widget.uuid,
+                                      'DEL_ACCEPTED',
+                                      null,
+                                    ),
+                                  );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColor.darkOrange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              minimumSize: const Size(0, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'ACCEPT',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(Icons.arrow_forward_rounded, size: 14),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              InkWell(
+                onTap: () {
+                  context.go(AppRoute.orders.path);
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColor.darkOrange,
+                      width: 1.5,
                     ),
                   ),
-                  if (showFoodActions) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => _showReleaseDialog(context, uuid),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColor.bright_red,
-                            side: const BorderSide(
-                              color: AppColor.bright_red,
-                              width: 1.2,
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            minimumSize: const Size(0, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Text(
-                            'RELEASE',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<OrderAssignmentBloc>().add(
-                                  OrderAssignmentGetEvent(
-                                    uuid,
-                                    'DEL_ACCEPTED',
-                                    null,
-                                  ),
-                                );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColor.darkOrange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            minimumSize: const Size(0, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'ACCEPT',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Icon(Icons.arrow_forward_rounded, size: 14),
-                            ],
-                          ),
-                        ),
-                      ],
-                    )
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            InkWell(
-              onTap: () {
-                context.go(AppRoute.orders.path);
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
+                  child: const Icon(
+                    Icons.info_rounded,
                     color: AppColor.darkOrange,
-                    width: 1.5,
+                    size: 20,
                   ),
                 ),
-                child: const Icon(
-                  Icons.info_rounded,
-                  color: AppColor.darkOrange,
-                  size: 20,
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -274,8 +325,8 @@ class FoodOrderActiveAssignmentWidget extends StatelessWidget {
                               style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 15),
                             ),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.arrow_forward_rounded, size: 18),
+                            SizedBox(width: 6),
+                            Icon(Icons.arrow_forward_rounded, size: 18),
                           ],
                         ),
                       ),

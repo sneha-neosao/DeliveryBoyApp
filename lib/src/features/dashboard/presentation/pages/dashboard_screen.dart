@@ -4,6 +4,7 @@ import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/dashboard/bloc/online_status_bloc/online_status_bloc.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/info_card_widget.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/order_history_overview_widget.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/wallet_card_widget.dart';
@@ -43,7 +44,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late final DashboardBloc _dashboardBloc;
   late final OrderCurrentAssignmentBloc _orderCurrentAssignmentBloc;
   late final FoodOrderCurrentAssignmentBloc _foodOrderCurrentAssignmentBloc;
+  late final OrderListBloc _orderListBloc;
   late final OrderStartAssignmentBloc _orderStartAssignmentBloc;
+  late final OrderAssignmentBloc _orderAssignmentBloc;
   late FirebaseTokenUpdateBloc _firebaseTokenUpdateBloc;
 
   @override
@@ -56,7 +59,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _dashboardBloc.add(DashboardGetEvent());
     _orderCurrentAssignmentBloc = getIt<OrderCurrentAssignmentBloc>();
     _foodOrderCurrentAssignmentBloc = getIt<FoodOrderCurrentAssignmentBloc>();
+    _orderListBloc = getIt<OrderListBloc>();
     _orderStartAssignmentBloc = getIt<OrderStartAssignmentBloc>();
+    _orderAssignmentBloc = getIt<OrderAssignmentBloc>();
     _firebaseTokenUpdateBloc = getIt<FirebaseTokenUpdateBloc>();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -80,6 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (_deliveryType?.toLowerCase() == "food") {
         _foodOrderCurrentAssignmentBloc.add(const FoodOrderCurrentAssignmentGetEvent());
+        _orderListBloc.add(const GetOrderListEvent(page: 1));
       } else {
         _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
       }
@@ -116,7 +122,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         BlocProvider(create: (_) => _dashboardBloc),
         BlocProvider(create: (_) => _orderCurrentAssignmentBloc),
         BlocProvider(create: (_) => _foodOrderCurrentAssignmentBloc),
+        BlocProvider(create: (_) => _orderListBloc),
         BlocProvider(create: (_) => _orderStartAssignmentBloc),
+        BlocProvider(create: (_) => _orderAssignmentBloc),
       ],
       child: MultiBlocListener(
         listeners: [
@@ -236,12 +244,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Refresh current assignment and dashboard stats
                 if (_deliveryType?.toLowerCase() == "food") {
                   _foodOrderCurrentAssignmentBloc.add(const FoodOrderCurrentAssignmentGetEvent());
+                  _orderListBloc.add(const GetOrderListEvent(page: 1));
                 } else {
                   _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
                 }
                 _dashboardBloc.add(DashboardGetEvent());
               } else if (state is OrderStartAssignmentFailureState) {
                 setState(() => _isStartingAssignment = false);
+                appSnackBar(context, AppColor.bright_red, state.message);
+              }
+            },
+          ),
+          BlocListener<OrderAssignmentBloc, OrderAssignmentState>(
+            listener: (context, state) {
+              if (state is OrderAssignmentLoadingState) {
+                setState(() => _isStartingAssignment = true);
+              } else if (state is OrderAssignmentSuccessState) {
+                setState(() => _isStartingAssignment = false);
+                appSnackBar(
+                  context,
+                  AppColor.green,
+                  state.data.message.isNotEmpty
+                      ? state.data.message
+                      : 'Assignment updated successfully',
+                );
+                // Refresh current assignment and dashboard stats
+                if (_deliveryType?.toLowerCase() == "food") {
+                  _foodOrderCurrentAssignmentBloc.add(const FoodOrderCurrentAssignmentGetEvent());
+                  _orderListBloc.add(const GetOrderListEvent(page: 1));
+                } else {
+                  _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
+                }
+                _dashboardBloc.add(DashboardGetEvent());
+              } else if (state is OrderAssignmentFailureState) {
+                setState(() => _isStartingAssignment = false);
+                appSnackBar(context, AppColor.bright_red, state.message);
+              }
+            },
+          ),
+          BlocListener<OrderListBloc, OrderListState>(
+            listener: (context, state) {
+              if (state is OrderListFailureState) {
                 appSnackBar(context, AppColor.bright_red, state.message);
               }
             },
@@ -286,6 +329,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           _dashboardBloc.add(DashboardGetEvent());
                           if (_deliveryType?.toLowerCase() == "food") {
                             _foodOrderCurrentAssignmentBloc.add(const FoodOrderCurrentAssignmentGetEvent());
+                            _orderListBloc.add(const GetOrderListEvent(page: 1));
                           } else {
                             _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
                           }
@@ -375,6 +419,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       orderCount: assignment.orderCount,
                                       status: assignment.status,
                                       uuid: assignment.uuid,
+                                      isFood: false,
                                     );
                                   }
 
@@ -383,22 +428,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
 
                               // Active Assignment Banner (Food)
-                              BlocBuilder<FoodOrderCurrentAssignmentBloc, FoodOrderCurrentAssignmentState>(
+                              BlocBuilder<OrderListBloc, OrderListState>(
                                 builder: (context, state) {
-                                  if (state is FoodOrderCurrentAssignmentLoadingState || state is FoodOrderCurrentAssignmentInitialState) {
-                                    if (_deliveryType?.toLowerCase() != "food") return const SizedBox.shrink();
+                                  if (_deliveryType?.toLowerCase() != "food") return const SizedBox.shrink();
+
+                                  final orders = state.orders;
+                                  if (state is OrderListLoadingState && (orders == null || orders.isEmpty)) {
                                     return _buildShimmerBanner();
                                   }
 
-                                  if (state is FoodOrderCurrentAssignmentSuccessState) {
-                                    final assignment = state.data.data;
-                                    if (assignment == null) {
-                                      return const SizedBox.shrink();
-                                    }
+                                  if (orders != null && orders.isNotEmpty) {
+                                    final activeOrders = orders.where(
+                                      (o) {
+                                        final s = o.orderStatus.toUpperCase();
+                                        return s != 'DELIVERED' && s != 'CANCELLED' && s != 'REJECTED';
+                                      },
+                                    ).toList();
+
+                                    if (activeOrders.isEmpty) return const SizedBox.shrink();
+
+                                    final activeOrder = activeOrders.first;
+
                                     return _buildActiveAssignmentBanner(
-                                      orderCount: 1,
-                                      status: assignment.assignmentStatus,
-                                      uuid: assignment.uuId,
+                                      orderCount: activeOrders.length,
+                                      status: activeOrder.assignmentStatus,
+                                      orderStatus: activeOrder.orderStatus,
+                                      uuid: activeOrder.uuId,
+                                      isFood: true,
                                     );
                                   }
 
@@ -451,16 +507,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildActiveAssignmentBanner({
     required int orderCount,
     required String status,
+    String? orderStatus,
     required String uuid,
+    bool isFood = false,
   }) {
     final assignmentStatus = status.toUpperCase();
+    final oStatus = (orderStatus ?? "").toUpperCase();
 
     final bool showStart =
         assignmentStatus == 'PREPAIRING' || assignmentStatus == 'PREPARING';
     final bool showInactivePickedUp = assignmentStatus == 'DEL_ACCEPTED';
     final bool showActivePickedUp = assignmentStatus == 'READY_FOR_PICKUP';
-    final bool showButton =
-        showStart || showInactivePickedUp || showActivePickedUp;
+
+    // For food orders, we show RELEASE and ACCEPT buttons
+    // Show if either assignment status or order status indicates it's pending/assigned
+    final bool showFoodActions = isFood &&
+        (assignmentStatus == 'PENDING' ||
+            assignmentStatus == 'ASSIGNED' ||
+            assignmentStatus == 'ASSIGN' ||
+            assignmentStatus == 'PLACED' ||
+            assignmentStatus == 'ACCEPTED' ||
+            assignmentStatus == 'ACTIVE' ||
+            assignmentStatus == 'PREPARING' ||
+            assignmentStatus == '' ||
+            oStatus == 'PENDING' ||
+            oStatus == 'PLACED' ||
+            oStatus == 'ACCEPTED' ||
+            oStatus == 'ASSIGNED' ||
+            oStatus == 'PREPARING' ||
+            oStatus == 'ACTIVE' ||
+            oStatus == '');
+
+    final bool showButton = showStart ||
+        showInactivePickedUp ||
+        showActivePickedUp ||
+        showFoodActions;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -498,7 +579,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   if (showButton) ...[
                     const SizedBox(height: 6),
-                    if (showStart)
+                    if (showFoodActions)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => _showReleaseDialog(context, uuid),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColor.bright_red,
+                              side: const BorderSide(
+                                color: AppColor.bright_red,
+                                width: 1.2,
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              minimumSize: const Size(0, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'RELEASE',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<OrderAssignmentBloc>().add(
+                                    OrderAssignmentGetEvent(
+                                      uuid,
+                                      'accept',
+                                      null,
+                                    ),
+                                  );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColor.darkOrange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              minimumSize: const Size(0, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'ACCEPT',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(Icons.arrow_forward_rounded, size: 14),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    else if (showStart)
                       InkWell(
                         onTap: () {
                           context.read<OrderStartAssignmentBloc>().add(
@@ -642,5 +789,137 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+  }
+
+  void _showReleaseDialog(BuildContext context, String uuid) {
+    final TextEditingController _reasonCtrl = TextEditingController();
+    final _formKey = GlobalKey<FormState>();
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 24,
+              bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFEEEE),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.cancel_outlined,
+                              color: AppColor.bright_red, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Release Order',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _reasonCtrl,
+                      maxLines: 3,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        hintText: 'Enter release reason',
+                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                        filled: true,
+                        fillColor: const Color(0xFFFFF9F5),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: AppColor.darkOrange, width: 1.5),
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Please enter reason';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        height: 46,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (!_formKey.currentState!.validate()) return;
+                            final reason = _reasonCtrl.text.trim();
+                            Navigator.of(dialogCtx).pop();
+                            context.read<OrderAssignmentBloc>().add(
+                                  OrderAssignmentGetEvent(
+                                    uuid,
+                                    'reject',
+                                    reason,
+                                  ),
+                                );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColor.darkOrange,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'SUBMIT',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 15),
+                              ),
+                              SizedBox(width: 6),
+                              Icon(Icons.arrow_forward_rounded, size: 18),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) => _reasonCtrl.dispose());
   }
 }

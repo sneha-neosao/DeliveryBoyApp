@@ -23,6 +23,7 @@ export '../../features/orders/bloc/order_status_update_bloc/order_status_update_
 export '../../features/orders/bloc/order_current_assignment_bloc/order_current_assignment_bloc.dart';
 export '../../features/orders/bloc/food_order_current_assignment_bloc/food_order_current_assignment_bloc.dart';
 export '../../features/orders/bloc/order_start_assignment_bloc/order_start_assignment_bloc.dart';
+export '../../features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 export '../../features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
 export '../../core/api/api_url.dart';
 export '../../core/services/socket_connect_service.dart';

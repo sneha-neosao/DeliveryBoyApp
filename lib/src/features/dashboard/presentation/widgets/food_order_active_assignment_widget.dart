@@ -177,123 +177,116 @@ class FoodOrderActiveAssignmentWidget extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Padding(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 24,
-              bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
-            ),
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFEEEE),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.cancel_outlined,
-                              color: AppColor.bright_red, size: 20),
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFEEEE),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Release Order',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: reasonCtrl,
-                      maxLines: 3,
-                      textInputAction: TextInputAction.done,
-                      decoration: InputDecoration(
-                        hintText: 'Enter release reason',
-                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                        filled: true,
-                        fillColor: const Color(0xFFFFF9F5),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: AppColor.darkOrange, width: 1.5),
+                        child: const Icon(Icons.cancel_outlined,
+                            color: AppColor.bright_red, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Release Order',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
                       ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'Please enter reason';
-                        }
-                        return null;
-                      },
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: reasonCtrl,
+                    maxLines: 3,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      hintText: 'Enter release reason',
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                      filled: true,
+                      fillColor: const Color(0xFFFFF9F5),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            const BorderSide(color: AppColor.darkOrange, width: 1.5),
+                      ),
                     ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(
-                        height: 46,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (!formKey.currentState!.validate()) return;
-                            final reason = reasonCtrl.text.trim();
-                            Navigator.of(dialogCtx).pop();
-                            context.read<OrderAssignmentBloc>().add(
-                                  OrderAssignmentGetEvent(
-                                    uuid,
-                                    'REJECTED',
-                                    reason,
-                                  ),
-                                );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColor.darkOrange,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Please enter reason';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      height: 46,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!formKey.currentState!.validate()) return;
+                          final reason = reasonCtrl.text.trim();
+                          Navigator.of(dialogCtx).pop();
+                          context.read<OrderAssignmentBloc>().add(
+                                OrderAssignmentGetEvent(
+                                  uuid,
+                                  'REJECTED',
+                                  reason,
+                                ),
+                              );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.darkOrange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'SUBMIT',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 15),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'SUBMIT',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 15),
-                              ),
-                              SizedBox(width: 6),
-                              Icon(Icons.arrow_forward_rounded, size: 18),
-                            ],
-                          ),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.arrow_forward_rounded, size: 18),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
         );
       },
-    ).then((_) => reasonCtrl.dispose());
+    );
   }
 }

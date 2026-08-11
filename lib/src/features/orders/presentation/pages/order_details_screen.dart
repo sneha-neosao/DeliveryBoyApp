@@ -887,14 +887,8 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Padding(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 24,
-              bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
-            ),
-            child: SingleChildScrollView(
-              child: Form(
+            padding: const EdgeInsets.all(20),
+            child: Form(
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -914,9 +908,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                             color: AppColor.bright_red, size: 20),
                       ),
                       12.wS,
-                      Text(
-                        'reject_order'.tr(),
-                        style: const TextStyle(
+                      const Text(
+                        'Release Order',
+                        style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
@@ -1015,10 +1009,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                   ),
                 ],
               ),
-            ),   // closes Form
-          ),     // closes SingleChildScrollView
-        ),       // closes Padding
-      );
+            ), // closes Form
+          ), // closes Padding
+        );
       },
     ).then((_) => _reasonCtrl.dispose());
   }

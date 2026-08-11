@@ -1,3 +1,5 @@
+import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
@@ -214,6 +216,97 @@ class OrderListCardWidget extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+            if (_shouldShowButton(rawStatus)) ...[
+              16.hS,
+              _buildActionButton(context, rawStatus),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _shouldShowButton(String status) {
+    switch (status.toUpperCase()) {
+      case 'DEL_ACCEPTED':
+      case 'READY_FOR_PICKUP':
+      case 'PICKED_UP':
+      case 'ON_THE_WAY':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  Widget _buildActionButton(BuildContext context, String status) {
+    String buttonText = '';
+    IconData? icon;
+    bool isActive = true;
+    String nextStatus = '';
+
+    switch (status.toUpperCase()) {
+      case 'DEL_ACCEPTED':
+        buttonText = 'PICKED UP';
+        icon = Icons.shopping_bag_rounded;
+        isActive = false;
+        break;
+      case 'READY_FOR_PICKUP':
+        buttonText = 'PICKED UP';
+        icon = Icons.shopping_bag_rounded;
+        nextStatus = 'PICKED_UP';
+        break;
+      case 'PICKED_UP':
+        buttonText = 'ON THE WAY';
+        icon = Icons.delivery_dining_rounded;
+        nextStatus = 'ON_THE_WAY';
+        break;
+      case 'ON_THE_WAY':
+        buttonText = 'DELIVERED';
+        icon = Icons.check_circle_rounded;
+        nextStatus = 'DELIVERED';
+        break;
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: ElevatedButton(
+        onPressed: isActive
+            ? () {
+                context.read<OrderStatusUpdateBloc>().add(
+                      OrderStatusUpdateGetEvent(
+                        order.uuId,
+                        nextStatus,
+                        null,
+                      ),
+                    );
+              }
+            : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isActive ? AppColor.darkOrange : Colors.grey.shade300,
+          foregroundColor: isActive ? Colors.white : Colors.grey.shade500,
+          disabledBackgroundColor: Colors.grey.shade300,
+          disabledForegroundColor: Colors.grey.shade500,
+          elevation: isActive ? 2 : 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18),
+              8.wS,
+            ],
+            Text(
+              buttonText,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
           ],
         ),

@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
@@ -25,6 +26,9 @@ class OrdersScreen extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => getIt<OrderListBloc>(),
+        ),
+        BlocProvider(
+          create: (_) => getIt<OrderStatusUpdateBloc>(),
         ),
       ],
       child: const _OrdersScreenContent(),
@@ -113,68 +117,102 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: const Color(0xFFFFF9F5),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppColor.darkOrange,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(24),
-              bottomRight: Radius.circular(24),
-            ),
-          ),
-          child: SafeArea(
-            child: Center(
-              child: Text(
-                'my_orders'.tr(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+    return Stack(
+      children: [
+        Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: const Color(0xFFFFF9F5),
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColor.darkOrange,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+              ),
+              child: SafeArea(
+                child: Center(
+                  child: Text(
+                    'my_orders'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
+          body: MultiBlocListener(
+            listeners: [
+              BlocListener<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+                listener: (context, state) {
+                  if (state is OrderCurrentAssignmentSuccessState) {
+                    final assignment = state.data.data;
+                    if (assignment != null && assignment.orderIds.isNotEmpty) {
+                      context.read<CurrentAssignmentOrdersBloc>().add(
+                            CurrentAssignmentOrdersGetEvent(assignment.uuid, 1, 100),
+                          );
+                    }
+                  }
+                  if (state is OrderCurrentAssignmentFailureState) {
+                    appSnackBar(context, AppColor.bright_red, state.message);
+                  }
+                },
+              ),
+              BlocListener<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+                listener: (context, state) {
+                  if (state is CurrentAssignmentOrdersFailureState) {
+                    appSnackBar(context, AppColor.bright_red, state.message);
+                  }
+                },
+              ),
+              BlocListener<OrderListBloc, OrderListState>(
+                listener: (context, state) {
+                  if (state is OrderListFailureState) {
+                    appSnackBar(context, AppColor.bright_red, state.message);
+                  }
+                },
+              ),
+              BlocListener<OrderStatusUpdateBloc, OrderStatusUpdateState>(
+                listener: (context, state) {
+                  if (state is OrderStatusUpdateSuccessState) {
+                    appSnackBar(
+                      context,
+                      AppColor.green,
+                      state.data.message.isNotEmpty
+                          ? state.data.message
+                          : 'Status updated',
+                    );
+                    // Refresh the list
+                    _initialFetch();
+                  } else if (state is OrderStatusUpdateFailureState) {
+                    appSnackBar(context, AppColor.bright_red, state.message);
+                  }
+                },
+              ),
+            ],
+            child: _buildBody(),
+          ),
         ),
-      ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
-            listener: (context, state) {
-              if (state is OrderCurrentAssignmentSuccessState) {
-                final assignment = state.data.data;
-                if (assignment != null && assignment.orderIds.isNotEmpty) {
-                  context.read<CurrentAssignmentOrdersBloc>().add(
-                        CurrentAssignmentOrdersGetEvent(assignment.uuid, 1, 100),
-                      );
-                }
-              }
-              if (state is OrderCurrentAssignmentFailureState) {
-                appSnackBar(context, AppColor.bright_red, state.message);
-              }
-            },
-          ),
-          BlocListener<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
-            listener: (context, state) {
-              if (state is CurrentAssignmentOrdersFailureState) {
-                appSnackBar(context, AppColor.bright_red, state.message);
-              }
-            },
-          ),
-          BlocListener<OrderListBloc, OrderListState>(
-            listener: (context, state) {
-              if (state is OrderListFailureState) {
-                appSnackBar(context, AppColor.bright_red, state.message);
-              }
-            },
-          ),
-        ],
-        child: _buildBody(),
-      ),
+        BlocBuilder<OrderStatusUpdateBloc, OrderStatusUpdateState>(
+          builder: (context, state) {
+            if (state is OrderStatusUpdateLoadingState) {
+              return Container(
+                color: Colors.black.withValues(alpha: 0.35),
+                child: const Center(
+                  child: CircularProgressIndicator(color: AppColor.darkOrange),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
     );
   }
 

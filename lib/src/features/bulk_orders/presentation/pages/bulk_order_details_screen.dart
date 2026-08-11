@@ -361,7 +361,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                             decoration: const BoxDecoration(color: Color(0xFFFFF2E6), shape: BoxShape.circle),
                             child: ClipOval(
                               child: Image.asset(
-                                'assets/images/vege_grocery.png',
+                                'assets/images/vege_grocery_plate_img.png',
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.contain,

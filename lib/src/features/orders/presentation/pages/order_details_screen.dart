@@ -433,7 +433,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                             ),
                             child: ClipOval(
                               child: Image.asset(
-                                'assets/images/vege_grocery.png',
+                                'assets/images/food_plate_img.png',
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.contain,

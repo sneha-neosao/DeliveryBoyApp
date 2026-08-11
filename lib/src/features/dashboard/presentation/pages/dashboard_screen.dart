@@ -221,7 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       : 'Assignment updated successfully',
                 );
                 
-                final updatedOrders = state.data.data?.updatedOrders ?? [];
+                /*final updatedOrders = state.data.data?.updatedOrders ?? [];
                 final isPickedUp = updatedOrders.any((o) => o.toStatus.toUpperCase() == 'PICKED_UP');
                 if (isPickedUp && updatedOrders.isNotEmpty) {
                   final firstOrderId = updatedOrders.first.uuId.toString();
@@ -241,7 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       logger.w("DashboardScreen: Auth token is empty, cannot connect socket.");
                     }
                   });
-                }
+                }*/
 
                 // Refresh current assignment and dashboard stats
                 if (_deliveryType?.toLowerCase() == "food") {

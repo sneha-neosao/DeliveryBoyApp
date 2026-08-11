@@ -258,294 +258,305 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   backgroundColor: const Color(0xFFFFF9F5),
                   body: Stack(
                     children: [
-                      SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        BlocBuilder<ProfileBloc, ProfileState>(
-                          builder: (context, profileState) {
-                            final isProfileLoading = profileState is ProfileLoadingState;
-                            return InfoCardWidget(
-                              isOnline: _isOnline,
-                              userName: _userName,
-                              userPhone: _userPhone,
-                              userImageUrl: _userImageUrl,
-                              isLoading: isProfileLoading,
-                              onOnlineToggle: (value) {
-                                setState(() => _isOnline = value);
-                                blocContext.read<OnlineStatusBloc>().add(
-                                      OnlineStatusGetEvent(value),
-                                    );
-                              },
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Wallet / Earnings Card
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 20.0),
-                          child: WalletCardWidget(
-                            totalEarning: _totalEarning,
-                            todaysEarning: _todaysEarning,
-                            avgRating: _avgRating,
-                            totalDeliveries: _totalDeliveries,
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Order History Overview Cards
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 20.0),
+                      RefreshIndicator(
+                        color: AppColor.darkOrange,
+                        onRefresh: () async {
+                          _profileBloc.add(ProfileGetEvent());
+                          _dashboardBloc.add(DashboardGetEvent());
+                          _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
+                          // Give it a little time to show the indicator
+                          await Future.delayed(const Duration(seconds: 1));
+                        },
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Order History Overview',
-                                style: TextStyle(
-                                  color: AppColor.textPrimary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                              BlocBuilder<ProfileBloc, ProfileState>(
+                                builder: (context, profileState) {
+                                  final isProfileLoading = profileState is ProfileLoadingState;
+                                  return InfoCardWidget(
+                                    isOnline: _isOnline,
+                                    userName: _userName,
+                                    userPhone: _userPhone,
+                                    userImageUrl: _userImageUrl,
+                                    isLoading: isProfileLoading,
+                                    onOnlineToggle: (value) {
+                                      setState(() => _isOnline = value);
+                                      blocContext.read<OnlineStatusBloc>().add(
+                                            OnlineStatusGetEvent(value),
+                                          );
+                                    },
+                                  );
+                                },
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // Wallet / Earnings Card
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20.0),
+                                child: WalletCardWidget(
+                                  totalEarning: _totalEarning,
+                                  todaysEarning: _todaysEarning,
+                                  avgRating: _avgRating,
+                                  totalDeliveries: _totalDeliveries,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              OrderHistoryOverviewWidget(
-                                deliveredCount: _deliveredCount,
-                                pendingCount: _pendingCount,
-                                cancelledCount: _cancelledCount,
-                              ),
-                            ],
-                          ),
-                        ),
 
-                        const SizedBox(height: 20),
+                              const SizedBox(height: 20),
 
-                        // Active Assignment Banner
-                        BlocBuilder<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
-                          builder: (context, state) {
-                            if (state is OrderCurrentAssignmentLoadingState || state is OrderCurrentAssignmentInitialState) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                                child: Shimmer.fromColors(
-                                  baseColor: Colors.grey.shade300,
-                                  highlightColor: Colors.grey.shade100,
-                                  child: Container(
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-
-                            if (state is OrderCurrentAssignmentSuccessState) {
-                              final assignment = state.data.data;
-                              if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-                              final orderCount = assignment.orderCount;
-                              final assignmentStatus = assignment.status.toUpperCase();
-
-                              final bool showStart = assignmentStatus == 'PREPAIRING' || assignmentStatus == 'PREPARING';
-                              final bool showInactivePickedUp = assignmentStatus == 'DEL_ACCEPTED';
-                              final bool showActivePickedUp = assignmentStatus == 'READY_FOR_PICKUP';
-                              final bool showButton = showStart || showInactivePickedUp || showActivePickedUp;
-
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFFFF2E6),
-                                        Color(0xFFFFE8D6),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: AppColor.border),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.shopping_bag_rounded,
-                                        color: AppColor.darkOrange,
-                                        size: 32,
+                              // Order History Overview Cards
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Order History Overview',
+                                      style: TextStyle(
+                                        color: AppColor.textPrimary,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      const SizedBox(width: 14),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    OrderHistoryOverviewWidget(
+                                      deliveredCount: _deliveredCount,
+                                      pendingCount: _pendingCount,
+                                      cancelledCount: _cancelledCount,
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // Active Assignment Banner
+                              BlocBuilder<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+                                builder: (context, state) {
+                                  if (state is OrderCurrentAssignmentLoadingState || state is OrderCurrentAssignmentInitialState) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                                      child: Shimmer.fromColors(
+                                        baseColor: Colors.grey.shade300,
+                                        highlightColor: Colors.grey.shade100,
+                                        child: Container(
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  if (state is OrderCurrentAssignmentSuccessState) {
+                                    final assignment = state.data.data;
+                                    if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final orderCount = assignment.orderCount;
+                                    final assignmentStatus = assignment.status.toUpperCase();
+
+                                    final bool showStart = assignmentStatus == 'PREPAIRING' || assignmentStatus == 'PREPARING';
+                                    final bool showInactivePickedUp = assignmentStatus == 'DEL_ACCEPTED';
+                                    final bool showActivePickedUp = assignmentStatus == 'READY_FOR_PICKUP';
+                                    final bool showButton = showStart || showInactivePickedUp || showActivePickedUp;
+
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFFFFF2E6),
+                                              Color(0xFFFFE8D6),
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(color: AppColor.border),
+                                        ),
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              'Active Assignment ($orderCount)',
-                                              style: const TextStyle(
-                                                color: AppColor.textPrimary,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
+                                            const Icon(
+                                              Icons.shopping_bag_rounded,
+                                              color: AppColor.darkOrange,
+                                              size: 32,
+                                            ),
+                                            const SizedBox(width: 14),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Active Assignment ($orderCount)',
+                                                    style: const TextStyle(
+                                                      color: AppColor.textPrimary,
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  if (showButton) ...[
+                                                    const SizedBox(height: 6),
+                                                    if (showStart)
+                                                      InkWell(
+                                                        onTap: () {
+                                                          context.read<OrderStartAssignmentBloc>().add(
+                                                                OrderStartAssignmentGetEvent(
+                                                                  assignment.uuid,
+                                                                  'DEL_ACCEPTED',
+                                                                ),
+                                                              );
+                                                        },
+                                                        borderRadius: BorderRadius.circular(16),
+                                                        child: Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                            horizontal: 24,
+                                                            vertical: 6,
+                                                          ),
+                                                          decoration: BoxDecoration(
+                                                            color: AppColor.darkOrange,
+                                                            borderRadius: BorderRadius.circular(16),
+                                                          ),
+                                                          child: const Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(
+                                                                Icons.play_arrow_rounded,
+                                                                color: Colors.white,
+                                                                size: 16,
+                                                              ),
+                                                              SizedBox(width: 4),
+                                                              Text(
+                                                                'START',
+                                                                style: TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 12,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      )
+                                                    else if (showInactivePickedUp)
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 24,
+                                                          vertical: 6,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.grey.shade300,
+                                                          borderRadius: BorderRadius.circular(16),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.shopping_bag_rounded,
+                                                              color: Colors.grey.shade500,
+                                                              size: 16,
+                                                            ),
+                                                            const SizedBox(width: 4),
+                                                            Text(
+                                                              'PICKED UP',
+                                                              style: TextStyle(
+                                                                color: Colors.grey.shade500,
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      )
+                                                    else if (showActivePickedUp)
+                                                      InkWell(
+                                                        onTap: () {
+                                                          context.read<OrderStartAssignmentBloc>().add(
+                                                                OrderStartAssignmentGetEvent(
+                                                                  assignment.uuid,
+                                                                  'PICKED_UP',
+                                                                ),
+                                                              );
+                                                        },
+                                                        borderRadius: BorderRadius.circular(16),
+                                                        child: Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                            horizontal: 24,
+                                                            vertical: 6,
+                                                          ),
+                                                          decoration: BoxDecoration(
+                                                            color: AppColor.darkOrange,
+                                                            borderRadius: BorderRadius.circular(16),
+                                                          ),
+                                                          child: const Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(
+                                                                Icons.shopping_bag_rounded,
+                                                                color: Colors.white,
+                                                                size: 16,
+                                                              ),
+                                                              SizedBox(width: 4),
+                                                              Text(
+                                                                'PICKED UP',
+                                                                style: TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 12,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ],
                                               ),
                                             ),
-                                            if (showButton) ...[
-                                              const SizedBox(height: 6),
-                                              if (showStart)
-                                                InkWell(
-                                                  onTap: () {
-                                                    context.read<OrderStartAssignmentBloc>().add(
-                                                          OrderStartAssignmentGetEvent(
-                                                            assignment.uuid,
-                                                            'DEL_ACCEPTED',
-                                                          ),
-                                                        );
-                                                  },
-                                                  borderRadius: BorderRadius.circular(16),
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 24,
-                                                      vertical: 6,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: AppColor.darkOrange,
-                                                      borderRadius: BorderRadius.circular(16),
-                                                    ),
-                                                    child: const Row(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.play_arrow_rounded,
-                                                          color: Colors.white,
-                                                          size: 16,
-                                                        ),
-                                                        SizedBox(width: 4),
-                                                        Text(
-                                                          'START',
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                )
-                                              else if (showInactivePickedUp)
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 24,
-                                                    vertical: 6,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.grey.shade300,
-                                                    borderRadius: BorderRadius.circular(16),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.shopping_bag_rounded,
-                                                        color: Colors.grey.shade500,
-                                                        size: 16,
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        'PICKED UP',
-                                                        style: TextStyle(
-                                                          color: Colors.grey.shade500,
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                )
-                                              else if (showActivePickedUp)
-                                                InkWell(
-                                                  onTap: () {
-                                                    context.read<OrderStartAssignmentBloc>().add(
-                                                          OrderStartAssignmentGetEvent(
-                                                            assignment.uuid,
-                                                            'PICKED_UP',
-                                                          ),
-                                                        );
-                                                  },
-                                                  borderRadius: BorderRadius.circular(16),
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 24,
-                                                      vertical: 6,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: AppColor.darkOrange,
-                                                      borderRadius: BorderRadius.circular(16),
-                                                    ),
-                                                    child: const Row(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.shopping_bag_rounded,
-                                                          color: Colors.white,
-                                                          size: 16,
-                                                        ),
-                                                        SizedBox(width: 4),
-                                                        Text(
-                                                          'PICKED UP',
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
+                                            const SizedBox(width: 10),
+                                            // navigation icon button in circle with orange border and white color bg and navigation icon in orange colro
+                                            InkWell(
+                                              onTap: () {
+                                                context.go(AppRoute.orders.path);
+                                              },
+                                              borderRadius: BorderRadius.circular(20),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: AppColor.darkOrange,
+                                                    width: 1.5,
                                                   ),
                                                 ),
-                                            ],
+                                                child: const Icon(
+                                                  Icons.info_rounded,
+                                                  color: AppColor.darkOrange,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
-                                      // navigation icon button in circle with orange border and white color bg and navigation icon in orange colro
-                                      InkWell(
-                                        onTap: () {
-                                          context.go(AppRoute.orders.path);
-                                        },
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: AppColor.darkOrange,
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.info_rounded,
-                                            color: AppColor.darkOrange,
-                                            size: 20,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
+                                    );
+                                  }
 
-                            return const SizedBox.shrink();
-                          },
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+
+                              const SizedBox(height: 100),
+                            ],
+                          ),
                         ),
-
-                        const SizedBox(height: 100),
-                      ],
-                    ),
-                  ),
+                      ),
                       if (_isStartingAssignment || _isTogglingStatus)
                         Container(
                           color: Colors.black.withValues(alpha: 0.35),

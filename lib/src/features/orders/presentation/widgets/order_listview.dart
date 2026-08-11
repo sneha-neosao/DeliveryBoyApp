@@ -45,41 +45,56 @@ class OrderListView extends StatelessWidget {
   Widget _buildBody(BuildContext context) {
     // Error state with no cached orders
     if (isError) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: AppColor.bright_red,
-              ),
-              12.hS,
-              Text(
-                errorMessage ?? 'Something went wrong',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColor.charcoal,
+      return RefreshIndicator(
+        color: AppColor.darkOrange,
+        onRefresh: () async {
+          try {
+            context.read<OrderCurrentAssignmentBloc>().add(
+                const OrderCurrentAssignmentGetEvent());
+          } catch (_) {}
+          context.read<OrderListBloc>().add(
+              const GetOrderListEvent(page: 1, isRefresh: true));
+          await Future.delayed(const Duration(seconds: 1));
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: MediaQuery.of(context).size.height - 220,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: AppColor.bright_red,
                 ),
-              ),
-              16.hS,
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColor.darkOrange,
-                  foregroundColor: AppColor.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                12.hS,
+                Text(
+                  errorMessage ?? 'Something went wrong',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColor.charcoal,
                   ),
                 ),
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text('retry'.tr()),
-              ),
-            ],
+                16.hS,
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColor.darkOrange,
+                    foregroundColor: AppColor.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text('retry'.tr()),
+                ),
+              ],
+            ),
           ),
         ),
       );

@@ -158,6 +158,9 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
                   context.read<OrderCurrentAssignmentBloc>().add(
                         const OrderCurrentAssignmentGetEvent(),
                       );
+                  context.read<OrderListBloc>().add(
+                      const GetOrderListEvent(page: 1, isRefresh: true));
+                  await Future.delayed(const Duration(seconds: 1));
                 },
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),

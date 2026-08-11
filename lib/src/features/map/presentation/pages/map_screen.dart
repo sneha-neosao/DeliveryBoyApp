@@ -4,6 +4,7 @@ import 'package:delivery_boy_app/src/remote/models/order_model/order_list_respon
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:dio/dio.dart';
 
 class MapScreen extends StatefulWidget {
   final List<Order> orders;
@@ -19,33 +20,35 @@ class _MapScreenState extends State<MapScreen> {
   final Map<MarkerId, Marker> _markers = {};
   final Set<Polyline> _polylines = {};
   bool _isLoading = true;
+  
+  // Using the API key from AndroidManifest
+  static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
   @override
   void initState() {
     super.initState();
     _createMarkers();
+    _fetchRoadPath();
   }
 
   void _createMarkers() {
     _markers.clear();
     _polylines.clear();
 
-    List<LatLng> polylinePoints = [];
+    List<LatLng> directPoints = [];
 
-    // Add store marker if available (taking from first order)
     if (widget.orders.isNotEmpty) {
       final firstOrder = widget.orders.first;
       if (firstOrder.storeLatitude != null && firstOrder.storeLongitude != null) {
         final storeLatLng = LatLng(firstOrder.storeLatitude!, firstOrder.storeLongitude!);
         const markerId = MarkerId('store');
-        final marker = Marker(
+        _markers[markerId] = Marker(
           markerId: markerId,
           position: storeLatLng,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           infoWindow: const InfoWindow(title: 'Store Location'),
         );
-        _markers[markerId] = marker;
-        polylinePoints.add(storeLatLng);
+        directPoints.add(storeLatLng);
       }
     }
 
@@ -53,7 +56,7 @@ class _MapScreenState extends State<MapScreen> {
       if (order.deliveryLat != 0 && order.deliveryLng != 0) {
         final markerId = MarkerId(order.id.toString());
         final latLng = LatLng(order.deliveryLat, order.deliveryLng);
-        final marker = Marker(
+        _markers[markerId] = Marker(
           markerId: markerId,
           position: latLng,
           infoWindow: InfoWindow(
@@ -61,24 +64,101 @@ class _MapScreenState extends State<MapScreen> {
             snippet: order.deliveryAddress,
           ),
         );
-        _markers[markerId] = marker;
-        polylinePoints.add(latLng);
+        directPoints.add(latLng);
       }
     }
 
-    if (polylinePoints.length > 1) {
+    // Show straight line initially while we fetch the road path
+    if (directPoints.length > 1) {
       _polylines.add(
         Polyline(
           polylineId: const PolylineId('delivery_path'),
-          points: polylinePoints,
-          color: AppColor.darkOrange,
-          width: 4,
-          jointType: JointType.round,
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
+          points: directPoints,
+          color: AppColor.darkOrange.withOpacity(0.5),
+          width: 3,
+          patterns: [PatternItem.dash(10), PatternItem.gap(10)],
         ),
       );
     }
+  }
+
+  Future<void> _fetchRoadPath() async {
+    if (widget.orders.isEmpty) return;
+
+    try {
+      final firstOrder = widget.orders.first;
+      if (firstOrder.storeLatitude == null || firstOrder.storeLongitude == null) return;
+
+      final origin = "${firstOrder.storeLatitude},${firstOrder.storeLongitude}";
+      final destination = "${widget.orders.last.deliveryLat},${widget.orders.last.deliveryLng}";
+      
+      String waypoints = "";
+      if (widget.orders.length > 1) {
+        waypoints = "waypoints=";
+        for (int i = 0; i < widget.orders.length - 1; i++) {
+          waypoints += "${widget.orders[i].deliveryLat},${widget.orders[i].deliveryLng}|";
+        }
+      }
+
+      final url = "https://maps.googleapis.com/maps/api/directions/json?"
+          "origin=$origin&destination=$destination&$waypoints&key=$_googleApiKey";
+
+      final response = await Dio().get(url);
+      
+      if (response.data['status'] == 'OK') {
+        final String encodedPolyline = response.data['routes'][0]['overview_polyline']['points'];
+        final List<LatLng> decodedPoints = _decodePolyline(encodedPolyline);
+
+        if (mounted) {
+          setState(() {
+            _polylines.clear();
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('delivery_path'),
+                points: decodedPoints,
+                color: AppColor.darkOrange,
+                width: 5,
+                jointType: JointType.round,
+                startCap: Cap.roundCap,
+                endCap: Cap.roundCap,
+              ),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching road path: $e");
+    }
+  }
+
+  List<LatLng> _decodePolyline(String encoded) {
+    List<LatLng> poly = [];
+    int index = 0, len = encoded.length;
+    int lat = 0, lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      poly.add(LatLng(lat / 1E5, lng / 1E5));
+    }
+    return poly;
   }
 
   void _onMapCreated(GoogleMapController controller) {

@@ -74,49 +74,64 @@ class OrderDetailsScreen extends StatelessWidget {
                   ),
                 );
               } else if (state is OrderDetailsFailureState) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline_rounded,
-                          size: 48,
-                          color: AppColor.bright_red,
-                        ),
-                        16.hS,
-                        Text(
-                          'failed_load_details'.tr(),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                return RefreshIndicator(
+                  color: AppColor.darkOrange,
+                  onRefresh: () async {
+                    context
+                        .read<OrderDetailsBloc>()
+                        .add(OrderDetailsGetEvent(order!.uuId));
+                    await Future.delayed(const Duration(seconds: 1));
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Container(
+                      height: MediaQuery.of(context).size.height - 100,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            size: 48,
+                            color: AppColor.bright_red,
                           ),
-                        ),
-                        8.hS,
-                        Text(
-                          state.message,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
+                          16.hS,
+                          Text(
+                            'failed_load_details'.tr(),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        24.hS,
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<OrderDetailsBloc>().add(OrderDetailsGetEvent(order!.uuId));
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColor.darkOrange,
-                            foregroundColor: Colors.white,
+                          8.hS,
+                          Text(
+                            state.message,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                            ),
                           ),
-                          child: Text('retry'.tr()),
-                        ),
-                      ],
+                          24.hS,
+                          ElevatedButton(
+                            onPressed: () {
+                              context
+                                  .read<OrderDetailsBloc>()
+                                  .add(OrderDetailsGetEvent(order!.uuId));
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColor.darkOrange,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: Text('retry'.tr()),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
-              } else if (state is OrderDetailsSuccessState) {
+              }
+else if (state is OrderDetailsSuccessState) {
                 final orderDetails = state.data.data;
                 if (orderDetails == null) {
                   return Center(
@@ -201,6 +216,35 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
 
   /// Only the 55 px the circle physically extends below the orange bar
   double get _circleOverlapH => 55.0 * _expandedFade;
+
+  String _formatStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'PLACED':
+        return 'PLACED';
+      case 'PENDING':
+        return 'PENDING';
+      case 'ACCEPTED':
+        return 'ACCEPTED';
+      case 'DEL_ACCEPTED':
+        return 'DELIVERY ACCEPTED';
+      case 'PREPARING':
+        return 'PREPARING';
+      case 'READY_FOR_PICKUP':
+        return 'READY FOR PICK UP';
+      case 'PICKED_UP':
+        return 'PICKED UP';
+      case 'ON_THE_WAY':
+        return 'ON THE WAY';
+      case 'DELIVERED':
+        return 'DELIVERED';
+      case 'CANCELLED':
+        return 'CANCELLED';
+      case 'REJECTED':
+        return 'REJECTED';
+      default:
+        return status.replaceAll('_', ' ').toUpperCase();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -413,12 +457,21 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
 
         // ── Scrollable content ─────────────────────────────────────────────
         Expanded(
-          child: SingleChildScrollView(
-            controller: _sc,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                children: [
+          child: RefreshIndicator(
+            color: AppColor.darkOrange,
+            onRefresh: () async {
+              context
+                  .read<OrderDetailsBloc>()
+                  .add(OrderDetailsGetEvent(widget.orderDetails.uuId));
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            child: SingleChildScrollView(
+              controller: _sc,
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: [
                   12.hS,
                   // Status badge — sits below circle, scrolls away naturally
                   Builder(
@@ -461,7 +514,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                         ),
                         child: Text(
                           orderDetails.orderStatus.isNotEmpty
-                              ? orderDetails.orderStatus
+                              ? _formatStatus(orderDetails.orderStatus)
                               : 'single_order'.tr(),
                           style: TextStyle(
                             color: textColor,
@@ -501,7 +554,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
             ),
           ),
         ),
+      ),
 
+        /*
         // ── Sticky bottom area ─────────────────────────────────────────────
         // REJECTED         → no button
         // DELIVERED        → no button
@@ -525,6 +580,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
           else if (orderDetails.orderStatus == 'ON_THE_WAY')
             _buildDeliveredButton(context, orderDetails),
         ],
+        */
 
       ],
     );

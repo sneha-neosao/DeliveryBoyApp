@@ -12,6 +12,35 @@ class StatusHistoryCard extends StatelessWidget {
     required this.statusLogs,
   });
 
+  String _formatStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'PLACED':
+        return 'PLACED';
+      case 'PENDING':
+        return 'PENDING';
+      case 'ACCEPTED':
+        return 'ACCEPTED';
+      case 'DEL_ACCEPTED':
+        return 'DELIVERY ACCEPTED';
+      case 'PREPARING':
+        return 'PREPARING';
+      case 'READY_FOR_PICKUP':
+        return 'READY FOR PICK UP';
+      case 'PICKED_UP':
+        return 'PICKED UP';
+      case 'ON_THE_WAY':
+        return 'ON THE WAY';
+      case 'DELIVERED':
+        return 'DELIVERED';
+      case 'CANCELLED':
+        return 'CANCELLED';
+      case 'REJECTED':
+        return 'REJECTED';
+      default:
+        return status.replaceAll('_', ' ').toUpperCase();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -102,7 +131,7 @@ class StatusHistoryCard extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    log.toStatus,
+                                    _formatStatus(log.toStatus),
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,

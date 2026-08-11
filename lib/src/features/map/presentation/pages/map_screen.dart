@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';

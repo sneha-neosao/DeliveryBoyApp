@@ -11,7 +11,7 @@ import 'package:delivery_boy_app/src/features/orders/presentation/widgets/paymen
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/status_history_card.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

@@ -1,6 +1,6 @@
 import 'package:delivery_boy_app/src/features/map/presentation/pages/map_screen.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_current_assignment_reponse.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:delivery_boy_app/src/features/main_screen/presentation/pages/main_screen.dart';

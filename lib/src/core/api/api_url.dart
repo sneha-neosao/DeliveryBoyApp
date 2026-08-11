@@ -24,6 +24,8 @@ class ApiUrl {
 
   static const currentAssignmentOrders = "/orders/current-assignment/orders";
 
+  static const foodCurrentAssignment = "/food-orders/current-assignment";
+
   static const profile = "/profile/details";
 
   static const onlineStatus = "/auth/toggle-online";

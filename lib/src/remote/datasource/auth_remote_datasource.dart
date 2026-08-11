@@ -19,13 +19,14 @@ import 'package:delivery_boy_app/src/remote/models/auth_model/firebase_token_upd
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
 import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/current_assignment_order_list_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/current_food_assignment_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/current_assignment_order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_assignment_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_current_assignment_reponse.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_start_assignment_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_status_update_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_start_assignment_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_status_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_image_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_update_response.dart';
@@ -56,6 +57,8 @@ sealed class RemoteDataSource {
   Future<OrderStartAssignmentResponse> order_start_assignment(OrderStartAssignmentParams params, String token);
 
   Future<CurrentAssignmentOrderListResponse> current_assignment_orders(CurrentAssignmentOrderListParams params, String token);
+
+  Future<CurrentFoodAssignmentResponse> food_order_current_assignment(String token);
 
   /// Profile
   Future<ProfileResponse> profile(String token);
@@ -372,6 +375,36 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = CurrentAssignmentOrderListResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<CurrentFoodAssignmentResponse> food_order_current_assignment(String token) async {
+    try {
+
+      final response = await _helper.execute(
+        method: Method.get,
+        url: ApiUrl.foodCurrentAssignment,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = CurrentFoodAssignmentResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

@@ -1,6 +1,6 @@
 import 'package:delivery_boy_app/src/core/utils/logger.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_start_assignment_usecase.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_start_assignment_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_start_assignment_response.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

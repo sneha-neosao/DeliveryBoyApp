@@ -3,7 +3,7 @@ import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_listview.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:easy_localization/easy_localization.dart';

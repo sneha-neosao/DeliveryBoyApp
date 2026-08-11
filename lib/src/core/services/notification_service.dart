@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
@@ -52,19 +53,54 @@ class NoficationService {
     }
   }
 
-  /// ✅ Initialize local notifications (for foreground messages)
-  static void initLocalNotifications() {
+  /// ✅ Initialize local notifications and create the custom sound channel
+  static void initLocalNotifications() async {
     const AndroidInitializationSettings androidInitializationSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const InitializationSettings initializationSettings =
         InitializationSettings(android: androidInitializationSettings);
-    _flutterLocalNotificationsPlugin.initialize(initializationSettings);
-    print("Local notifications initialized (if applicable).");
+    
+    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    // Create the Order Assignment Channel with the custom sound
+    // This allows the sound to play even if the app is in the background
+    const AndroidNotificationChannel orderChannel = AndroidNotificationChannel(
+      'order_assignment_channel', 
+      'Order Assignments',
+      description: 'Critical notifications for new order assignments',
+      importance: Importance.max,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('notification_bell'),
+      enableVibration: true,
+    );
+
+    await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(orderChannel);
+
+    print("Notification channels initialized with custom sound.");
   }
 
   static void showLocalNotification(RemoteMessage message) async {
     // Skip manual local notification on iOS
     if (Platform.isIOS) return;
+
+    final String? title = message.notification?.title;
+    final String? body = message.notification?.body;
+    final Map<String, dynamic> data = message.data;
+
+    // Check if this is an order assignment notification
+    // Logic: Look for keywords in title/body OR specific data fields from backend
+    final bool isOrderAssignment = 
+        (title?.toLowerCase().contains('order') ?? false) || 
+        (title?.toLowerCase().contains('assign') ?? false) ||
+        (title?.toLowerCase().contains('new task') ?? false) ||
+        data['type'] == 'order_assignment' ||
+        data['notification_type'] == 'ASSIGNED' ||
+        data['status'] == 'assigned';
+
+    print("🔔 Processing notification: '$title'");
+    print("🔔 Is Order Assignment: $isOrderAssignment");
 
     final String? imageUrl =
         message.notification?.android?.imageUrl ??
@@ -79,18 +115,36 @@ class NoficationService {
       );
       bigPictureStyleInformation = BigPictureStyleInformation(
         FilePathAndroidBitmap(filePath),
-        contentTitle: message.notification?.title,
-        summaryText: message.notification?.body,
+        contentTitle: title,
+        summaryText: body,
       );
+    }
+
+    // Default Channel
+    String channelId = 'your_channel_id';
+    String channelName = 'General';
+    AndroidNotificationSound? customSound;
+    Int32List? flags;
+
+    // Assignment Channel (Matches the one created in initLocalNotifications)
+    if (isOrderAssignment) {
+      channelId = 'order_assignment_channel';
+      channelName = 'Order Assignments';
+      customSound = const RawResourceAndroidNotificationSound('notification_bell');
+      // FLAG_INSISTENT (4) keeps the sound looping until user interacts
+      flags = Int32List.fromList([4]);
     }
 
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-          'your_channel_id',
-          'your_channel_name',
-          channelDescription: 'your_channel_description',
+          channelId,
+          channelName,
+          channelDescription: 'Channel for $channelName',
           importance: Importance.max,
           priority: Priority.high,
+          sound: customSound,
+          playSound: true,
+          additionalFlags: flags,
           styleInformation:
               bigPictureStyleInformation ??
               const DefaultStyleInformation(true, true),
@@ -101,11 +155,11 @@ class NoficationService {
     );
 
     _flutterLocalNotificationsPlugin.show(
-      0,
-      message.notification?.title,
-      message.notification?.body,
+      DateTime.now().millisecond, // Unique ID to allow multiple notifications
+      title,
+      body,
       platformDetails,
-      payload: message.data['payload'], // Optional payload
+      payload: data['payload'],
     );
   }
 

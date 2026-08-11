@@ -1,6 +1,6 @@
 import 'package:delivery_boy_app/src/core/errors/failures.dart';
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_current_assignment_reponse.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../configs/injector/injector.dart';

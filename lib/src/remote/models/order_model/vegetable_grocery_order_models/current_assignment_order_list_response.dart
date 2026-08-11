@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'order_list_response.dart';
+import '../food_order_model/order_list_response.dart';
 
 class CurrentAssignmentOrderListResponse {
   final int status;

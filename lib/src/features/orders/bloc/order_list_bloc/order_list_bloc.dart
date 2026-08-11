@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/logger.dart';
-import '../../../../remote/models/order_model/order_list_response.dart';
+import '../../../../remote/models/order_model/food_order_model/order_list_response.dart';
 import '../../domain/usecase/order_list_usecase.dart';
 
 part 'order_list_event.dart';

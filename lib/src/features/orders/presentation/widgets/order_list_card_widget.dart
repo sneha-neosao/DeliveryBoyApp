@@ -1,6 +1,6 @@
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';

@@ -26,3 +26,4 @@ export '../../features/bulk_orders/bloc/current_assignment_orders_bloc/current_a
 export '../../core/api/api_url.dart';
 export '../../core/services/socket_connect_service.dart';
 export '../../core/utils/logger.dart';
+export '../../features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';

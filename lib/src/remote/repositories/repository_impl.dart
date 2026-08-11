@@ -21,13 +21,14 @@ import 'package:delivery_boy_app/src/remote/models/auth_model/firebase_token_upd
 import 'package:delivery_boy_app/src/remote/models/common_response.dart';
 import 'package:delivery_boy_app/src/remote/models/dashboard_model/dashboard_response.dart';
 import 'package:delivery_boy_app/src/remote/models/online_status_model/online_status_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/current_assignment_order_list_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_assignment_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_current_assignment_reponse.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/current_food_assignment_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/current_assignment_order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_assignment_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_current_assignment_reponse.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_list_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_start_assignment_response.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/order_status_update_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_start_assignment_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_status_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_image_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_update_response.dart';
@@ -60,6 +61,8 @@ abstract class Repository {
   Future<Either<Failure, OrderStartAssignmentResponse>> orderStartAssignment(OrderStartAssignmentParams params);
 
   Future<Either<Failure, CurrentAssignmentOrderListResponse>> currentOrderAssignmentOrders(CurrentAssignmentOrderListParams params);
+
+  Future<Either<Failure, CurrentFoodAssignmentResponse>> foodOrderCurrentAssignment(NoParams params);
 
   /// Profile
   Future<Either<Failure, ProfileResponse>> profile(NoParams params);
@@ -413,6 +416,39 @@ class AuthRepositoryImpl implements Repository {
           String token = await SessionManager.getAuthToken() ?? "";
 
           final respData = await _remoteDataSource.current_assignment_orders(params, token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, CurrentFoodAssignmentResponse>> foodOrderCurrentAssignment(NoParams params) {
+    return _networkInfo.check<CurrentFoodAssignmentResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.food_order_current_assignment(token);
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));

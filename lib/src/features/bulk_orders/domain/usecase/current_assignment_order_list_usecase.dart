@@ -1,6 +1,6 @@
 import 'package:delivery_boy_app/src/core/errors/failures.dart';
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
-import 'package:delivery_boy_app/src/remote/models/order_model/current_assignment_order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/current_assignment_order_list_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:equatable/equatable.dart';
 import 'package:fpdart/fpdart.dart';

@@ -1,7 +1,6 @@
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
 import 'package:delivery_boy_app/src/core/utils/logger.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_current_assignment_usecase.dart';
-import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_details_usecase.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_current_assignment_reponse.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,7 +18,7 @@ class OrderCurrentAssignmentBloc extends Bloc<OrderCurrentAssignmentEvent, Order
     on<OrderCurrentAssignmentGetEvent>(_orderCurrentAssignment);
   }
 
-  /// - **_orderCurrentAssignment:** Handles [OrderCurrentAssignmentGetEvent] → calls [OrderDetailsUseCase]
+  /// - **_orderCurrentAssignment:** Handles [OrderCurrentAssignmentGetEvent] → calls [OrderCurrentAssignmentUseCase]
   Future _orderCurrentAssignment(OrderCurrentAssignmentGetEvent event, Emitter emit) async {
     emit(OrderCurrentAssignmentLoadingState());
 

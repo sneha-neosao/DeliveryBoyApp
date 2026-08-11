@@ -173,6 +173,7 @@ void configureDepedencies() {
         () => FoodOrderCurrentAssignmentBloc(getIt<FoodOrderCurrentAssignmentUseCase>()),
   );
 
+
   /// API Helper
 
   getIt.registerLazySingleton(() => NetworkInfo());

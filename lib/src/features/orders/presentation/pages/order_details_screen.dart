@@ -1,5 +1,6 @@
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
+import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
@@ -260,6 +261,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
               setState(() => _isLoading = true);
             } else if (state is OrderAssignmentSuccessState) {
               setState(() => _isLoading = false);
+
+              // Stop any ringing notification sound
+              NoficationService.cancelAll();
 
               if (_pendingAction == 'accept') {
                 // Stay on screen — switch UI to the inactive PICKED UP button.

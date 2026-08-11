@@ -261,6 +261,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 setState(() => _isStartingAssignment = true);
               } else if (state is OrderAssignmentSuccessState) {
                 setState(() => _isStartingAssignment = false);
+                
+                // Stop any ringing notification sound
+                NoficationService.cancelAll();
+
                 appSnackBar(
                   context,
                   AppColor.green,

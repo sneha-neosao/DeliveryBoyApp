@@ -65,7 +65,7 @@ class NoficationService {
     // Create the Order Assignment Channel with the custom sound
     // This allows the sound to play even if the app is in the background
     const AndroidNotificationChannel orderChannel = AndroidNotificationChannel(
-      'order_assignment_channel', 
+      'order_assignment_channel_v2', 
       'Order Assignments',
       description: 'Critical notifications for new order assignments',
       importance: Importance.max,
@@ -81,6 +81,12 @@ class NoficationService {
     print("Notification channels initialized with custom sound.");
   }
 
+  /// Stop all active notification sounds/alerts
+  static void cancelAll() {
+    _flutterLocalNotificationsPlugin.cancelAll();
+    print("🔔 All notifications cancelled.");
+  }
+
   static void showLocalNotification(RemoteMessage message) async {
     // Skip manual local notification on iOS
     if (Platform.isIOS) return;
@@ -90,7 +96,6 @@ class NoficationService {
     final Map<String, dynamic> data = message.data;
 
     // Check if this is an order assignment notification
-    // Logic: Look for keywords in title/body OR specific data fields from backend
     final bool isOrderAssignment = 
         (title?.toLowerCase().contains('order') ?? false) || 
         (title?.toLowerCase().contains('assign') ?? false) ||
@@ -121,18 +126,15 @@ class NoficationService {
     }
 
     // Default Channel
-    String channelId = 'your_channel_id';
+    String channelId = 'general_channel';
     String channelName = 'General';
     AndroidNotificationSound? customSound;
-    Int32List? flags;
 
-    // Assignment Channel (Matches the one created in initLocalNotifications)
+    // Assignment Channel
     if (isOrderAssignment) {
-      channelId = 'order_assignment_channel';
+      channelId = 'order_assignment_channel_v2';
       channelName = 'Order Assignments';
       customSound = const RawResourceAndroidNotificationSound('notification_bell');
-      // FLAG_INSISTENT (4) keeps the sound looping until user interacts
-      flags = Int32List.fromList([4]);
     }
 
     final AndroidNotificationDetails androidDetails =
@@ -144,7 +146,7 @@ class NoficationService {
           priority: Priority.high,
           sound: customSound,
           playSound: true,
-          additionalFlags: flags,
+          additionalFlags: isOrderAssignment ? Int32List.fromList([4]) : null, // FLAG_INSISTENT loops sound
           styleInformation:
               bigPictureStyleInformation ??
               const DefaultStyleInformation(true, true),

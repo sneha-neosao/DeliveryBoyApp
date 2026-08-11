@@ -526,7 +526,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
 
     return GestureDetector(
       onTap: () {
-        context.push(AppRoute.orderDetails.path, extra: order);
+        context.push(AppRoute.bulkOrderDetails.path, extra: order);
       },
       child: Container(
       padding: const EdgeInsets.all(16),

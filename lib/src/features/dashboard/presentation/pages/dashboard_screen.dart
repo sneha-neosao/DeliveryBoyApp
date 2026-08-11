@@ -416,6 +416,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       return const SizedBox.shrink();
                                     }
                                     return _buildActiveAssignmentBanner(
+                                      context: context,
                                       orderCount: assignment.orderCount,
                                       status: assignment.status,
                                       uuid: assignment.uuid,
@@ -450,6 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     final activeOrder = activeOrders.first;
 
                                     return _buildActiveAssignmentBanner(
+                                      context: context,
                                       orderCount: activeOrders.length,
                                       status: activeOrder.assignmentStatus,
                                       orderStatus: activeOrder.orderStatus,
@@ -505,6 +507,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildActiveAssignmentBanner({
+    required BuildContext context,
     required int orderCount,
     required String status,
     String? orderStatus,
@@ -517,7 +520,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final bool showStart =
         assignmentStatus == 'PREPAIRING' || assignmentStatus == 'PREPARING';
     final bool showInactivePickedUp = assignmentStatus == 'DEL_ACCEPTED';
-    final bool showActivePickedUp = assignmentStatus == 'READY_FOR_PICKUP';
+    final bool showActivePickedUp =
+        assignmentStatus == 'READY_FOR_PICKUP' ||
+            oStatus == 'READY_FOR_PICKUP';
 
     // For food orders, we show RELEASE and ACCEPT buttons
     // Show if either assignment status or order status indicates it's pending/assigned
@@ -612,7 +617,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               context.read<OrderAssignmentBloc>().add(
                                     OrderAssignmentGetEvent(
                                       uuid,
-                                      'accept',
+                                      'DEL_ACCEPTED',
                                       null,
                                     ),
                                   );
@@ -885,7 +890,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             context.read<OrderAssignmentBloc>().add(
                                   OrderAssignmentGetEvent(
                                     uuid,
-                                    'reject',
+                                    'REJECTED',
                                     reason,
                                   ),
                                 );

@@ -41,6 +41,14 @@ class AppRouteConf {
           return _fadePage(OrderDetailsScreen(order: order));
         },
       ),
+      GoRoute(
+        path: AppRoute.bulkOrderDetails.path,
+        name: AppRoute.bulkOrderDetails.name,
+        pageBuilder: (context, state) {
+          final order = state.extra as Order?;
+          return _fadePage(BulkOrderDetailsScreen(order: order));
+        },
+      ),
 
       GoRoute(
         path: AppRoute.bulkOrder.path,

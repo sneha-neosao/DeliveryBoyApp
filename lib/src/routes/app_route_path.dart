@@ -10,6 +10,7 @@ enum AppRoute {
   rejected(path: "/rejected_screen"),
   profile(path: "/profile_screen"),
   bulkOrder(path: "/bulk_order_screen"),
+  bulkOrderDetails(path: "/bulk_order_details_screen"),
   map(path: "/map_screen");
 
   final String path;

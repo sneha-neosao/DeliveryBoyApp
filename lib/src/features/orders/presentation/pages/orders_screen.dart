@@ -1,3 +1,5 @@
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
+import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
@@ -16,7 +18,10 @@ class OrdersScreen extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => getIt<OrderCurrentAssignmentBloc>()..add(const OrderCurrentAssignmentGetEvent()),
+          create: (_) => getIt<OrderCurrentAssignmentBloc>(),
+        ),
+        BlocProvider(
+          create: (_) => getIt<CurrentAssignmentOrdersBloc>(),
         ),
         BlocProvider(
           create: (_) => getIt<OrderListBloc>(),
@@ -37,6 +42,7 @@ class _OrdersScreenContent extends StatefulWidget {
 class _OrdersScreenContentState extends State<_OrdersScreenContent> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
+  String? _deliveryType;
 
   // Selected Filter Tab ('All', 'Active', 'Completed')
   String _selectedFilter = 'All';
@@ -44,7 +50,26 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
   @override
   void initState() {
     super.initState();
+    _loadDeliveryType();
     _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _loadDeliveryType() async {
+    final session = await SessionManager.getUserSession();
+    if (mounted) {
+      setState(() {
+        _deliveryType = session?.data?.deliveryBoy?.deliveryType;
+      });
+      _initialFetch();
+    }
+  }
+
+  void _initialFetch() {
+    if (_deliveryType?.toLowerCase() == 'food') {
+      context.read<OrderListBloc>().add(const GetOrderListEvent(page: 1));
+    } else {
+      context.read<OrderCurrentAssignmentBloc>().add(const OrderCurrentAssignmentGetEvent());
+    }
   }
 
   @override
@@ -119,14 +144,24 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
       body: MultiBlocListener(
         listeners: [
           BlocListener<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
-            listener: (context, currentAssignmentState) {
-              if (currentAssignmentState is OrderCurrentAssignmentSuccessState) {
-                final assignment = currentAssignmentState.data.data;
-                if (assignment != null &&
-                    assignment.orderIds.isNotEmpty &&
-                    context.read<OrderListBloc>().state is OrderListInitialState) {
-                  context.read<OrderListBloc>().add(const GetOrderListEvent(page: 1));
+            listener: (context, state) {
+              if (state is OrderCurrentAssignmentSuccessState) {
+                final assignment = state.data.data;
+                if (assignment != null && assignment.orderIds.isNotEmpty) {
+                  context.read<CurrentAssignmentOrdersBloc>().add(
+                        CurrentAssignmentOrdersGetEvent(assignment.uuid, 1, 100),
+                      );
                 }
+              }
+              if (state is OrderCurrentAssignmentFailureState) {
+                appSnackBar(context, AppColor.bright_red, state.message);
+              }
+            },
+          ),
+          BlocListener<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+            listener: (context, state) {
+              if (state is CurrentAssignmentOrdersFailureState) {
+                appSnackBar(context, AppColor.bright_red, state.message);
               }
             },
           ),
@@ -138,112 +173,205 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
             },
           ),
         ],
-        child: BlocBuilder<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
-          builder: (context, currentAssignmentState) {
-            if (currentAssignmentState is OrderCurrentAssignmentLoadingState ||
-                currentAssignmentState is OrderCurrentAssignmentInitialState) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppColor.darkOrange),
-              );
-            }
+        child: _buildBody(),
+      ),
+    );
+  }
 
-            final assignment = (currentAssignmentState is OrderCurrentAssignmentSuccessState)
-                ? currentAssignmentState.data.data
-                : null;
+  Widget _buildBody() {
+    if (_deliveryType == null) {
+      return const Center(child: CircularProgressIndicator(color: AppColor.darkOrange));
+    }
 
-            if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
-              return RefreshIndicator(
-                color: AppColor.darkOrange,
-                onRefresh: () async {
-                  context.read<OrderCurrentAssignmentBloc>().add(
-                        const OrderCurrentAssignmentGetEvent(),
-                      );
-                  context.read<OrderListBloc>().add(
-                      const GetOrderListEvent(page: 1, isRefresh: true));
-                  await Future.delayed(const Duration(seconds: 1));
-                },
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Container(
-                    height: MediaQuery.of(context).size.height - 220,
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: AppColor.orangeTint.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.shopping_bag_outlined,
-                            size: 64,
-                            color: AppColor.darkOrange,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'no_orders_yet'.tr(),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColor.charcoal,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'home_no_orders_subtitle'.tr(),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade500,
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
+    if (_deliveryType?.toLowerCase() == 'food') {
+      return _buildFoodOrders();
+    } else {
+      return _buildVegetableOrders();
+    }
+  }
+
+  Widget _buildFoodOrders() {
+    return BlocBuilder<OrderListBloc, OrderListState>(
+      builder: (context, state) {
+        if (state is OrderListLoadingState && (state.orders == null || state.orders!.isEmpty)) {
+          return const Center(child: CircularProgressIndicator(color: AppColor.darkOrange));
+        }
+
+        final orders = state.orders ?? [];
+        if (orders.isEmpty) {
+          return RefreshIndicator(
+            color: AppColor.darkOrange,
+            onRefresh: () async {
+              context.read<OrderListBloc>().add(const GetOrderListEvent(page: 1, isRefresh: true));
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Container(
+                height: MediaQuery.of(context).size.height - 220,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColor.orangeTint.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 64,
+                        color: AppColor.darkOrange,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "You don't have any orders yet",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColor.charcoal,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "You will see orders here when assign like this",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade500,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ),
-              );
+              ),
+            ),
+          );
+        }
+
+        final filteredOrders = _getFilteredOrders(orders);
+        return OrderListView(
+          filteredOrders: filteredOrders,
+          loadingMore: state.loadingMore,
+          scrollController: _scrollController,
+          selectedFilter: _selectedFilter,
+          isLoadingInitial: false,
+          isError: state is OrderListFailureState && orders.isEmpty,
+          errorMessage: state is OrderListFailureState && orders.isEmpty ? state.message : null,
+          onFilterChanged: (filter) => setState(() => _selectedFilter = filter),
+          onRetry: () => context.read<OrderListBloc>().add(const GetOrderListEvent(page: 1)),
+          deliveryType: _deliveryType,
+        );
+      },
+    );
+  }
+
+  Widget _buildVegetableOrders() {
+    return BlocBuilder<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+      builder: (context, currentAssignmentState) {
+        if (currentAssignmentState is OrderCurrentAssignmentLoadingState ||
+            currentAssignmentState is OrderCurrentAssignmentInitialState) {
+          return const Center(child: CircularProgressIndicator(color: AppColor.darkOrange));
+        }
+
+        final assignment = (currentAssignmentState is OrderCurrentAssignmentSuccessState)
+            ? currentAssignmentState.data.data
+            : null;
+
+        if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
+          return RefreshIndicator(
+            color: AppColor.darkOrange,
+            onRefresh: () async {
+              context.read<OrderCurrentAssignmentBloc>().add(const OrderCurrentAssignmentGetEvent());
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Container(
+                height: MediaQuery.of(context).size.height - 220,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColor.orangeTint.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 64,
+                        color: AppColor.darkOrange,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'no_orders_yet'.tr(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColor.charcoal,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'home_no_orders_subtitle'.tr(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade500,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+          builder: (context, state) {
+            List<Order> orders = [];
+            if (state is CurrentAssignmentOrdersSuccessState) {
+              orders = state.data.data.map((e) => e.toOrder()).toList();
             }
 
-            return BlocBuilder<OrderListBloc, OrderListState>(
-              builder: (context, state) {
-                final orders = state.orders ?? [];
-                final isLoadingInitial =
-                    state is OrderListLoadingState && orders.isEmpty;
-                final isError = state is OrderListFailureState && orders.isEmpty;
+            if (state is CurrentAssignmentOrdersLoadingState && orders.isEmpty) {
+              return const Center(child: CircularProgressIndicator(color: AppColor.darkOrange));
+            }
 
-                final filteredOrders = _getFilteredOrders(orders);
-
-                return OrderListView(
-                  filteredOrders: filteredOrders,
-                  state: state,
-                  scrollController: _scrollController,
-                  selectedFilter: _selectedFilter,
-                  isLoadingInitial: isLoadingInitial,
-                  isError: isError,
-                  errorMessage: state is OrderListFailureState && orders.isEmpty
-                      ? state.message
-                      : null,
-                  onFilterChanged: (filter) {
-                    setState(() {
-                      _selectedFilter = filter;
-                    });
-                  },
-                  onRetry: () {
-                    context.read<OrderListBloc>().add(const GetOrderListEvent(page: 1));
-                  },
-                );
+            final filteredOrders = _getFilteredOrders(orders);
+            return OrderListView(
+              filteredOrders: filteredOrders,
+              loadingMore: false,
+              scrollController: _scrollController,
+              selectedFilter: _selectedFilter,
+              isLoadingInitial: false,
+              isError: state is CurrentAssignmentOrdersFailureState && orders.isEmpty,
+              errorMessage: state is CurrentAssignmentOrdersFailureState && orders.isEmpty ? state.message : null,
+              onFilterChanged: (filter) => setState(() => _selectedFilter = filter),
+              onRetry: () {
+                if (assignment != null) {
+                  context.read<CurrentAssignmentOrdersBloc>().add(
+                        CurrentAssignmentOrdersGetEvent(assignment.uuid, 1, 100),
+                      );
+                }
               },
+              deliveryType: _deliveryType,
             );
           },
-        ),
-      ),
+        );
+      },
     );
   }
 }

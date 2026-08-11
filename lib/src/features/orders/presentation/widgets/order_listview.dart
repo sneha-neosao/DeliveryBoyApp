@@ -10,7 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderListView extends StatelessWidget {
   final List<Order> filteredOrders;
-  final OrderListState state;
+  final bool loadingMore;
   final ScrollController scrollController;
   final String selectedFilter;
   final ValueChanged<String> onFilterChanged;
@@ -18,11 +18,12 @@ class OrderListView extends StatelessWidget {
   final bool isError;
   final String? errorMessage;
   final VoidCallback? onRetry;
+  final String? deliveryType;
 
   const OrderListView({
     super.key,
     required this.filteredOrders,
-    required this.state,
+    this.loadingMore = false,
     required this.scrollController,
     required this.selectedFilter,
     required this.onFilterChanged,
@@ -30,6 +31,7 @@ class OrderListView extends StatelessWidget {
     this.isError = false,
     this.errorMessage,
     this.onRetry,
+    this.deliveryType,
   });
 
   @override
@@ -49,11 +51,14 @@ class OrderListView extends StatelessWidget {
         color: AppColor.darkOrange,
         onRefresh: () async {
           try {
-            context.read<OrderCurrentAssignmentBloc>().add(
-                const OrderCurrentAssignmentGetEvent());
+            if (deliveryType?.toLowerCase() == 'food') {
+              context.read<OrderListBloc>().add(
+                  const GetOrderListEvent(page: 1, isRefresh: true));
+            } else {
+              context.read<OrderCurrentAssignmentBloc>().add(
+                  const OrderCurrentAssignmentGetEvent());
+            }
           } catch (_) {}
-          context.read<OrderListBloc>().add(
-              const GetOrderListEvent(page: 1, isRefresh: true));
           await Future.delayed(const Duration(seconds: 1));
         },
         child: SingleChildScrollView(
@@ -120,11 +125,14 @@ class OrderListView extends StatelessWidget {
         color: AppColor.darkOrange,
         onRefresh: () async {
           try {
-            context.read<OrderCurrentAssignmentBloc>().add(
-                const OrderCurrentAssignmentGetEvent());
+            if (deliveryType?.toLowerCase() == 'food') {
+              context.read<OrderListBloc>().add(
+                  const GetOrderListEvent(page: 1, isRefresh: true));
+            } else {
+              context.read<OrderCurrentAssignmentBloc>().add(
+                  const OrderCurrentAssignmentGetEvent());
+            }
           } catch (_) {}
-          context.read<OrderListBloc>().add(
-              const GetOrderListEvent(page: 1, isRefresh: true));
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -180,11 +188,14 @@ class OrderListView extends StatelessWidget {
       color: AppColor.darkOrange,
       onRefresh: () async {
         try {
-          context.read<OrderCurrentAssignmentBloc>().add(
-              const OrderCurrentAssignmentGetEvent());
+          if (deliveryType?.toLowerCase() == 'food') {
+            context.read<OrderListBloc>().add(
+                const GetOrderListEvent(page: 1, isRefresh: true));
+          } else {
+            context.read<OrderCurrentAssignmentBloc>().add(
+                const OrderCurrentAssignmentGetEvent());
+          }
         } catch (_) {}
-        context.read<OrderListBloc>().add(
-            const GetOrderListEvent(page: 1, isRefresh: true));
       },
       child: Padding(
         padding: const EdgeInsets.only(bottom: 32.0),
@@ -193,7 +204,7 @@ class OrderListView extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          itemCount: filteredOrders.length + (state.loadingMore ? 1 : 0),
+          itemCount: filteredOrders.length + (loadingMore ? 1 : 0),
           itemBuilder: (context, index) {
             // Load-more spinner at the bottom
             if (index == filteredOrders.length) {

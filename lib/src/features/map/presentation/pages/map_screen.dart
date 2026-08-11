@@ -54,7 +54,9 @@ class _MapScreenState extends State<MapScreen> {
 
     for (var order in widget.orders) {
       if (order.deliveryLat != 0 && order.deliveryLng != 0) {
-        final markerId = MarkerId(order.id.toString());
+        // Use uuId for marker ID to avoid clashes if id is 0 for multiple orders
+        final String mId = order.uuId.isNotEmpty ? order.uuId : "order_${order.id}_${widget.orders.indexOf(order)}";
+        final markerId = MarkerId(mId);
         final latLng = LatLng(order.deliveryLat, order.deliveryLng);
         _markers[markerId] = Marker(
           markerId: markerId,
@@ -72,7 +74,7 @@ class _MapScreenState extends State<MapScreen> {
     if (directPoints.length > 1) {
       _polylines.add(
         Polyline(
-          polylineId: const PolylineId('delivery_path'),
+          polylineId: const PolylineId('delivery_path_fallback'),
           points: directPoints,
           color: AppColor.darkOrange.withOpacity(0.5),
           width: 3,
@@ -86,22 +88,32 @@ class _MapScreenState extends State<MapScreen> {
     if (widget.orders.isEmpty) return;
 
     try {
+      // 1. Determine Origin (Store)
       final firstOrder = widget.orders.first;
       if (firstOrder.storeLatitude == null || firstOrder.storeLongitude == null) return;
-
       final origin = "${firstOrder.storeLatitude},${firstOrder.storeLongitude}";
-      final destination = "${widget.orders.last.deliveryLat},${widget.orders.last.deliveryLng}";
+
+      // 2. Filter orders with valid coordinates
+      final validOrders = widget.orders
+          .where((o) => o.deliveryLat != 0 && o.deliveryLng != 0)
+          .toList();
+      if (validOrders.isEmpty) return;
+
+      // 3. Determine Destination (Last valid order)
+      final destination = "${validOrders.last.deliveryLat},${validOrders.last.deliveryLng}";
       
-      String waypoints = "";
-      if (widget.orders.length > 1) {
-        waypoints = "waypoints=";
-        for (int i = 0; i < widget.orders.length - 1; i++) {
-          waypoints += "${widget.orders[i].deliveryLat},${widget.orders[i].deliveryLng}|";
-        }
+      // 4. Determine Waypoints (All valid orders except the last one)
+      String waypointsStr = "";
+      if (validOrders.length > 1) {
+        final List<String> waypointCoords = validOrders
+            .take(validOrders.length - 1)
+            .map((o) => "${o.deliveryLat},${o.deliveryLng}")
+            .toList();
+        waypointsStr = "waypoints=${waypointCoords.join('|')}";
       }
 
       final url = "https://maps.googleapis.com/maps/api/directions/json?"
-          "origin=$origin&destination=$destination&$waypoints&key=$_googleApiKey";
+          "origin=$origin&destination=$destination&${waypointsStr.isNotEmpty ? '$waypointsStr&' : ''}key=$_googleApiKey";
 
       final response = await Dio().get(url);
       
@@ -125,6 +137,8 @@ class _MapScreenState extends State<MapScreen> {
             );
           });
         }
+      } else {
+        debugPrint("Directions API error: ${response.data['status']} - ${response.data['error_message']}");
       }
     } catch (e) {
       debugPrint("Error fetching road path: $e");

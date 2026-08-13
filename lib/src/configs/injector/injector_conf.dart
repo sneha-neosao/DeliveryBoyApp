@@ -1,4 +1,6 @@
 import 'package:delivery_boy_app/src/features/bulk_orders/domain/usecase/current_assignment_order_list_usecase.dart';
+import 'package:delivery_boy_app/src/features/dashboard/bloc/app_update_bloc/app_update_bloc.dart';
+import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/app_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/dashboard_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/firebase_token_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
@@ -13,6 +15,7 @@ import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_detail
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_start_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_status_update_usecase.dart';
+import 'package:delivery_boy_app/src/features/profile/domain/usecase/delete_account_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_image_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
@@ -171,6 +174,20 @@ void configureDepedencies() {
   );
   getIt.registerFactory(
         () => FoodOrderCurrentAssignmentBloc(getIt<FoodOrderCurrentAssignmentUseCase>()),
+  );
+
+  getIt.registerLazySingleton(
+        () => AppUpdateUseCase(getIt<AuthRepositoryImpl>()),
+  );
+  getIt.registerFactory(
+        () => AppUpdateBloc(getIt<AppUpdateUseCase>()),
+  );
+
+  getIt.registerLazySingleton(
+        () => DeleteAccountUseCase(getIt<AuthRepositoryImpl>()),
+  );
+  getIt.registerFactory(
+        () => DeleteAccountBloc(getIt<DeleteAccountUseCase>()),
   );
 
 

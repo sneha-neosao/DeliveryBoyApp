@@ -2,6 +2,7 @@ import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/profile/bloc/delete_account_bloc/delete_account_bloc.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/change_password_input_widget.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_input_widget.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/profile_image_widget.dart';
@@ -111,6 +112,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _handleDeleteAccount(BuildContext parentContext) {
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) => BlocProvider.value(
+        value: parentContext.read<DeleteAccountBloc>(),
+        child: BlocConsumer<DeleteAccountBloc, DeleteAccountState>(
+          listener: (context, state) async {
+            if (state is DeleteAccountSuccessState) {
+              Navigator.of(dialogContext).pop();
+              await SessionManager.clear();
+              appSnackBar(context, AppColor.bright_red, state.data.message);
+              context.go(AppRoute.login.path);
+            } else if (state is DeleteAccountFailureState) {
+              Navigator.of(dialogContext).pop();
+              appSnackBar(context, AppColor.bright_red, state.message);
+            }
+          },
+          builder: (context, state) {
+            final isLoading = state is DeleteAccountLoadingState;
+            return AppAlertDialogWidget(
+              title: 'Delete Account',
+              subtitle: 'Are you sure you want to delete your account? This action cannot be undone.',
+              confirmText: 'Delete',
+              cancelText: 'Cancel',
+              icon: Icons.delete_forever_rounded,
+              iconBgColor: const Color(0xFFFFEBEE),
+              iconColor: AppColor.bright_red,
+              confirmBtnColor: AppColor.bright_red,
+              isLoading: isLoading,
+              onConfirm: () {
+                context.read<DeleteAccountBloc>().add(const DeleteAccountGetEvent());
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -120,6 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         BlocProvider(create: (_) => getIt<ProfileUpdateBloc>()),
         BlocProvider(create: (_) => getIt<ProfileUpdateFormBloc>()),
         BlocProvider(create: (_) => getIt<AuthLoginBloc>()),
+        BlocProvider(create: (_) => getIt<DeleteAccountBloc>()),
         BlocProvider(create: (_) => _profileBloc),
         BlocProvider(create: (_) => getIt<ProfileImageUpdateBloc>()),
       ],
@@ -343,6 +384,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     const SizedBox(width: 8),
                                     const Text(
                                       'LOGOUT',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Delete Account Button
+                              ElevatedButton(
+                                onPressed: () => _handleDeleteAccount(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFEBEE),
+                                  foregroundColor: AppColor.bright_red,
+                                  elevation: 0,
+                                  side: const BorderSide(
+                                      color: AppColor.bright_red, width: 1.5),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  minimumSize: const Size.fromHeight(50),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.delete_forever_rounded, size: 20),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'DELETE ACCOUNT',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,

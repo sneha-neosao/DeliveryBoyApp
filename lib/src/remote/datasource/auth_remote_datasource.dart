@@ -30,6 +30,7 @@ import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_image_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_update_response.dart';
+import 'package:delivery_boy_app/src/remote/models/version_model/app_update_response.dart';
 import 'package:dio/dio.dart';
 
 import '../../configs/injector/injector.dart';
@@ -74,8 +75,14 @@ sealed class RemoteDataSource {
 
   ///Profile Update
   Future<ProfileUpdateResponse> profile_update(ProfileUpdateParams params, String token);
+
   Future<ProfileImageUpdateResponse> profile_image_update(ProfileImageUpdateParams params, String token);
 
+  /// Delete Account
+  Future<CommonResponse> delete_account(String token);
+
+  /// App Update
+  Future<AppUpdateResponse> app_update(String token);
 }
 
 class RemoteDataSourceImpl implements RemoteDataSource {
@@ -613,6 +620,65 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = ProfileImageUpdateResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<CommonResponse> delete_account(String token) async {
+    try {
+      final response = await _helper.execute(
+        method: Method.delete,
+        url: ApiUrl.deleteAccount,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = CommonResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+
+  @override
+  Future<AppUpdateResponse> app_update(String token) async {
+    try {
+      final response = await _helper.execute(
+        method: Method.get,
+        url: ApiUrl.appUpdate,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = AppUpdateResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

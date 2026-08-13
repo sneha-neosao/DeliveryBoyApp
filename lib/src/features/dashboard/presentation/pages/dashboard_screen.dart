@@ -3,6 +3,7 @@ import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/dashboard/bloc/app_update_bloc/app_update_bloc.dart';
 import 'package:delivery_boy_app/src/features/dashboard/bloc/online_status_bloc/online_status_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_list_bloc/order_list_bloc.dart';
 import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
@@ -51,6 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late final OrderListBloc _orderListBloc;
   late final OrderStartAssignmentBloc _orderStartAssignmentBloc;
   late final OrderAssignmentBloc _orderAssignmentBloc;
+  late final AppUpdateBloc _appUpdateBloc;
   late FirebaseTokenUpdateBloc _firebaseTokenUpdateBloc;
 
   @override
@@ -67,6 +69,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _orderListBloc = getIt<OrderListBloc>();
     _orderStartAssignmentBloc = getIt<OrderStartAssignmentBloc>();
     _orderAssignmentBloc = getIt<OrderAssignmentBloc>();
+    _appUpdateBloc = getIt<AppUpdateBloc>();
+    _appUpdateBloc.add(const AppUpdateGetEvent());
     _firebaseTokenUpdateBloc = getIt<FirebaseTokenUpdateBloc>();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -131,6 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         BlocProvider(create: (_) => _orderListBloc),
         BlocProvider(create: (_) => _orderStartAssignmentBloc),
         BlocProvider(create: (_) => _orderAssignmentBloc),
+        BlocProvider(create: (_) => _appUpdateBloc),
       ],
       child: MultiBlocListener(
         listeners: [
@@ -304,6 +309,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             listener: (context, state) {
               if (state is OrderListFailureState) {
                 appSnackBar(context, AppColor.bright_red, state.message);
+              }
+            },
+          ),
+          BlocListener<AppUpdateBloc, AppUpdateState>(
+            listener: (context, state) {
+              if (state is AppUpdateSuccessState) {
+                // Handle app update logic here (e.g. show dialog if version is old)
+                print("App Update Status: ${state.data.status}");
+              }
+              if (state is AppUpdateFailureState) {
+                // appSnackBar(context, AppColor.bright_red, state.message);
               }
             },
           ),

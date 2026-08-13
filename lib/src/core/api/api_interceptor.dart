@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../configs/injector/injector.dart';
 import '../session/session_manager.dart';
 import '../utils/logger.dart';
+import '../../routes/app_route_path.dart';
 
 class ApiInterceptor extends Interceptor {
   final Dio dio;
@@ -88,7 +89,9 @@ class ApiInterceptor extends Interceptor {
 
     options.baseUrl = ApiUrl.baseUrl;
 
-    bool skipAuth = options.path.contains('login') || options.path.contains('/token/refresh');
+    bool skipAuth = options.path.contains('login') ||
+        options.path.contains('/token/refresh') ||
+        options.path.contains('/auth/refresh');
 
     if (!skipAuth && token != null) {
       options.headers['Authorization'] = 'Bearer $token';
@@ -156,7 +159,7 @@ class ApiInterceptor extends Interceptor {
 
         try {
           final refreshResponse = await dio.post(
-            "${ApiUrl.baseUrl}technician/token/refresh",
+            "${ApiUrl.baseUrl}/auth/refresh",
             data: {'refresh_token': refreshToken},
             options: Options(headers: {
               'accept': 'application/json',
@@ -243,7 +246,7 @@ class ApiInterceptor extends Interceptor {
       // Close any open dialogs/bottom sheets on the root navigator
       Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
 
-      // context.go(AppRoute.loginScreen.path);
+      context.go(AppRoute.login.path);
     });
   }
 }

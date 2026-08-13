@@ -32,6 +32,7 @@ import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_image_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_update_response.dart';
+import 'package:delivery_boy_app/src/remote/models/version_model/app_update_response.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../configs/injector/injector.dart';
@@ -78,7 +79,14 @@ abstract class Repository {
 
   /// Update Profile
   Future<Either<Failure, ProfileUpdateResponse>> profileUpdate(ProfileUpdateParams params);
+
   Future<Either<Failure, ProfileImageUpdateResponse>> profileImageUpdate(ProfileImageUpdateParams params);
+
+  /// Delete Account
+  Future<Either<Failure, CommonResponse>> deleteAccount(NoParams params);
+
+  /// App Version
+  Future<Either<Failure, AppUpdateResponse>> appUpdate(NoParams params);
 
 }
 
@@ -650,6 +658,72 @@ class AuthRepositoryImpl implements Repository {
 
           if (respData.status != 200) {
             return Left(CredentialFailure(respData.message!));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, CommonResponse>> deleteAccount(NoParams params) {
+    return _networkInfo.check<CommonResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.delete_account(token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message));
+          }
+
+          return Right(respData);
+        } on ServerException {
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        } catch (e) {
+          if (e is ApiException) {
+            return Left(ApiFailure(e.message)); // rethrow as-is
+          }
+          return Left(ServerFailure(mapFailureToMessage(ServerFailure(""))));
+        }
+      },
+      notConnected: () async {
+        try {
+          return Left(InternetFailure(mapFailureToMessage(InternetFailure(""))));
+        } on CacheException {
+          return Left(CacheFailure(mapFailureToMessage(CacheFailure(""))));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, AppUpdateResponse>> appUpdate(NoParams params) {
+    return _networkInfo.check<AppUpdateResponse>(
+      connected: () async {
+        try {
+          String token = await SessionManager.getAuthToken() ?? "";
+
+          final respData = await _remoteDataSource.app_update(token);
+
+          if (respData.status != 200) {
+            return Left(CredentialFailure(respData.message));
           }
 
           return Right(respData);

@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
+import 'dart:math' as math;
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
@@ -7,9 +8,11 @@ import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_listview.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
@@ -133,16 +136,21 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
                 ),
               ),
               child: SafeArea(
-                child: Center(
-                  child: Text(
-                    'my_orders'.tr(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Text(
+                        'my_orders'.tr(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
+                    _buildNavigationIcon(),
+                  ],
                 ),
               ),
             ),
@@ -213,6 +221,70 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildNavigationIcon() {
+    if (_deliveryType == null) return const SizedBox.shrink();
+
+    if (_deliveryType?.toLowerCase() == 'food') {
+      return BlocBuilder<OrderListBloc, OrderListState>(
+        builder: (context, state) {
+          final orders = state.orders ?? [];
+          return _navIcon(orders);
+        },
+      );
+    } else {
+      return BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+        builder: (context, state) {
+          List<Order> orders = [];
+          if (state is CurrentAssignmentOrdersSuccessState) {
+            orders = state.data.data.map((e) => e.toOrder()).toList();
+          }
+          return _navIcon(orders);
+        },
+      );
+    }
+  }
+
+  Widget _navIcon(List<Order> orders) {
+    final bool anyPickedUp = orders.any((o) {
+      final s = o.orderStatus.toUpperCase();
+      return s == 'PICKED_UP' || s == 'ON_THE_WAY';
+    });
+
+    if (orders.isEmpty || !anyPickedUp) return const SizedBox.shrink();
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: InkWell(
+          onTap: () {
+            context.push(AppRoute.map.path, extra: orders);
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColor.darkOrange,
+                width: 1.5,
+              ),
+            ),
+            child: Transform.rotate(
+              angle: math.pi / 4, // 45° towards upper-right
+              child: const Icon(
+                Icons.navigation,
+                color: AppColor.darkOrange,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

@@ -470,36 +470,47 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                 ),
               ),
               if (_assignment != null && bulkOrders.isNotEmpty)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: InkWell(
-                      onTap: () {
-                        context.push(AppRoute.map.path, extra: bulkOrders);
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColor.darkOrange,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Transform.rotate(
-                          angle: math.pi / 4, // 45° towards upper-right
-                          child: const Icon(
-                            Icons.navigation,
-                            color: AppColor.darkOrange,
-                            size: 20,
+                Builder(
+                  builder: (context) {
+                    final bool anyPickedUp = bulkOrders.any((o) {
+                      final s = o.orderStatus.toUpperCase();
+                      return s == 'PICKED_UP' || s == 'ON_THE_WAY';
+                    });
+
+                    if (!anyPickedUp) return const SizedBox.shrink();
+
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: InkWell(
+                          onTap: () {
+                            context.push(AppRoute.map.path, extra: bulkOrders);
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColor.darkOrange,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Transform.rotate(
+                              angle: math.pi / 4, // 45° towards upper-right
+                              child: const Icon(
+                                Icons.navigation,
+                                color: AppColor.darkOrange,
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  }
                 )
             ],
           ),

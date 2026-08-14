@@ -5,6 +5,10 @@ import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:dio/dio.dart';
+import 'dart:async';
+import 'package:delivery_boy_app/src/configs/injector/injector.dart';
+import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 
 class MapScreen extends StatefulWidget {
   final List<Order> orders;
@@ -21,6 +25,7 @@ class _MapScreenState extends State<MapScreen> {
   final Set<Polyline> _polylines = {};
   bool _isLoading = true;
   Position? _currentPosition;
+  StreamSubscription<Position>? _positionStreamSubscription;
   
   static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
@@ -28,6 +33,60 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _initMapData();
+    _initSocket();
+    _startLocationUpdates();
+  }
+
+  @override
+  void dispose() {
+    _positionStreamSubscription?.cancel();
+    getIt<TrackingSocketService>().disconnect();
+    super.dispose();
+  }
+
+  void _startLocationUpdates() {
+    _positionStreamSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+          _updateUserMarker(position);
+        });
+      }
+    });
+  }
+
+  Future<void> _initSocket() async {
+    try {
+      final firstOrder = _getFirstOrder();
+      if (firstOrder == null) {
+        logger.w("MapScreen: No active order found to track.");
+        return;
+      }
+
+      final token = await SessionManager.getAuthToken();
+      if (token == null || token.isEmpty) {
+        logger.e("MapScreen: Auth token is missing.");
+        return;
+      }
+
+      final uri = Uri.parse(ApiUrl.baseUrl);
+      final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+      final wsUrl = '$wsScheme://${uri.authority}/api/v1/ws?token=$token';
+
+      logger.i("MapScreen: Starting tracking for order ${firstOrder.uuId} at $wsUrl");
+      
+      await getIt<TrackingSocketService>().startTracking(
+        socketUrl: wsUrl,
+        orderId: firstOrder.uuId,
+      );
+    } catch (e) {
+      logger.e("MapScreen: Error initializing socket: $e");
+    }
   }
 
   Future<void> _initMapData() async {

@@ -11,7 +11,9 @@ enum AppRoute {
   profile(path: "/profile_screen"),
   bulkOrder(path: "/bulk_order_screen"),
   bulkOrderDetails(path: "/bulk_order_details_screen"),
-  map(path: "/map_screen");
+  map(path: "/map_screen"),
+  orderMap(path: "/order_map_screen"),
+  bulkOrderMap(path: "/bulk_order_map_screen");
 
   final String path;
 

@@ -9,3 +9,5 @@ export '../../src/features/profile/presentation/pages/profile_screen.dart';
 export '../../src/features/bulk_orders/presentation/pages/bulk_order_screen.dart';
 export '../../src/features/bulk_orders/presentation/pages/bulk_order_details_screen.dart';
 export '../../src/features/orders/presentation/pages/orders_tab_wrapper.dart';
+export '../../src/features/orders/presentation/pages/order_map_screen.dart';
+export '../../src/features/bulk_orders/presentation/pages/bulk_order_map_screen.dart';

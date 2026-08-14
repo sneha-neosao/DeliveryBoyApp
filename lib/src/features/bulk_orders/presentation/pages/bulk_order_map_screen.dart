@@ -6,16 +6,16 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:dio/dio.dart';
 
-class MapScreen extends StatefulWidget {
+class BulkOrderMapScreen extends StatefulWidget {
   final List<Order> orders;
 
-  const MapScreen({super.key, required this.orders});
+  const BulkOrderMapScreen({super.key, required this.orders});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  State<BulkOrderMapScreen> createState() => _BulkOrderMapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
   late GoogleMapController _mapController;
   final Map<MarkerId, Marker> _markers = {};
   final Set<Polyline> _polylines = {};
@@ -53,14 +53,14 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _printDebugInfo() async {
-    debugPrint("=== MAP SCREEN DEBUG INFO ===");
+    debugPrint("=== BULK MAP SCREEN DEBUG INFO ===");
     LatLng? storeLoc = _getStoreLocation();
     debugPrint("STORE LOCATION: ${storeLoc?.latitude}, ${storeLoc?.longitude}");
     
-    Order? firstOrder = _getFirstOrder();
+    Order? firstOrder = _getFirstOngoingOrder();
     debugPrint("1ST ORDER LOCATION: ${firstOrder?.deliveryLat}, ${firstOrder?.deliveryLng} (ID: ${firstOrder?.id})");
     debugPrint("DELIVERY BOY LIVE LOCATION: ${_currentPosition?.latitude}, ${_currentPosition?.longitude}");
-    debugPrint("==============================");
+    debugPrint("===================================");
   }
 
   LatLng? _getStoreLocation() {
@@ -72,9 +72,10 @@ class _MapScreenState extends State<MapScreen> {
     return null;
   }
 
-  Order? _getFirstOrder() {
+  Order? _getFirstOngoingOrder() {
     for (var order in widget.orders) {
-      if (order.deliveryLat != 0 && order.deliveryLng != 0) {
+      final String status = order.orderStatus.toUpperCase();
+      if (status != 'DELIVERED' && status != 'REJECTED' && order.deliveryLat != 0 && order.deliveryLng != 0) {
         return order;
       }
     }
@@ -98,7 +99,7 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
 
-    Order? ongoingOrder = _getFirstOrder();
+    Order? ongoingOrder = _getFirstOngoingOrder();
     LatLng? ongoingLocation;
     if (ongoingOrder != null) {
       ongoingLocation = LatLng(ongoingOrder.deliveryLat, ongoingOrder.deliveryLng);
@@ -114,6 +115,7 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
 
+    // Fallback Polyline (Dashed)
     if (_polylines.isEmpty) {
       List<LatLng> fallbackPoints = [];
       if (_currentPosition != null) fallbackPoints.add(LatLng(_currentPosition!.latitude, _currentPosition!.longitude));
@@ -138,7 +140,7 @@ class _MapScreenState extends State<MapScreen> {
     if (widget.orders.isEmpty) return;
     try {
       LatLng? storeLocation = _getStoreLocation();
-      Order? ongoingOrder = _getFirstOrder();
+      Order? ongoingOrder = _getFirstOngoingOrder();
       if (ongoingOrder == null) return;
       
       final destination = "${ongoingOrder.deliveryLat},${ongoingOrder.deliveryLng}";
@@ -163,21 +165,29 @@ class _MapScreenState extends State<MapScreen> {
         if (mounted) {
           setState(() {
             _polylines.removeWhere((p) => p.polylineId.value == 'delivery_path_fallback');
-            _polylines.add(Polyline(
-              polylineId: const PolylineId('delivery_path'),
-              points: decodedPoints,
-              color: Colors.blue.shade700,
-              width: 6,
-              jointType: JointType.round,
-              startCap: Cap.roundCap,
-              endCap: Cap.roundCap,
-            ));
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('delivery_path'),
+                points: decodedPoints,
+                color: Colors.blue.shade700,
+                width: 6,
+                jointType: JointType.round,
+                startCap: Cap.roundCap,
+                endCap: Cap.roundCap,
+              ),
+            );
           });
           _fitBounds(_currentPosition);
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Road path error: ${response.data['status']}")));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Road path error: ${response.data['status']}")),
+          );
+        }
+        if (_currentPosition != null && storeLocation != null) {
+          _currentPosition = null; 
+          _fetchRoadPath();
         }
       }
     } catch (e) {
@@ -271,7 +281,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Delivery Path', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Bulk Order Map', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppColor.darkOrange,
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.pop()),
       ),

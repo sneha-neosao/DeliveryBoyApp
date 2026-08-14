@@ -485,7 +485,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                         padding: const EdgeInsets.only(right: 12),
                         child: InkWell(
                           onTap: () {
-                            context.push(AppRoute.map.path, extra: bulkOrders);
+                            context.push(AppRoute.bulkOrderMap.path, extra: bulkOrders);
                           },
                           borderRadius: BorderRadius.circular(20),
                           child: Container(

@@ -66,6 +66,22 @@ class AppRouteConf {
           return _fadePage(MapScreen(orders: orders ?? []));
         },
       ),
+      GoRoute(
+        path: AppRoute.orderMap.path,
+        name: AppRoute.orderMap.name,
+        pageBuilder: (context, state) {
+          final orders = state.extra as List<Order>?;
+          return _fadePage(OrderMapScreen(orders: orders ?? []));
+        },
+      ),
+      GoRoute(
+        path: AppRoute.bulkOrderMap.path,
+        name: AppRoute.bulkOrderMap.name,
+        pageBuilder: (context, state) {
+          final orders = state.extra as List<Order>?;
+          return _fadePage(BulkOrderMapScreen(orders: orders ?? []));
+        },
+      ),
 
       // Shell route for bottom navigation bar screens
       ShellRoute(

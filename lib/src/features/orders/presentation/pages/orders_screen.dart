@@ -261,7 +261,7 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
         padding: const EdgeInsets.only(right: 12),
         child: InkWell(
           onTap: () {
-            context.push(AppRoute.map.path, extra: orders);
+            context.push(AppRoute.orderMap.path, extra: orders);
           },
           borderRadius: BorderRadius.circular(20),
           child: Container(

@@ -6,16 +6,16 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:dio/dio.dart';
 
-class MapScreen extends StatefulWidget {
+class OrderMapScreen extends StatefulWidget {
   final List<Order> orders;
 
-  const MapScreen({super.key, required this.orders});
+  const OrderMapScreen({super.key, required this.orders});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  State<OrderMapScreen> createState() => _OrderMapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _OrderMapScreenState extends State<OrderMapScreen> {
   late GoogleMapController _mapController;
   final Map<MarkerId, Marker> _markers = {};
   final Set<Polyline> _polylines = {};
@@ -57,7 +57,7 @@ class _MapScreenState extends State<MapScreen> {
     LatLng? storeLoc = _getStoreLocation();
     debugPrint("STORE LOCATION: ${storeLoc?.latitude}, ${storeLoc?.longitude}");
     
-    Order? firstOrder = _getFirstOrder();
+    Order? firstOrder = _getFirstOngoingOrder();
     debugPrint("1ST ORDER LOCATION: ${firstOrder?.deliveryLat}, ${firstOrder?.deliveryLng} (ID: ${firstOrder?.id})");
     debugPrint("DELIVERY BOY LIVE LOCATION: ${_currentPosition?.latitude}, ${_currentPosition?.longitude}");
     debugPrint("==============================");
@@ -72,9 +72,10 @@ class _MapScreenState extends State<MapScreen> {
     return null;
   }
 
-  Order? _getFirstOrder() {
+  Order? _getFirstOngoingOrder() {
     for (var order in widget.orders) {
-      if (order.deliveryLat != 0 && order.deliveryLng != 0) {
+      final String status = order.orderStatus.toUpperCase();
+      if (status != 'DELIVERED' && status != 'REJECTED' && order.deliveryLat != 0 && order.deliveryLng != 0) {
         return order;
       }
     }
@@ -98,7 +99,7 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
 
-    Order? ongoingOrder = _getFirstOrder();
+    Order? ongoingOrder = _getFirstOngoingOrder();
     LatLng? ongoingLocation;
     if (ongoingOrder != null) {
       ongoingLocation = LatLng(ongoingOrder.deliveryLat, ongoingOrder.deliveryLng);
@@ -114,6 +115,7 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
 
+    // Comprehensive Fallback Polyline (Dashed)
     if (_polylines.isEmpty) {
       List<LatLng> fallbackPoints = [];
       if (_currentPosition != null) fallbackPoints.add(LatLng(_currentPosition!.latitude, _currentPosition!.longitude));
@@ -138,46 +140,59 @@ class _MapScreenState extends State<MapScreen> {
     if (widget.orders.isEmpty) return;
     try {
       LatLng? storeLocation = _getStoreLocation();
-      Order? ongoingOrder = _getFirstOrder();
+      Order? ongoingOrder = _getFirstOngoingOrder();
       if (ongoingOrder == null) return;
       
       final destination = "${ongoingOrder.deliveryLat},${ongoingOrder.deliveryLng}";
       String url = "";
 
       if (_currentPosition != null) {
+        // Mode A: Current -> Store -> Order
         final origin = "${_currentPosition!.latitude},${_currentPosition!.longitude}";
         url = "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=$_googleApiKey";
         if (storeLocation != null) {
           url += "&waypoints=optimize:true|${storeLocation.latitude},${storeLocation.longitude}";
         }
       } else if (storeLocation != null) {
+        // Mode B: Store -> Order (if current location unknown)
         url = "https://maps.googleapis.com/maps/api/directions/json?origin=${storeLocation.latitude},${storeLocation.longitude}&destination=$destination&key=$_googleApiKey";
       } else {
         return;
       }
 
       final response = await Dio().get(url);
+      
       if (response.data['status'] == 'OK') {
         final String encodedPolyline = response.data['routes'][0]['overview_polyline']['points'];
         final List<LatLng> decodedPoints = _decodePolyline(encodedPolyline);
         if (mounted) {
           setState(() {
             _polylines.removeWhere((p) => p.polylineId.value == 'delivery_path_fallback');
-            _polylines.add(Polyline(
-              polylineId: const PolylineId('delivery_path'),
-              points: decodedPoints,
-              color: Colors.blue.shade700,
-              width: 6,
-              jointType: JointType.round,
-              startCap: Cap.roundCap,
-              endCap: Cap.roundCap,
-            ));
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('delivery_path'),
+                points: decodedPoints,
+                color: Colors.blue.shade700,
+                width: 6,
+                jointType: JointType.round,
+                startCap: Cap.roundCap,
+                endCap: Cap.roundCap,
+              ),
+            );
           });
           _fitBounds(_currentPosition);
         }
       } else {
+        debugPrint("Directions API error: ${response.data['status']}");
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Road path error: ${response.data['status']}")));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Road path error: ${response.data['status']}")),
+          );
+        }
+        // If Mode A failed, try Mode B as fallback
+        if (_currentPosition != null && storeLocation != null) {
+          _currentPosition = null; // Forces Mode B in next call
+          _fetchRoadPath();
         }
       }
     } catch (e) {
@@ -219,7 +234,10 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _setInitialLocation() async {
     try {
-      if (_currentPosition == null) _currentPosition = await _determinePosition();
+      if (_currentPosition == null) {
+        _currentPosition = await _determinePosition();
+      }
+      
       if (_currentPosition != null) {
         _updateUserMarker(_currentPosition!);
         _fitBounds(_currentPosition);
@@ -254,6 +272,7 @@ class _MapScreenState extends State<MapScreen> {
   void _fitBounds(Position? userPosition) {
     List<LatLng> points = _markers.values.map((m) => m.position).toList();
     if (userPosition != null) points.add(LatLng(userPosition.latitude, userPosition.longitude));
+    
     if (points.isEmpty) return;
     double? minLat, maxLat, minLng, maxLng;
     for (var point in points) {
@@ -262,6 +281,7 @@ class _MapScreenState extends State<MapScreen> {
       if (minLng == null || point.longitude < minLng) minLng = point.longitude;
       if (maxLng == null || point.longitude > maxLng) maxLng = point.longitude;
     }
+    
     if (minLat != null && maxLat != null && minLng != null && maxLng != null) {
       _mapController.animateCamera(CameraUpdate.newLatLngBounds(LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)), 70.0));
     }

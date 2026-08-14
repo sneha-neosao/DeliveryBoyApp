@@ -4,6 +4,7 @@ import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:delivery_boy_app/src/features/main_screen/presentation/pages/main_screen.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'app_route_path.dart';
 import 'routes.dart';
 
@@ -74,12 +75,21 @@ class AppRouteConf {
           return _fadePage(OrderMapScreen(orders: orders ?? []));
         },
       ),
+
       GoRoute(
         path: AppRoute.bulkOrderMap.path,
         name: AppRoute.bulkOrderMap.name,
         pageBuilder: (context, state) {
-          final orders = state.extra as List<Order>?;
-          return _fadePage(BulkOrderMapScreen(orders: orders ?? []));
+          final data = state.extra as Map<String, dynamic>;
+          final storeLocation = data['storeLocation'] as LatLng;
+          final deliveryLocations = data['deliveryLocations'] as List<LatLng>;
+
+          return _fadePage(
+            BulkOrderMapScreen(
+              storeLocation: storeLocation,
+              deliveryLocations: deliveryLocations,
+            ),
+          );
         },
       ),
 

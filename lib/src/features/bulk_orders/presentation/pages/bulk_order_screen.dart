@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class BulkOrderScreen extends StatefulWidget {
   final AssignmentBatch? assignment;
@@ -484,10 +485,37 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                       child: Padding(
                         padding: const EdgeInsets.only(right: 12),
                         child: InkWell(
-                          onTap: () {
-                            context.push(AppRoute.bulkOrderMap.path, extra: bulkOrders);
-                          },
-                          borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              final storeLocation = LatLng(
+                                bulkOrders.first.storeLatitude!,
+                                bulkOrders.first.storeLongitude!,
+                              );
+
+                              final deliveryLocations = bulkOrders
+                                  .map((o) => LatLng(o.deliveryLat, o.deliveryLng))
+                                  .toList();
+                              debugPrint("========== BULK ORDERS ==========");
+
+                              for (int i = 0; i < bulkOrders.length; i++) {
+                                debugPrint(
+                                  "Order ${i + 1}: "
+                                      "${bulkOrders[i].deliveryLat}, "
+                                      "${bulkOrders[i].deliveryLng}",
+                                );
+                              }
+
+                              debugPrint("================================");
+
+
+                              context.push(
+                                AppRoute.bulkOrderMap.path,
+                                extra: {
+                                  'storeLocation': storeLocation,
+                                  'deliveryLocations': deliveryLocations,
+                                },
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(20),
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(

@@ -373,7 +373,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
     try {
       final response = await _helper.execute(
         method: Method.get,
-        url: "${ApiUrl.currentAssignmentOrders}?uuid=${params.uuid}&page=${params.page}&limit=${params.page}",
+        url: "${ApiUrl.currentAssignmentOrders}?uuid=${params.uuid}&page=${params.page}&limit=${params.limit}",
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',

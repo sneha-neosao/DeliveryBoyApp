@@ -93,7 +93,7 @@ class DeliveryBoy {
     required this.vehicleNumber,
     required this.isActive,
     required this.isAvailable,
-    required this.profileImage
+    required this.profileImage,
   });
 
   factory DeliveryBoy.fromRawJson(String str) =>
@@ -112,7 +112,7 @@ class DeliveryBoy {
     vehicleNumber: json["vehicle_number"] ?? "",
     isActive: json["is_active"] ?? false,
     isAvailable: json["is_available"] ?? false,
-    profileImage: json["profile_image"] ?? ""
+    profileImage: json["profile_image"] ?? "",
   );
 
   Map<String, dynamic> toJson() => {
@@ -126,6 +126,6 @@ class DeliveryBoy {
     "vehicle_number": vehicleNumber,
     "is_active": isActive,
     "is_available": isAvailable,
-    "profileImage": profileImage
+    "profile_image": profileImage, // ✅ fixed key
   };
 }

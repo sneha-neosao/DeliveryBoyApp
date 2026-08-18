@@ -33,16 +33,28 @@ class OnlineStatusResponse {
 
 class OnlineStatus {
   final bool isOnline;
+  final double? currentLatitude;
+  final double? currentLongitude;
 
   OnlineStatus({
     required this.isOnline,
+    this.currentLatitude,
+    this.currentLongitude,
   });
 
   factory OnlineStatus.fromJson(Map<String, dynamic> json) => OnlineStatus(
     isOnline: json["is_online"] ?? false,
+    currentLatitude: json["current_latitude"] != null
+        ? (json["current_latitude"] as num).toDouble()
+        : null,
+    currentLongitude: json["current_longitude"] != null
+        ? (json["current_longitude"] as num).toDouble()
+        : null,
   );
 
   Map<String, dynamic> toJson() => {
     "is_online": isOnline,
+    "current_latitude": currentLatitude,
+    "current_longitude": currentLongitude,
   };
 }

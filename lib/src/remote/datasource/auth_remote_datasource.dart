@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/core/api/api_exception.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:delivery_boy_app/src/core/api/api_url.dart';
 import 'package:delivery_boy_app/src/core/constants/error_message.dart';
 import 'package:delivery_boy_app/src/core/errors/exceptions.dart';
@@ -459,8 +460,31 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   @override
   Future<OnlineStatusResponse> online_status(OnlineStatusParams params, String token) async {
     try {
+      double latitude = 0.0;
+      double longitude = 0.0;
+      try {
+        Position? position;
+        try {
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: const Duration(seconds: 4),
+          );
+        } catch (_) {
+          position = await Geolocator.getLastKnownPosition();
+        }
+        if (position != null) {
+          latitude = position.latitude;
+          longitude = position.longitude;
+        }
+      } catch (e) {
+        logger.e("Failed to get location for online status: $e");
+      }
 
-      var data = {"is_online": params.is_online};
+      var data = {
+        "is_online": params.is_online,
+        "latitude": latitude,
+        "longitude": longitude,
+      };
 
       final response = await _helper.execute(
         method: Method.put,

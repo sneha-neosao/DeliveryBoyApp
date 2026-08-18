@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 
 class BulkOrderMapScreen extends StatefulWidget {
@@ -24,6 +26,8 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   bool _isLoading = true;
+  Position? _currentPosition;
+  StreamSubscription<Position>? _positionStreamSubscription;
 
   static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
@@ -32,6 +36,7 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
     super.initState();
     _setMarkers();
     _getRoutePolyline();
+    _startLocationUpdates();
     debugPrint(
       "Delivery Count: ${widget.deliveryLocations.length}",
     );
@@ -42,6 +47,64 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
             "${widget.deliveryLocations[i].latitude}, "
             "${widget.deliveryLocations[i].longitude}",
       );
+    }
+  }
+
+  @override
+  void dispose() {
+    _positionStreamSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _startLocationUpdates() {
+    _positionStreamSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+          _updateUserMarker(position);
+        });
+      }
+    });
+  }
+
+  void _updateUserMarker(Position pos) {
+    if (!mounted) return;
+    setState(() {
+      _markers = {
+        ..._markers.where((m) => m.markerId.value != 'user_location'),
+        Marker(
+          markerId: const MarkerId('user_location'),
+          position: LatLng(pos.latitude, pos.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: const InfoWindow(title: 'Your Location'),
+        ),
+      };
+    });
+  }
+
+  Future<Position?> _determinePosition() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return null;
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return null;
+    }
+    if (permission == LocationPermission.deniedForever) return null;
+    try {
+      Position? lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) return lastKnown;
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 5),
+      );
+    } catch (e) {
+      return null;
     }
   }
 
@@ -188,6 +251,8 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
     final allPoints = [
       widget.storeLocation,
       ...widget.deliveryLocations,
+      if (_currentPosition != null)
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
     ];
 
     double minLat = allPoints.first.latitude;
@@ -237,8 +302,8 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
             ),
             markers: _markers,
             polylines: _polylines,
-            myLocationEnabled: false,
-            myLocationButtonEnabled: false,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
             onMapCreated: (controller) {
               _mapController = controller;
               _mapReady = true;

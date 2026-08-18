@@ -81,15 +81,7 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
   void _updateUserMarker(Position pos) {
     if (!mounted) return;
     setState(() {
-      _markers = {
-        ..._markers.where((m) => m.markerId.value != 'user_location'),
-        Marker(
-          markerId: const MarkerId('user_location'),
-          position: LatLng(pos.latitude, pos.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          infoWindow: const InfoWindow(title: 'Your Location'),
-        ),
-      };
+      _currentPosition = pos;
     });
   }
 

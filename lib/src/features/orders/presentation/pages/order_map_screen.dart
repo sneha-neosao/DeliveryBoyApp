@@ -106,12 +106,6 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
     if (!mounted) return;
     setState(() {
       _currentPosition = pos;
-      _markers[const MarkerId('user_location')] = Marker(
-        markerId: const MarkerId('user_location'),
-        position: LatLng(pos.latitude, pos.longitude),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: const InfoWindow(title: 'Your Location'),
-      );
     });
   }
 
@@ -146,9 +140,7 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   }
 
   void _createMarkers() {
-    final userMarker = _markers[const MarkerId('user_location')];
     _markers.clear();
-    if (userMarker != null) _markers[const MarkerId('user_location')] = userMarker;
     
     _polylines.removeWhere((p) => p.polylineId.value == 'delivery_path_fallback');
     

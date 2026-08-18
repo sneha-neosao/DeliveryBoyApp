@@ -78,7 +78,7 @@ class _MapScreenState extends State<MapScreen> {
       final deliveryType = session?.data?.deliveryBoy?.deliveryType;
 
       final String wsUrl;
-      if (deliveryType?.toLowerCase() == "food") {
+      if (deliveryType?.toLowerCase() == "food" || deliveryType?.toLowerCase() == "vegetable") {
         wsUrl = "https://web.neosao.co.in?token=$token";
       } else {
         final uri = Uri.parse(ApiUrl.baseUrl);

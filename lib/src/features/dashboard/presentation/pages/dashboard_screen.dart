@@ -242,33 +242,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       : 'Assignment updated successfully',
                 );
                 
-                if (_deliveryType?.toLowerCase() == "vegetable" && _deliveryBoyId != null) {
-                  final updatedOrders = state.data.data?.updatedOrders ?? [];
-                  if (updatedOrders.isNotEmpty) {
-                    final orderIds = updatedOrders.map((o) => o.uuId).toList();
-                    
-                    SessionManager.getAuthToken().then((token) async {
-                      if (token != null && token.isNotEmpty) {
-                        final uri = Uri.parse(ApiUrl.baseUrl);
-                        final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
-                        final wsUrl = '$wsScheme://${uri.authority}/api/v1/ws';
-                        
-                        logger.i("DashboardScreen: Connecting to Socket for Vegetable at $wsUrl");
-                        final socketService = getIt<TrackingSocketService>();
-                        await socketService.startTracking(
-                          socketUrl: wsUrl,
-                          jwtToken: token,
-                        );
-                        
-                        logger.i("DashboardScreen: Sending delivery:accepted for vegetable orders: $orderIds");
-                        socketService.acceptDelivery(
-                          deliveryId: _deliveryBoyId!,
-                          orderIds: orderIds,
-                        );
-                      } else {
-                        logger.w("DashboardScreen: Auth token is empty, cannot connect socket.");
-                      }
-                    });
+                if (_deliveryType?.toLowerCase() == "vegetable") {
+                  // Connect to socket
+                  SessionManager.getAuthToken().then((token) async {
+                    if (token != null && token.isNotEmpty) {
+                      final wsUrl = "https://web.neosao.co.in?token=$token";
+                      logger.i("DashboardScreen: Connecting to Socket for Vegetable at $wsUrl");
+                      final socketService = getIt<TrackingSocketService>();
+                      await socketService.startTracking(
+                        socketUrl: wsUrl,
+                        jwtToken: token,
+                      );
+                    }
+                  });
+
+                  // At the same time call the /orders/current-assignment/orders api in background
+                  final assignmentUuid = state.data.data?.assignmentUuid;
+                  if (assignmentUuid != null && assignmentUuid.isNotEmpty) {
+                    _currentAssignmentOrdersBloc.add(
+                      CurrentAssignmentOrdersGetEvent(assignmentUuid, 1, 100),
+                    );
                   }
                 }
 
@@ -361,6 +354,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }
               if (state is AppUpdateFailureState) {
                 // appSnackBar(context, AppColor.bright_red, state.message);
+              }
+            },
+          ),
+          BlocListener<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+            listener: (context, state) {
+              if (state is CurrentAssignmentOrdersSuccessState) {
+                if (_deliveryType?.toLowerCase() == "vegetable") {
+                  final orders = state.data.data;
+                  if (orders.isNotEmpty) {
+                    final orderIds = orders.map((o) => o.uuId).toList();
+                    
+                    SessionManager.getAuthToken().then((token) async {
+                      if (token != null && token.isNotEmpty) {
+                        final session = await SessionManager.getUserSession();
+                        final deliveryId = _deliveryBoyId ?? session?.data?.deliveryBoy?.id;
+                        if (deliveryId == null) {
+                          logger.w("DashboardScreen: Delivery boy ID is missing.");
+                          return;
+                        }
+                        final wsUrl = "https://web.neosao.co.in?token=$token";
+                        // final wsUrl = "http://192.168.1.28:8023?token=$token";
+                        
+                        logger.i("DashboardScreen: Connecting to Socket for Vegetable at $wsUrl");
+                        final socketService = getIt<TrackingSocketService>();
+                        await socketService.startTracking(
+                          socketUrl: wsUrl,
+                          jwtToken: token,
+                        );
+                        
+                        logger.i("DashboardScreen: Sending delivery:accepted for vegetable orders: $orderIds");
+                        socketService.acceptDelivery(
+                          deliveryId: deliveryId,
+                          orderIds: orderIds,
+                        );
+                      } else {
+                        logger.w("DashboardScreen: Auth token is empty, cannot connect socket.");
+                      }
+                    });
+                  }
+                }
               }
             },
           ),

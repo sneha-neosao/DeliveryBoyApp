@@ -66,6 +66,7 @@ class OrderDetailsScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: const Color(0xFFFFF9F5),
         body: SafeArea(
+          top: false,
           child: BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
             builder: (context, state) {
               if (state is OrderDetailsLoadingState || state is OrderDetailsInitialState) {
@@ -338,11 +339,14 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
             ? fallbackOrder.deliveryAddress
             : 'address_not_available'.tr());
 
+    final double statusBarH = MediaQuery.of(context).padding.top;
+    final double topShift = statusBarH * _progress;
+
     return Column(
       children: [
         // ── Collapsible pinned header ──────────────────────────────────────
         SizedBox(
-          height: _headerH,
+          height: _headerH + topShift,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -359,9 +363,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                 ),
               ),
 
-              // Back arrow — always visible
+              // Back arrow — vertically aligned with order ID at all scroll states
               Positioned(
-                top: 12,
+                top: topShift + (_headerH - 28 * _expandedFade) / 2 - 19,
                 left: 12,
                 child: InkWell(
                   onTap: () => context.pop(),
@@ -381,11 +385,13 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                 ),
               ),
 
-              // Order ID — always visible, stays centered in current header height
+              // Order ID — always visible, shifts down when collapsed
               Positioned.fill(
                 child: Padding(
-                  // Fades away when collapsed so ID stays perfectly centred in the sticky bar
-                  padding: EdgeInsets.only(bottom: 28 * _expandedFade),
+                  padding: EdgeInsets.only(
+                    top: topShift,
+                    bottom: 28 * _expandedFade,
+                  ),
                   child: Center(
                     child: Text(
                       displayId,

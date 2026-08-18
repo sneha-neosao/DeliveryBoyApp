@@ -5,15 +5,19 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 
 class BulkOrderMapScreen extends StatefulWidget {
   final LatLng storeLocation;
   final List<LatLng> deliveryLocations;
+  final List<Order> orders;
 
   const BulkOrderMapScreen({
     super.key,
     required this.storeLocation,
     required this.deliveryLocations,
+    this.orders = const [],
   });
 
   @override
@@ -28,6 +32,8 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
   bool _isLoading = true;
   Position? _currentPosition;
   StreamSubscription<Position>? _positionStreamSubscription;
+  Order? _selectedOrder;   // tracks which stop marker was tapped
+  int _selectedStopIndex = 0;
 
   static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
@@ -132,12 +138,22 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
         hue = BitmapDescriptor.hueBlue;  // intermediate stops
       }
 
+      final int stopNum = i + 1;
+      // Match order by index if available
+      final Order? matchedOrder = (i < widget.orders.length) ? widget.orders[i] : null;
+
       markers.add(
         Marker(
           markerId: MarkerId('order_$i'),
           position: widget.deliveryLocations[i],
-          infoWindow: InfoWindow(title: 'Stop ${i + 1}'),
+          // No infoWindow — we show our own custom card overlay
           icon: BitmapDescriptor.defaultMarkerWithHue(hue),
+          onTap: () {
+            setState(() {
+              _selectedOrder = matchedOrder;
+              _selectedStopIndex = stopNum;
+            });
+          },
         ),
       );
     }
@@ -284,8 +300,7 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
       appBar: AppBar(
         title: Text(
           'Delivery Path (${widget.deliveryLocations.length} Stop${widget.deliveryLocations.length == 1 ? '' : 's'})',
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColor.darkOrange,
         leading: IconButton(
@@ -295,6 +310,7 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
       ),
       body: Stack(
         children: [
+          // ── Map (tap dismisses card) ──────────────────────────
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: widget.storeLocation,
@@ -310,7 +326,130 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
               _fitBounds();
               if (mounted) setState(() => _isLoading = false);
             },
+            onTap: (_) {
+              if (_selectedOrder != null || _selectedStopIndex != 0) {
+                setState(() {
+                  _selectedOrder = null;
+                  _selectedStopIndex = 0;
+                });
+              }
+            },
           ),
+
+          // ── Custom stop info card (shown on marker tap) ─────────
+          if (_selectedStopIndex > 0)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Material(
+                    elevation: 8,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      // Stop number badge
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: AppColor.darkOrange,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$_selectedStopIndex',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Stop details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _selectedOrder != null && _selectedOrder!.customerName.isNotEmpty
+                                  ? _selectedOrder!.customerName
+                                  : 'Stop $_selectedStopIndex',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (_selectedOrder != null && _selectedOrder!.deliveryAddress.isNotEmpty) ...
+                              [
+                                const SizedBox(height: 3),
+                                Text(
+                                  _selectedOrder!.deliveryAddress,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            if (_selectedOrder == null)
+                              Text(
+                                'Stop $_selectedStopIndex',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // ── Info / Details icon button ──
+                      IconButton(
+                        tooltip: 'View Order Details',
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColor.darkOrange,
+                          shape: const CircleBorder(),
+                          padding: const EdgeInsets.all(8),
+                        ),
+                        icon: const Icon(
+                          Icons.info_outline_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        onPressed: _selectedOrder != null
+                            ? () {
+                                context.pushNamed(
+                                  AppRoute.bulkOrderDetails.name,
+                                  extra: _selectedOrder,
+                                );
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Loading overlay ──────────────────────────────────
           if (_isLoading)
             Container(
               color: Colors.white.withValues(alpha: 0.8),

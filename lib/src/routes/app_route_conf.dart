@@ -83,11 +83,13 @@ class AppRouteConf {
           final data = state.extra as Map<String, dynamic>;
           final storeLocation = data['storeLocation'] as LatLng;
           final deliveryLocations = data['deliveryLocations'] as List<LatLng>;
+          final orders = (data['orders'] as List<Order>?) ?? [];
 
           return _fadePage(
             BulkOrderMapScreen(
               storeLocation: storeLocation,
               deliveryLocations: deliveryLocations,
+              orders: orders,
             ),
           );
         },

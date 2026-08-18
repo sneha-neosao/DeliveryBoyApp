@@ -201,7 +201,9 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                       },
                     ),
                   ],
-                  child: Builder(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 40),
+                    child: Builder(
                     builder: (context) {
                       final currentAssignmentState = context.watch<OrderCurrentAssignmentBloc>().state;
                       if (currentAssignmentState is OrderCurrentAssignmentLoadingState ||
@@ -407,6 +409,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                     },
                   ),
                 ),
+                ),
                 if (_isStatusUpdating)
                   Container(
                     color: Colors.black.withValues(alpha: 0.35),
@@ -503,6 +506,7 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                             extra: {
                               'storeLocation': storeLocation,
                               'deliveryLocations': deliveryLocations,
+                              'orders': bulkOrders,
                             },
                           );
                         },

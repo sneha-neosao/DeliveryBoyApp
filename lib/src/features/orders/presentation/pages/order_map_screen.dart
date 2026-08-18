@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
+import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 
 class OrderMapScreen extends StatefulWidget {
   final List<Order> orders;
@@ -26,7 +27,9 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   bool _isLoading = true;
   Position? _currentPosition;
   StreamSubscription<Position>? _positionStreamSubscription;
-  
+  Order? _selectedOrder; // tracks which stop marker was tapped
+  int _selectedStopIndex = 0;
+
   static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
   @override
@@ -158,19 +161,33 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
       );
     }
 
-    Order? ongoingOrder = _getFirstOngoingOrder();
+    // Add a marker for EVERY order stop with valid coordinates
     LatLng? ongoingLocation;
-    if (ongoingOrder != null) {
-      ongoingLocation = LatLng(ongoingOrder.deliveryLat, ongoingOrder.deliveryLng);
-      final String mId = ongoingOrder.uuId.isNotEmpty ? ongoingOrder.uuId : "order_${ongoingOrder.id}";
+    Order? ongoingOrder = _getFirstOngoingOrder();
+    // collect only orders with valid coords for stop numbering
+    final validOrders = widget.orders
+        .where((o) => o.deliveryLat != 0 || o.deliveryLng != 0)
+        .toList();
+    for (int i = 0; i < validOrders.length; i++) {
+      final order = validOrders[i];
+      final isOngoing = ongoingOrder != null && order.id == ongoingOrder.id;
+      final stopLocation = LatLng(order.deliveryLat, order.deliveryLng);
+      if (isOngoing) ongoingLocation = stopLocation;
+      final String mId = order.uuId.isNotEmpty ? order.uuId : "order_${order.id}";
+      final int stopNum = i + 1;
       _markers[MarkerId(mId)] = Marker(
         markerId: MarkerId(mId),
-        position: ongoingLocation,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: InfoWindow(
-          title: ongoingOrder.customerName.isNotEmpty ? ongoingOrder.customerName : 'Customer',
-          snippet: ongoingOrder.deliveryAddress,
+        position: stopLocation,
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+          isOngoing ? BitmapDescriptor.hueRed : BitmapDescriptor.hueViolet,
         ),
+        // No infoWindow – we show our own custom card overlay
+        onTap: () {
+          setState(() {
+            _selectedOrder = order;
+            _selectedStopIndex = stopNum;
+          });
+        },
       );
     }
 
@@ -350,21 +367,147 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Delivery Path', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Delivery Path (${widget.orders.length} Stops)',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppColor.darkOrange,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.pop()),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: Stack(
         children: [
+          // ── Map (dismisses card on tap) ─────────────────────────
           GoogleMap(
             onMapCreated: _onMapCreated,
-            initialCameraPosition: const CameraPosition(target: LatLng(20.5937, 78.9629), zoom: 12),
+            initialCameraPosition: const CameraPosition(
+              target: LatLng(20.5937, 78.9629),
+              zoom: 12,
+            ),
             markers: Set<Marker>.of(_markers.values),
             polylines: _polylines,
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
+            onTap: (_) {
+              // dismiss the card when tapping on empty map area
+              if (_selectedOrder != null) {
+                setState(() => _selectedOrder = null);
+              }
+            },
           ),
-          if (_isLoading) Container(color: Colors.white.withOpacity(0.8), child: const Center(child: CircularProgressIndicator(color: AppColor.darkOrange))),
+
+          // ── Custom stop info card (shown on marker tap) ─────────
+          if (_selectedOrder != null)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Material(
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          // Stop number badge
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColor.darkOrange,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '$_selectedStopIndex',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Stop details
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _selectedOrder!.customerName.isNotEmpty
+                                      ? _selectedOrder!.customerName
+                                      : 'Stop $_selectedStopIndex',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (_selectedOrder!.deliveryAddress.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _selectedOrder!.deliveryAddress,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.black54,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // ── Info / Details icon button ──
+                          IconButton(
+                            tooltip: 'View Order Details',
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColor.darkOrange,
+                              shape: const CircleBorder(),
+                              padding: const EdgeInsets.all(8),
+                            ),
+                            icon: const Icon(
+                              Icons.info_outline_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            onPressed: () {
+                              context.pushNamed(
+                                AppRoute.bulkOrderDetails.name,
+                                extra: _selectedOrder,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // ── Loading overlay ─────────────────────────────────────
+          if (_isLoading)
+            Container(
+              color: Colors.white.withValues(alpha: 0.8),
+              child: const Center(
+                child: CircularProgressIndicator(color: AppColor.darkOrange),
+              ),
+            ),
         ],
       ),
     );

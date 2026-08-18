@@ -204,7 +204,10 @@ class _OrdersScreenContentState extends State<_OrdersScreenContent> {
                 },
               ),
             ],
-            child: _buildBody(),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 40),
+              child: _buildBody(),
+            ),
           ),
         ),
         BlocBuilder<OrderStatusUpdateBloc, OrderStatusUpdateState>(

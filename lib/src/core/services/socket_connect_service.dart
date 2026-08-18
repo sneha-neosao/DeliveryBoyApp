@@ -365,18 +365,10 @@ class TrackingSocketService {
       return;
     }
 
-    final Map<String, dynamic> payload;
-    if (_activeOrderIds.length > 1) {
-      payload = {
-        'delivery_id': _deliveryId,
-        'order_ids': _activeOrderIds,
-      };
-    } else {
-      payload = {
-        'delivery_boy_id': _deliveryId,
-        'order_id': _activeOrderIds.first,
-      };
-    }
+    final Map<String, dynamic> payload = {
+      'delivery_id': _deliveryId,
+      'order_ids': _activeOrderIds,
+    };
 
     logger.i(
       'TrackingSocketService: Sending delivery:accepted',

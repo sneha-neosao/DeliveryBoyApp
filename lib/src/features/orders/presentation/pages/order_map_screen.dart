@@ -77,9 +77,17 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
         return;
       }
 
-      final uri = Uri.parse(ApiUrl.baseUrl);
-      final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
-      final wsUrl = '$wsScheme://${uri.authority}/api/v1/ws?token=$token';
+      final session = await SessionManager.getUserSession();
+      final deliveryType = session?.data?.deliveryBoy?.deliveryType;
+
+      final String wsUrl;
+      if (deliveryType?.toLowerCase() == "food") {
+        wsUrl = "https://web.neosao.co.in?token=$token";
+      } else {
+        final uri = Uri.parse(ApiUrl.baseUrl);
+        final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+        wsUrl = '$wsScheme://${uri.authority}/api/v1/ws?token=$token';
+      }
 
       logger.i("OrderMapScreen: Starting tracking for order ${ongoingOrder.uuId} at $wsUrl");
       

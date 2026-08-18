@@ -36,6 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _userPhone;
   String? _userImageUrl;
   String? _deliveryType;
+  int? _deliveryBoyId;
 
   // Dashboard stats from /dashboard/ API
   num? _totalEarning;
@@ -89,6 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _userPhone = deliveryBoy.phone;
         _userImageUrl = deliveryBoy.profileImage;
         _deliveryType = deliveryBoy.deliveryType;
+        _deliveryBoyId = deliveryBoy.id;
         if (deliveryBoy.isAvailable != null) {
           _isOnline = deliveryBoy.isAvailable!;
         }
@@ -240,27 +242,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       : 'Assignment updated successfully',
                 );
                 
-                /*final updatedOrders = state.data.data?.updatedOrders ?? [];
-                final isPickedUp = updatedOrders.any((o) => o.toStatus.toUpperCase() == 'PICKED_UP');
-                if (isPickedUp && updatedOrders.isNotEmpty) {
-                  final firstOrderId = updatedOrders.first.uuId.toString();
-                  
-                  SessionManager.getAuthToken().then((token) {
-                    if (token != null && token.isNotEmpty) {
-                      final uri = Uri.parse(ApiUrl.baseUrl);
-                      final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
-                      final wsUrl = '$wsScheme://${uri.authority}/api/v1/ws?token=$token';
-                      
-                      logger.i("DashboardScreen: Connecting to Socket at $wsUrl");
-                      getIt<TrackingSocketService>().startTracking(
-                        socketUrl: wsUrl,
-                        orderId: firstOrderId,
-                      );
-                    } else {
-                      logger.w("DashboardScreen: Auth token is empty, cannot connect socket.");
-                    }
-                  });
-                }*/
+                if (_deliveryType?.toLowerCase() == "vegetable" && _deliveryBoyId != null) {
+                  final updatedOrders = state.data.data?.updatedOrders ?? [];
+                  if (updatedOrders.isNotEmpty) {
+                    final orderIds = updatedOrders.map((o) => o.uuId).toList();
+                    
+                    SessionManager.getAuthToken().then((token) async {
+                      if (token != null && token.isNotEmpty) {
+                        final uri = Uri.parse(ApiUrl.baseUrl);
+                        final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+                        final wsUrl = '$wsScheme://${uri.authority}/api/v1/ws';
+                        
+                        logger.i("DashboardScreen: Connecting to Socket for Vegetable at $wsUrl");
+                        final socketService = getIt<TrackingSocketService>();
+                        await socketService.startTracking(
+                          socketUrl: wsUrl,
+                          jwtToken: token,
+                        );
+                        
+                        logger.i("DashboardScreen: Sending delivery:accepted for vegetable orders: $orderIds");
+                        socketService.acceptDelivery(
+                          deliveryId: _deliveryBoyId!,
+                          orderIds: orderIds,
+                        );
+                      } else {
+                        logger.w("DashboardScreen: Auth token is empty, cannot connect socket.");
+                      }
+                    });
+                  }
+                }
 
                 // Refresh current assignment and dashboard stats
                 if (_deliveryType?.toLowerCase() == "food") {
@@ -300,10 +310,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (orderAssignment != null && orderAssignment.status.toUpperCase() == 'DEL_ACCEPTED') {
                     SessionManager.getAuthToken().then((token) async {
                       if (token != null && token.isNotEmpty) {
-                        final uri = Uri.parse(ApiUrl.baseUrl);
-                        final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
-                        final wsUrl = '$wsScheme://${uri.authority}/api/v1/ws';
-                        
+                        // final wsUrl = "https://web.neosao.co.in/?token=$token";
+                        final wsUrl = "https://web.neosao.co.in?token=$token";
+
                         logger.i("DashboardScreen: Connecting to Socket at $wsUrl");
                         final socketService = getIt<TrackingSocketService>();
                         await socketService.startTracking(

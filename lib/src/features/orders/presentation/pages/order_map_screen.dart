@@ -105,6 +105,7 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   void _updateUserMarker(Position pos) {
     if (!mounted) return;
     setState(() {
+      _currentPosition = pos;
       _markers[const MarkerId('user_location')] = Marker(
         markerId: const MarkerId('user_location'),
         position: LatLng(pos.latitude, pos.longitude),
@@ -161,31 +162,22 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
       );
     }
 
-    // Add a marker for EVERY order stop with valid coordinates
-    LatLng? ongoingLocation;
-    Order? ongoingOrder = _getFirstOngoingOrder();
-    // collect only orders with valid coords for stop numbering
+    // Add marker for only the 1st valid order
     final validOrders = widget.orders
         .where((o) => o.deliveryLat != 0 || o.deliveryLng != 0)
         .toList();
-    for (int i = 0; i < validOrders.length; i++) {
-      final order = validOrders[i];
-      final isOngoing = ongoingOrder != null && order.id == ongoingOrder.id;
+    if (validOrders.isNotEmpty) {
+      final order = validOrders[0];
       final stopLocation = LatLng(order.deliveryLat, order.deliveryLng);
-      if (isOngoing) ongoingLocation = stopLocation;
       final String mId = order.uuId.isNotEmpty ? order.uuId : "order_${order.id}";
-      final int stopNum = i + 1;
       _markers[MarkerId(mId)] = Marker(
         markerId: MarkerId(mId),
         position: stopLocation,
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          isOngoing ? BitmapDescriptor.hueRed : BitmapDescriptor.hueViolet,
-        ),
-        // No infoWindow – we show our own custom card overlay
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         onTap: () {
           setState(() {
             _selectedOrder = order;
-            _selectedStopIndex = stopNum;
+            _selectedStopIndex = 1;
           });
         },
       );
@@ -194,9 +186,10 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
     // Comprehensive Fallback Polyline (Dashed)
     if (_polylines.isEmpty) {
       List<LatLng> fallbackPoints = [];
-      if (_currentPosition != null) fallbackPoints.add(LatLng(_currentPosition!.latitude, _currentPosition!.longitude));
       if (storeLocation != null) fallbackPoints.add(storeLocation);
-      if (ongoingLocation != null) fallbackPoints.add(ongoingLocation);
+      if (validOrders.isNotEmpty) {
+        fallbackPoints.add(LatLng(validOrders[0].deliveryLat, validOrders[0].deliveryLng));
+      }
 
       if (fallbackPoints.length > 1) {
         _polylines.add(
@@ -213,28 +206,19 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   }
 
   Future<void> _fetchRoadPath() async {
-    if (widget.orders.isEmpty) return;
+    final validOrders = widget.orders
+        .where((o) => o.deliveryLat != 0 || o.deliveryLng != 0)
+        .toList();
+    if (validOrders.isEmpty) return;
     try {
       LatLng? storeLocation = _getStoreLocation();
-      Order? ongoingOrder = _getFirstOngoingOrder();
-      if (ongoingOrder == null) return;
+      if (storeLocation == null) return;
       
-      final destination = "${ongoingOrder.deliveryLat},${ongoingOrder.deliveryLng}";
-      String url = "";
-
-      if (_currentPosition != null) {
-        // Mode A: Current -> Store -> Order
-        final origin = "${_currentPosition!.latitude},${_currentPosition!.longitude}";
-        url = "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=$_googleApiKey";
-        if (storeLocation != null) {
-          url += "&waypoints=optimize:true|${storeLocation.latitude},${storeLocation.longitude}";
-        }
-      } else if (storeLocation != null) {
-        // Mode B: Store -> Order (if current location unknown)
-        url = "https://maps.googleapis.com/maps/api/directions/json?origin=${storeLocation.latitude},${storeLocation.longitude}&destination=$destination&key=$_googleApiKey";
-      } else {
-        return;
-      }
+      final firstOrder = validOrders[0];
+      final origin = "${storeLocation.latitude},${storeLocation.longitude}";
+      final destination = "${firstOrder.deliveryLat},${firstOrder.deliveryLng}";
+      
+      final url = "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=$_googleApiKey";
 
       final response = await Dio().get(url);
       
@@ -256,7 +240,7 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
               ),
             );
           });
-          _fitBounds(_currentPosition);
+          _fitBounds();
         }
       } else {
         debugPrint("Directions API error: ${response.data['status']}");
@@ -264,11 +248,6 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Road path error: ${response.data['status']}")),
           );
-        }
-        // If Mode A failed, try Mode B as fallback
-        if (_currentPosition != null && storeLocation != null) {
-          _currentPosition = null; // Forces Mode B in next call
-          _fetchRoadPath();
         }
       }
     } catch (e) {
@@ -327,10 +306,8 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
       
       if (_currentPosition != null) {
         _updateUserMarker(_currentPosition!);
-        _fitBounds(_currentPosition);
-      } else if (_markers.isNotEmpty) {
-        _fitBounds(null);
       }
+      _fitBounds();
     } catch (e) {
       debugPrint("Error setting initial location: $e");
     } finally {
@@ -356,9 +333,8 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
     }
   }
 
-  void _fitBounds(Position? userPosition) {
+  void _fitBounds() {
     List<LatLng> points = _markers.values.map((m) => m.position).toList();
-    if (userPosition != null) points.add(LatLng(userPosition.latitude, userPosition.longitude));
     
     if (points.isEmpty) return;
     double? minLat, maxLat, minLng, maxLng;
@@ -378,9 +354,9 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Delivery Path (${widget.orders.length} Stops)',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: const Text(
+          'Delivery Path',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColor.darkOrange,
         leading: IconButton(

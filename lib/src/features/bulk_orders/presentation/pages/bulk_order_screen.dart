@@ -471,74 +471,63 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
                 ),
               ),
               if (_assignment != null && bulkOrders.isNotEmpty)
-                Builder(
-                  builder: (context) {
-                    final bool anyPickedUp = bulkOrders.any((o) {
-                      final s = o.orderStatus.toUpperCase();
-                      return s == 'PICKED_UP' || s == 'ON_THE_WAY';
-                    });
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: InkWell(
+                        onTap: () {
+                          final storeLocation = LatLng(
+                            bulkOrders.first.storeLatitude ?? 0.0,
+                            bulkOrders.first.storeLongitude ?? 0.0,
+                          );
 
-                    if (!anyPickedUp) return const SizedBox.shrink();
+                          final deliveryLocations = bulkOrders
+                              .map((o) => LatLng(o.deliveryLat, o.deliveryLng))
+                              .toList();
+                          debugPrint("========== BULK ORDERS ==========");
 
-                    return Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: InkWell(
-                            onTap: () {
-                              final storeLocation = LatLng(
-                                bulkOrders.first.storeLatitude!,
-                                bulkOrders.first.storeLongitude!,
-                              );
+                          for (int i = 0; i < bulkOrders.length; i++) {
+                            debugPrint(
+                              "Order ${i + 1}: "
+                                  "${bulkOrders[i].deliveryLat}, "
+                                  "${bulkOrders[i].deliveryLng}",
+                            );
+                          }
 
-                              final deliveryLocations = bulkOrders
-                                  .map((o) => LatLng(o.deliveryLat, o.deliveryLng))
-                                  .toList();
-                              debugPrint("========== BULK ORDERS ==========");
-
-                              for (int i = 0; i < bulkOrders.length; i++) {
-                                debugPrint(
-                                  "Order ${i + 1}: "
-                                      "${bulkOrders[i].deliveryLat}, "
-                                      "${bulkOrders[i].deliveryLng}",
-                                );
-                              }
-
-                              debugPrint("================================");
+                          debugPrint("================================");
 
 
-                              context.push(
-                                AppRoute.bulkOrderMap.path,
-                                extra: {
-                                  'storeLocation': storeLocation,
-                                  'deliveryLocations': deliveryLocations,
-                                },
-                              );
+                          context.push(
+                            AppRoute.bulkOrderMap.path,
+                            extra: {
+                              'storeLocation': storeLocation,
+                              'deliveryLocations': deliveryLocations,
                             },
-                            borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColor.darkOrange,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Transform.rotate(
-                              angle: math.pi / 4, // 45° towards upper-right
-                              child: const Icon(
-                                Icons.navigation,
-                                color: AppColor.darkOrange,
-                                size: 20,
-                              ),
-                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColor.darkOrange,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Transform.rotate(
+                          angle: math.pi / 4, // 45° towards upper-right
+                          child: const Icon(
+                            Icons.navigation,
+                            color: AppColor.darkOrange,
+                            size: 20,
                           ),
                         ),
                       ),
-                    );
-                  }
+                    ),
+                  ),
                 )
             ],
           ),

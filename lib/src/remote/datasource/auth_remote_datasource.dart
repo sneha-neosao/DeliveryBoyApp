@@ -466,8 +466,10 @@ class RemoteDataSourceImpl implements RemoteDataSource {
         Position? position;
         try {
           position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high,
-            timeLimit: const Duration(seconds: 4),
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 4),
+            ),
           );
         } catch (_) {
           position = await Geolocator.getLastKnownPosition();

@@ -18,6 +18,8 @@ import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:delivery_boy_app/src/core/api/api_url.dart';
+import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -291,6 +293,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ? state.data.message
                       : 'Assignment updated successfully',
                 );
+
+                // --- Sockets for Food Delivery Type ---
+                if (_deliveryType?.toLowerCase() == "food") {
+                  final orderAssignment = state.data.data;
+                  if (orderAssignment != null && orderAssignment.status.toUpperCase() == 'DEL_ACCEPTED') {
+                    SessionManager.getAuthToken().then((token) async {
+                      if (token != null && token.isNotEmpty) {
+                        final uri = Uri.parse(ApiUrl.baseUrl);
+                        final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+                        final wsUrl = '$wsScheme://${uri.authority}/api/v1/ws';
+                        
+                        logger.i("DashboardScreen: Connecting to Socket at $wsUrl");
+                        final socketService = getIt<TrackingSocketService>();
+                        await socketService.startTracking(
+                          socketUrl: wsUrl,
+                          jwtToken: token,
+                        );
+                        
+                        logger.i("DashboardScreen: Sending delivery:accepted for order ${orderAssignment.orderUuId}");
+                        socketService.acceptDelivery(
+                          deliveryId: orderAssignment.deliveryBoyId,
+                          orderIds: [orderAssignment.orderUuId],
+                        );
+                      } else {
+                        logger.w("DashboardScreen: Auth token is empty, cannot connect socket.");
+                      }
+                    });
+                  }
+                }
+
                 // Refresh current assignment and dashboard stats
                 if (_deliveryType?.toLowerCase() == "food") {
                   _foodOrderCurrentAssignmentBloc.add(const FoodOrderCurrentAssignmentGetEvent());

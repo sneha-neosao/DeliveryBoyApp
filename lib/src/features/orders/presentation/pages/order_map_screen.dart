@@ -85,7 +85,7 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
       
       await getIt<TrackingSocketService>().startTracking(
         socketUrl: wsUrl,
-        orderId: ongoingOrder.uuId,
+        jwtToken: token,
       );
     } catch (e) {
       logger.e("OrderMapScreen: Error initializing socket: $e");

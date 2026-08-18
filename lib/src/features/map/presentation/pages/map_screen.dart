@@ -82,7 +82,7 @@ class _MapScreenState extends State<MapScreen> {
       
       await getIt<TrackingSocketService>().startTracking(
         socketUrl: wsUrl,
-        orderId: firstOrder.uuId,
+        jwtToken: token,
       );
     } catch (e) {
       logger.e("MapScreen: Error initializing socket: $e");

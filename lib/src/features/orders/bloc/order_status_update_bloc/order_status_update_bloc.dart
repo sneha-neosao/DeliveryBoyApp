@@ -4,6 +4,9 @@ import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_status
 import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_status_update_response.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:delivery_boy_app/src/configs/injector/injector.dart';
+import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
+import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 
 part 'order_status_update_event.dart';
 part 'order_status_update_state.dart';
@@ -32,7 +35,16 @@ class OrderStatusUpdateBloc extends Bloc<OrderStatusUpdateEvent, OrderStatusUpda
 
     result.fold(
       (l) => emit(OrderStatusUpdateFailureState(l.message)),
-      (r) => emit(OrderStatusUpdateSuccessState(r)),
+      (r) {
+        if (event.status.toUpperCase() == 'DELIVERED') {
+          try {
+            getIt<TrackingSocketService>().completeOrder(event.uu_id);
+          } catch (e) {
+            logger.e("OrderStatusUpdateBloc: Failed to emit order:delivered: $e");
+          }
+        }
+        emit(OrderStatusUpdateSuccessState(r));
+      },
     );
   }
 

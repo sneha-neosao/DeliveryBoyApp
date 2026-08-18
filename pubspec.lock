@@ -773,38 +773,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  linkedin_login:
-    dependency: "direct main"
-    description:
-      name: linkedin_login
-      sha256: "417d52fd656124b08fb3b6789b3339045786097d2be9b361bff9f6f5a80f2d41"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.3"
-  linkedin_login_android:
-    dependency: transitive
-    description:
-      name: linkedin_login_android
-      sha256: dc1a2175626e23190f63728809df7d1ea3c1ee7647658cd9727cb8177cf7a6d4
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.3"
-  linkedin_login_ios:
-    dependency: transitive
-    description:
-      name: linkedin_login_ios
-      sha256: c5eef824567be7a832b639157396368631798c913ec085e0bd980d236b8a44fe
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.3"
-  linkedin_login_platform_interface:
-    dependency: transitive
-    description:
-      name: linkedin_login_platform_interface
-      sha256: cb53d803b66ba32a6acc27ad9c15b96fabc2c0731d3dff15b8581a6e889e9368
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.3"
   lints:
     dependency: transitive
     description:
@@ -1029,14 +997,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.5+1"
-  rxdart:
-    dependency: transitive
-    description:
-      name: rxdart
-      sha256: "5c3004a4a8dbb94bd4bf5412a4def4acdaa12e12f269737a5751369e12d1a962"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.28.0"
   sanitize_html:
     dependency: transitive
     description:
@@ -1114,6 +1074,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  socket_io_client:
+    dependency: "direct main"
+    description:
+      name: socket_io_client
+      sha256: f5990ff303d385e7b2150f0e57cca097a8d20c6a2ae0a22cb2d496661ea8ed9b
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.6"
+  socket_io_common:
+    dependency: transitive
+    description:
+      name: socket_io_common
+      sha256: "162fbaecbf4bf9a9372a62a341b3550b51dcef2f02f3e5830a297fd48203d45b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.1"
   source_span:
     dependency: transitive
     description:
@@ -1290,38 +1266,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
-  webview_flutter:
+  web_socket:
     dependency: transitive
     description:
-      name: webview_flutter
-      sha256: a3da219916aba44947d3a5478b1927876a09781174b5a2b67fa5be0555154bf9
+      name: web_socket
+      sha256: "34d64019aa8e36bf9842ac014bb5d2f5586ca73df5e4d9bf5c936975cae6982c"
       url: "https://pub.dev"
     source: hosted
-    version: "4.13.1"
-  webview_flutter_android:
-    dependency: transitive
-    description:
-      name: webview_flutter_android
-      sha256: ad5182eff9a550925330cb9f0cb038eddfdd5712aba8b77aa0f0400e50f6e688
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.12.0"
-  webview_flutter_platform_interface:
-    dependency: transitive
-    description:
-      name: webview_flutter_platform_interface
-      sha256: "1221c1b12f5278791042f2ec2841743784cf25c5a644e23d6680e5d718824f04"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.15.1"
-  webview_flutter_wkwebview:
-    dependency: transitive
-    description:
-      name: webview_flutter_wkwebview
-      sha256: e50cd97ad28e888f6a4f862a05eab917a635417f9b134df64c3abb78250c6446
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.25.0"
+    version: "1.0.1"
   win32:
     dependency: transitive
     description:

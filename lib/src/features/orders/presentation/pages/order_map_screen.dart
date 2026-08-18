@@ -276,6 +276,17 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
     }
   }
 
+  String _formatStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'DEL_ACCEPTED':
+        return 'DELIVERY ACCEPTED';
+      case 'READY_FOR_PICKUP':
+        return 'READY FOR PICK UP';
+      default:
+        return status.replaceAll('_', ' ').toUpperCase();
+    }
+  }
+
   List<LatLng> _decodePolyline(String encoded) {
     List<LatLng> poly = [];
     int index = 0, len = encoded.length;
@@ -460,6 +471,17 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                       color: Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _formatStatus(_selectedOrder!.orderStatus),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColor.darkOrange,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

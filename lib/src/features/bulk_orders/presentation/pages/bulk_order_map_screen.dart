@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
@@ -34,15 +36,14 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
   StreamSubscription<Position>? _positionStreamSubscription;
   Order? _selectedOrder;   // tracks which stop marker was tapped
   int _selectedStopIndex = 0;
+  BitmapDescriptor? _userMarkerIcon;
 
   static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
   @override
   void initState() {
     super.initState();
-    _setMarkers();
-    _getRoutePolyline();
-    _startLocationUpdates();
+    _initMapData();
     debugPrint(
       "Delivery Count: ${widget.deliveryLocations.length}",
     );
@@ -62,6 +63,30 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
     super.dispose();
   }
 
+  Future<BitmapDescriptor> _loadMarkerIcon() async {
+    final byteData = await rootBundle.load('assets/images/map_marker.png');
+    final bytes = byteData.buffer.asUint8List();
+    final codec = await ui.instantiateImageCodec(bytes, targetWidth: 50);
+    final frame = await codec.getNextFrame();
+    final resizedBytes = (await frame.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+    return BitmapDescriptor.bytes(resizedBytes);
+  }
+
+  Future<void> _initMapData() async {
+    try {
+      _userMarkerIcon = await _loadMarkerIcon();
+    } catch (e) {
+      debugPrint('Failed to load map_marker.png: $e');
+    }
+    _setMarkers();
+    _currentPosition = await _determinePosition();
+    if (_currentPosition != null) {
+      _updateUserMarker(_currentPosition!);
+    }
+    _getRoutePolyline();
+    _startLocationUpdates();
+  }
+
   void _startLocationUpdates() {
     _positionStreamSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
@@ -70,10 +95,7 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
       ),
     ).listen((Position position) {
       if (mounted) {
-        setState(() {
-          _currentPosition = position;
-          _updateUserMarker(position);
-        });
+        _updateUserMarker(position);
       }
     });
   }
@@ -82,6 +104,15 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
     if (!mounted) return;
     setState(() {
       _currentPosition = pos;
+      final userMarker = Marker(
+        markerId: const MarkerId('user_location'),
+        position: LatLng(pos.latitude, pos.longitude),
+        icon: _userMarkerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: const InfoWindow(title: 'Your Location'),
+        anchor: const Offset(0.5, 0.5),
+      );
+      _markers.removeWhere((m) => m.markerId == const MarkerId('user_location'));
+      _markers.add(userMarker);
     });
   }
 
@@ -98,8 +129,7 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
       Position? lastKnown = await Geolocator.getLastKnownPosition();
       if (lastKnown != null) return lastKnown;
       return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 5),
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 5)),
       );
     } catch (e) {
       return null;
@@ -108,6 +138,25 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
 
   void _setMarkers() {
     final markers = <Marker>{};
+
+    // Preserve user marker if present
+    final userMarker = _markers.firstWhere(
+      (m) => m.markerId == const MarkerId('user_location'),
+      orElse: () => const Marker(markerId: MarkerId('none')),
+    );
+    if (userMarker.markerId.value != 'none') {
+      markers.add(userMarker);
+    } else if (_currentPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('user_location'),
+          position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          icon: _userMarkerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: const InfoWindow(title: 'Your Location'),
+          anchor: const Offset(0.5, 0.5),
+        ),
+      );
+    }
 
     // Store marker (orange)
     markers.add(
@@ -321,8 +370,8 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
             ),
             markers: _markers,
             polylines: _polylines,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
+            myLocationEnabled: false,
+            myLocationButtonEnabled: false,
             onMapCreated: (controller) {
               _mapController = controller;
               _mapReady = true;

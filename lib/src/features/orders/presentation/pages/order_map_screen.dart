@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
@@ -29,6 +31,7 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   StreamSubscription<Position>? _positionStreamSubscription;
   Order? _selectedOrder; // tracks which stop marker was tapped
   int _selectedStopIndex = 0;
+  BitmapDescriptor? _userMarkerIcon;
 
   static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
@@ -47,6 +50,15 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
     super.dispose();
   }
 
+  Future<BitmapDescriptor> _loadMarkerIcon() async {
+    final byteData = await rootBundle.load('assets/images/map_marker.png');
+    final bytes = byteData.buffer.asUint8List();
+    final codec = await ui.instantiateImageCodec(bytes, targetWidth: 50);
+    final frame = await codec.getNextFrame();
+    final resizedBytes = (await frame.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+    return BitmapDescriptor.bytes(resizedBytes);
+  }
+
   void _startLocationUpdates() {
     _positionStreamSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
@@ -55,10 +67,7 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
       ),
     ).listen((Position position) {
       if (mounted) {
-        setState(() {
-          _currentPosition = position;
-          _updateUserMarker(position);
-        });
+        _updateUserMarker(position);
       }
     });
   }
@@ -101,6 +110,11 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   }
 
   Future<void> _initMapData() async {
+    try {
+      _userMarkerIcon = await _loadMarkerIcon();
+    } catch (e) {
+      debugPrint('Failed to load map_marker.png: $e');
+    }
     _createMarkers(); 
     _currentPosition = await _determinePosition();
     if (_currentPosition != null) {
@@ -114,6 +128,13 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
     if (!mounted) return;
     setState(() {
       _currentPosition = pos;
+      _markers[const MarkerId('user_location')] = Marker(
+        markerId: const MarkerId('user_location'),
+        position: LatLng(pos.latitude, pos.longitude),
+        icon: _userMarkerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: const InfoWindow(title: 'Your Location'),
+        anchor: const Offset(0.5, 0.5),
+      );
     });
   }
 
@@ -148,7 +169,19 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   }
 
   void _createMarkers() {
+    final userMarker = _markers[const MarkerId('user_location')];
     _markers.clear();
+    if (userMarker != null) {
+      _markers[const MarkerId('user_location')] = userMarker;
+    } else if (_currentPosition != null) {
+      _markers[const MarkerId('user_location')] = Marker(
+        markerId: const MarkerId('user_location'),
+        position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        icon: _userMarkerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: const InfoWindow(title: 'Your Location'),
+        anchor: const Offset(0.5, 0.5),
+      );
+    }
     
     _polylines.removeWhere((p) => p.polylineId.value == 'delivery_path_fallback');
     
@@ -375,8 +408,8 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
             ),
             markers: Set<Marker>.of(_markers.values),
             polylines: _polylines,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
+            myLocationEnabled: false,
+            myLocationButtonEnabled: false,
             onTap: (_) {
               // dismiss the card when tapping on empty map area
               if (_selectedOrder != null) {

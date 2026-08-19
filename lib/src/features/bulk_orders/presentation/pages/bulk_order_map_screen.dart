@@ -107,6 +107,8 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
       final userMarker = Marker(
         markerId: const MarkerId('user_location'),
         position: LatLng(pos.latitude, pos.longitude),
+        rotation: pos.heading,
+        flat: true,
         icon: _userMarkerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         infoWindow: const InfoWindow(title: 'Your Location'),
         anchor: const Offset(0.5, 0.5),

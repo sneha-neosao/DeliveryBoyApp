@@ -544,6 +544,7 @@ class TrackingSocketService {
     final payload = {
       'lat': position.latitude,
       'lng': position.longitude,
+      'bearing': position.heading,
       'timestamp': DateTime.now()
           .toUtc()
           .toIso8601String(),
@@ -568,7 +569,7 @@ class TrackingSocketService {
       );
 
       logger.d(
-        'Location: ${position.latitude}, ${position.longitude}',
+        'Location: ${position.latitude}, ${position.longitude}, Bearing: ${position.heading}',
       );
     } catch (e) {
       logger.e(

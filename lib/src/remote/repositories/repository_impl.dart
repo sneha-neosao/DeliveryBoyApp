@@ -1,6 +1,7 @@
 import 'package:delivery_boy_app/src/core/api/api_exception.dart';
 import 'package:delivery_boy_app/src/core/errors/exceptions.dart';
 import 'package:delivery_boy_app/src/core/errors/failures.dart';
+import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
 import 'package:delivery_boy_app/src/core/utils/failure_converter.dart';
@@ -35,6 +36,7 @@ import 'package:delivery_boy_app/src/remote/models/profile_model/profile_update_
 import 'package:delivery_boy_app/src/remote/models/version_model/app_update_response.dart';
 import 'package:fpdart/fpdart.dart';
 
+import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import '../../configs/injector/injector.dart';
 
 /// Abstract Repository interface defining all data operations for the app
@@ -114,6 +116,12 @@ class AuthRepositoryImpl implements Repository {
           // Save tokens to their dedicated keys so ApiInterceptor can read them
           if (respData.data?.accessToken != null) {
             await SessionManager.saveSessionId(respData.data?.accessToken);
+            final token = respData.data!.accessToken!;
+            final wsUrl = "https://web.neosao.co.in?token=$token";
+            getIt<TrackingSocketService>().startTracking(
+              socketUrl: wsUrl,
+              jwtToken: token,
+            );
           }
           if (respData.data?.refreshToken != null) {
             await SessionManager.saveRefreshToken(respData.data?.refreshToken);

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
@@ -39,6 +40,12 @@ class TrackingSocketService {
   int? _deliveryId;
 
   List<String> _activeOrderIds = [];
+
+  // ===========================================================================
+  // CONNECTIVITY
+  // ===========================================================================
+
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   // ===========================================================================
   // STATE
@@ -88,12 +95,34 @@ class TrackingSocketService {
     _jwtToken = jwtToken;
 
     _manuallyDisconnected = false;
+    _initConnectivityListener();
 
     logger.i(
       'TrackingSocketService: Starting Socket.IO tracking',
     );
 
     await _connect();
+  }
+
+  void _initConnectivityListener() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      final isOnline = results.any((r) => r != ConnectivityResult.none);
+      if (isOnline) {
+        logger.i('TrackingSocketService: Internet restored ($results). Checking socket connection...');
+        if (_socket != null) {
+          if (!_socket!.connected) {
+            logger.i('TrackingSocketService: Reconnecting socket...');
+            _socket!.connect();
+          }
+        } else if (_socketUrl != null && _jwtToken != null) {
+          logger.i('TrackingSocketService: Connecting socket...');
+          _connect();
+        }
+      } else {
+        logger.w('TrackingSocketService: Internet connection lost.');
+      }
+    });
   }
 
   // ===========================================================================
@@ -235,13 +264,14 @@ class TrackingSocketService {
 
       _connectionController.add(false);
 
-      // IMPORTANT:
-      // Do not stop GPS permanently here.
-      //
-      // Socket.IO will automatically reconnect.
-      //
-      // GPS tracking can continue and _sendLocation() will simply
-      // skip sending while socket is disconnected.
+      // Try reconnecting after disconnect if not disposed or manually disconnected
+      if (!_disposed && !_manuallyDisconnected) {
+        Future.delayed(const Duration(seconds: 3), () {
+          if (!_disposed && !_manuallyDisconnected && !isConnected) {
+            _socket?.connect();
+          }
+        });
+      }
     });
 
     // -------------------------------------------------------------------------
@@ -292,10 +322,16 @@ class TrackingSocketService {
 
     socket.onReconnectFailed((_) {
       logger.e(
-        'TrackingSocketService: Reconnection failed',
+        'TrackingSocketService: Reconnection failed, retrying in 3 seconds...',
       );
 
       _connectionController.add(false);
+
+      Future.delayed(const Duration(seconds: 3), () {
+        if (!_disposed && !_manuallyDisconnected && !isConnected) {
+          _socket?.connect();
+        }
+      });
     });
 
     // -------------------------------------------------------------------------
@@ -842,6 +878,9 @@ class TrackingSocketService {
     logger.i(
       'TrackingSocketService: Disposing service',
     );
+
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = null;
 
     disconnect();
 

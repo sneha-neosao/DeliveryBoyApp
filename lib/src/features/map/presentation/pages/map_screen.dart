@@ -42,7 +42,6 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
-    getIt<TrackingSocketService>().disconnect();
     super.dispose();
   }
 

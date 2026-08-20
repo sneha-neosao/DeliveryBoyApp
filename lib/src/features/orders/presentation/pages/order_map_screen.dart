@@ -46,7 +46,6 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
-    getIt<TrackingSocketService>().disconnect();
     super.dispose();
   }
 

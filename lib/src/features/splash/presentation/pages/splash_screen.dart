@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
+import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 import 'package:delivery_boy_app/src/features/widgets/safe_gif_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -57,7 +58,16 @@ class _SplashScreenState extends State<SplashScreen> {
       );
 
       if (_authState is AuthCheckSignInStatusSuccessState) {
-        debugPrint("UserData: ${(_authState as AuthCheckSignInStatusSuccessState).data}");
+        final session = (_authState as AuthCheckSignInStatusSuccessState).data;
+        final token = session.data?.accessToken;
+        if (token != null && token.isNotEmpty) {
+          final wsUrl = "https://web.neosao.co.in?token=$token";
+          getIt<TrackingSocketService>().startTracking(
+            socketUrl: wsUrl,
+            jwtToken: token,
+          );
+        }
+        debugPrint("UserData: ${session.data}");
         context.goNamed(AppRoute.dashboard.name);
       } else {
         context.goNamed(AppRoute.getStarted.name);

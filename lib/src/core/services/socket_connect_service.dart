@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
@@ -102,6 +103,10 @@ class TrackingSocketService {
     );
 
     await _connect();
+
+    if (isConnected) {
+      _sendDeliveryGeoUpdate();
+    }
   }
 
   void _initConnectivityListener() {
@@ -232,6 +237,8 @@ class TrackingSocketService {
 
       _connectionController.add(true);
 
+      _sendDeliveryGeoUpdate();
+
       _sendAcceptDelivery();
 
       // If tracking was already active before connection dropped,
@@ -294,6 +301,8 @@ class TrackingSocketService {
       );
 
       _connectionController.add(true);
+
+      _sendDeliveryGeoUpdate();
     });
 
     // -------------------------------------------------------------------------
@@ -357,6 +366,78 @@ class TrackingSocketService {
       'error',
       _handleServerError,
     );
+  }
+
+  // ===========================================================================
+  // DELIVERY GEO UPDATE
+  // ===========================================================================
+
+  /// Emits delivery:geo_update with parameters:
+  /// { "delivery_boy_id": <int/str>, "lat": <float>, "long": <float>, "status": true|false }
+  Future<void> sendDeliveryGeoUpdate({
+    dynamic deliveryBoyId,
+    double? lat,
+    double? long,
+    bool? status,
+  }) async {
+    try {
+      dynamic boyId = deliveryBoyId ?? _deliveryId;
+      bool currentStatus = status ?? true;
+
+      final session = await SessionManager.getUserSession();
+      if (boyId == null) {
+        boyId = session?.data?.deliveryBoy?.id ?? session?.data?.deliveryBoy?.uuId;
+      }
+      if (status == null && session?.data?.deliveryBoy != null) {
+        currentStatus = session?.data?.deliveryBoy?.isActive ?? true;
+      }
+
+      double latitude = lat ?? 0.0;
+      double longitude = long ?? 0.0;
+
+      if (lat == null || long == null) {
+        try {
+          Position? position;
+          try {
+            position = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.high,
+                timeLimit: Duration(seconds: 4),
+              ),
+            );
+          } catch (_) {
+            position = await Geolocator.getLastKnownPosition();
+          }
+          if (position != null) {
+            latitude = position.latitude;
+            longitude = position.longitude;
+          }
+        } catch (e) {
+          logger.e("TrackingSocketService: Failed to get position for delivery:geo_update: $e");
+        }
+      }
+
+      final Map<String, dynamic> payload = {
+        "delivery_boy_id": boyId ?? 0,
+        "lat": latitude,
+        "long": longitude,
+        "status": currentStatus,
+      };
+
+      logger.i("TrackingSocketService: Emitting delivery:geo_update payload: $payload");
+
+      if (_socket != null && isConnected) {
+        _socket!.emit('delivery:geo_update', payload);
+      } else {
+        logger.w("TrackingSocketService: Socket not connected yet. Will emit delivery:geo_update on connect.");
+      }
+    } catch (e) {
+      logger.e("TrackingSocketService: Error sending delivery:geo_update: $e");
+    }
+  }
+
+  void _sendDeliveryGeoUpdate() {
+    sendDeliveryGeoUpdate();
   }
 
   // ===========================================================================

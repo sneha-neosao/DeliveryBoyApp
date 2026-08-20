@@ -523,6 +523,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
                                       return const SizedBox.shrink();
                                     }
+                                    final autoAssignMode = assignment.effectiveAutoAssignMode.isNotEmpty
+                                        ? assignment.effectiveAutoAssignMode
+                                        : state.data.autoAssignMode;
                                     return BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
                                       builder: (context, ordersState) {
                                         String paymentMode = '';
@@ -534,6 +537,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           status: assignment.status,
                                           uuid: assignment.uuid,
                                           paymentMode: paymentMode,
+                                          autoAssignMode: autoAssignMode,
                                         );
                                       },
                                     );

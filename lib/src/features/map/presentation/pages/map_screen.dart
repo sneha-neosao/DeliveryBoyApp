@@ -80,7 +80,7 @@ class _MapScreenState extends State<MapScreen> {
 
       final String wsUrl;
       if (deliveryType?.toLowerCase() == "food" || deliveryType?.toLowerCase() == "vegetable") {
-        wsUrl = "https://web.neosao.co.in?token=$token";
+        wsUrl = "${ApiUrl.socketUrl}?token=$token";
       } else {
         final uri = Uri.parse(ApiUrl.baseUrl);
         final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';

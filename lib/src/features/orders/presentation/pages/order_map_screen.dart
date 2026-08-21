@@ -32,6 +32,7 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   Order? _selectedOrder; // tracks which stop marker was tapped
   int _selectedStopIndex = 0;
   BitmapDescriptor? _userMarkerIcon;
+  String? _deliveryType;
 
   static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
@@ -90,7 +91,7 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
 
       final String wsUrl;
       if (deliveryType?.toLowerCase() == "food" || deliveryType?.toLowerCase() == "vegetable") {
-        wsUrl = "https://web.neosao.co.in?token=$token";
+        wsUrl = "${ApiUrl.socketUrl}?token=$token";
       } else {
         final uri = Uri.parse(ApiUrl.baseUrl);
         final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
@@ -111,8 +112,10 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
   Future<void> _initMapData() async {
     try {
       _userMarkerIcon = await _loadMarkerIcon();
+      final session = await SessionManager.getUserSession();
+      _deliveryType = session?.data?.deliveryBoy?.deliveryType;
     } catch (e) {
-      debugPrint('Failed to load map_marker.png: $e');
+      debugPrint('Failed to load map data: $e');
     }
     _createMarkers(); 
     _currentPosition = await _determinePosition();
@@ -249,7 +252,19 @@ class _OrderMapScreenState extends State<OrderMapScreen> {
       if (storeLocation == null) return;
       
       final firstOrder = validOrders[0];
-      final origin = "${storeLocation.latitude},${storeLocation.longitude}";
+      
+      // ORIGIN LOGIC:
+      // If vegetable delivery and single order, path starts from Delivery Boy's live location.
+      // Otherwise, path starts from the Store.
+      final String origin;
+      if (_deliveryType?.toLowerCase() == 'vegetable' && validOrders.length == 1 && _currentPosition != null) {
+        origin = "${_currentPosition!.latitude},${_currentPosition!.longitude}";
+        debugPrint("Path Origin: Delivery Boy Live Location (Vegetable Single Order)");
+      } else {
+        origin = "${storeLocation.latitude},${storeLocation.longitude}";
+        debugPrint("Path Origin: Store Location");
+      }
+
       final destination = "${firstOrder.deliveryLat},${firstOrder.deliveryLng}";
       
       final url = "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=$_googleApiKey";

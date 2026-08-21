@@ -1,5 +1,6 @@
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
+import 'package:delivery_boy_app/src/core/api/api_url.dart';
 import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/login/presentation/widgets/login_input_widget.dart';
@@ -122,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (state is AuthLoginSuccessState) {
                                 final token = state.data.data?.accessToken;
                                 if (token != null && token.isNotEmpty) {
-                                  final wsUrl = "https://web.neosao.co.in?token=$token";
+                                  final wsUrl = "${ApiUrl.socketUrl}?token=$token";
                                   getIt<TrackingSocketService>().startTracking(
                                     socketUrl: wsUrl,
                                     jwtToken: token,

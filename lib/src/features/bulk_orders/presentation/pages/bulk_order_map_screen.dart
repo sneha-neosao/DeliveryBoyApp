@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
@@ -37,6 +38,7 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
   Order? _selectedOrder;   // tracks which stop marker was tapped
   int _selectedStopIndex = 0;
   BitmapDescriptor? _userMarkerIcon;
+  String? _deliveryType;
 
   static const String _googleApiKey = "AIzaSyCZw4DVNyJwP85ZeDG1y_x8DLQ7bF8J0EU";
 
@@ -75,8 +77,10 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
   Future<void> _initMapData() async {
     try {
       _userMarkerIcon = await _loadMarkerIcon();
+      final session = await SessionManager.getUserSession();
+      _deliveryType = session?.data?.deliveryBoy?.deliveryType;
     } catch (e) {
-      debugPrint('Failed to load map_marker.png: $e');
+      debugPrint('Failed to load map data: $e');
     }
     _setMarkers();
     _currentPosition = await _determinePosition();
@@ -212,8 +216,18 @@ class _BulkOrderMapScreenState extends State<BulkOrderMapScreen> {
       return;
     }
 
-    final origin =
-        '${widget.storeLocation.latitude},${widget.storeLocation.longitude}';
+    // ORIGIN LOGIC:
+    // If vegetable delivery and single order, path starts from Delivery Boy's live location.
+    // Otherwise, path starts from the Store.
+    final String origin;
+    if (_deliveryType?.toLowerCase() == 'vegetable' && widget.deliveryLocations.length == 1 && _currentPosition != null) {
+      origin = '${_currentPosition!.latitude},${_currentPosition!.longitude}';
+      debugPrint("Bulk Path Origin: Delivery Boy Live Location (Vegetable Single Order)");
+    } else {
+      origin = '${widget.storeLocation.latitude},${widget.storeLocation.longitude}';
+      debugPrint("Bulk Path Origin: Store Location");
+    }
+
     final destination =
         '${widget.deliveryLocations.last.latitude},${widget.deliveryLocations.last.longitude}';
 

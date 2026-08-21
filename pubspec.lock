@@ -342,6 +342,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.1.1"
+  flutter_hooks:
+    dependency: transitive
+    description:
+      name: flutter_hooks
+      sha256: "8ae1f090e5f4ef5cfa6670ce1ab5dddadd33f3533a7f9ba19d9f958aa2a89f42"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.21.3+1"
   flutter_intl_phone_field:
     dependency: "direct main"
     description:
@@ -1138,6 +1146,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.0"
+  tanstack_query:
+    dependency: "direct main"
+    description:
+      name: tanstack_query
+      sha256: "963c7f15a1b38093add0af77de518dd8cba4b73ee609a2d6004a45026e7bf8bb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   term_glyph:
     dependency: transitive
     description:

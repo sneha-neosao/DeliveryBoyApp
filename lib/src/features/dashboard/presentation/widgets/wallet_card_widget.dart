@@ -111,10 +111,7 @@ class WalletCardWidget extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               InkWell(
-                onTap: () {
-                  appSnackBar(
-                      context, AppColor.darkOrange, 'Wallet details up to date!');
-                },
+                onTap: () {},
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding: const EdgeInsets.symmetric(

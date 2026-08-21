@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:delivery_boy_app/src/configs/injector/injector.dart';
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/services/notification_service.dart';
@@ -13,11 +14,10 @@ import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/wal
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/vegetable_order_active_assignment_widget.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/food_order_active_assignment_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
-import 'package:delivery_boy_app/src/routes/app_route_path.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:delivery_boy_app/src/core/api/api_url.dart';
 import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 
@@ -37,6 +37,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _userImageUrl;
   String? _deliveryType;
   int? _deliveryBoyId;
+
+  StreamSubscription<RemoteMessage>? _notificationSubscription;
+  StreamSubscription<Map<String, dynamic>>? _socketMessageSubscription;
 
   // Dashboard stats from /dashboard/ API
   num? _totalEarning;
@@ -76,9 +79,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _appUpdateBloc.add(const AppUpdateGetEvent());
     _firebaseTokenUpdateBloc = getIt<FirebaseTokenUpdateBloc>();
 
+    // Listen for incoming notifications to refresh immediately
+    _notificationSubscription = NoficationService.onMessageStream.listen((message) {
+      final String? title = message.notification?.title;
+      final Map<String, dynamic> data = message.data;
+      final bool isOrderAssignment =
+          (title?.toLowerCase().contains('order') ?? false) ||
+          (title?.toLowerCase().contains('assign') ?? false) ||
+          (title?.toLowerCase().contains('new task') ?? false) ||
+          data['type'] == 'order_assignment' ||
+          data['notification_type'] == 'ASSIGNED' ||
+          data['status'] == 'assigned';
+
+      if (isOrderAssignment) {
+        _refreshDashboardAndAssignments();
+      }
+    });
+
+    // Listen for socket events to refresh immediately
+    final socketService = getIt<TrackingSocketService>();
+    _socketMessageSubscription = socketService.messageStream.listen((msg) {
+      if (msg['event'] == 'order:assigned') {
+        _refreshDashboardAndAssignments();
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _sendFirebaseToken();
     });
+  }
+
+  void _refreshDashboardAndAssignments() {
+    if (!mounted) return;
+    _dashboardBloc.add(DashboardGetEvent());
+    if (_deliveryType?.toLowerCase() == "food") {
+      _foodOrderCurrentAssignmentBloc.add(const FoodOrderCurrentAssignmentGetEvent());
+      _orderListBloc.add(const GetOrderListEvent(page: 1));
+    } else {
+      _orderCurrentAssignmentBloc.add(const OrderCurrentAssignmentGetEvent());
+    }
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    _socketMessageSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadUserSession() async {
@@ -246,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // Connect to socket
                   SessionManager.getAuthToken().then((token) async {
                     if (token != null && token.isNotEmpty) {
-                      final wsUrl = "https://web.neosao.co.in?token=$token";
+                      final wsUrl = "${ApiUrl.socketUrl}?token=$token";
                       logger.i("DashboardScreen: Connecting to Socket for Vegetable at $wsUrl");
                       final socketService = getIt<TrackingSocketService>();
                       await socketService.startTracking(
@@ -304,7 +350,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SessionManager.getAuthToken().then((token) async {
                       if (token != null && token.isNotEmpty) {
                         // final wsUrl = "https://web.neosao.co.in/?token=$token";
-                        final wsUrl = "https://web.neosao.co.in?token=$token";
+                        final wsUrl = "${ApiUrl.socketUrl}?token=$token";
 
                         logger.i("DashboardScreen: Connecting to Socket at $wsUrl");
                         final socketService = getIt<TrackingSocketService>();
@@ -373,7 +419,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           logger.w("DashboardScreen: Delivery boy ID is missing.");
                           return;
                         }
-                        final wsUrl = "https://web.neosao.co.in?token=$token";
+                        final wsUrl = "${ApiUrl.socketUrl}?token=$token";
                         // final wsUrl = "http://192.168.1.28:8023?token=$token";
                         
                         logger.i("DashboardScreen: Connecting to Socket for Vegetable at $wsUrl");
@@ -511,76 +557,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(height: 20),
 
                               // Active Assignment Banner (Vegetable/Grocery)
-                              BlocBuilder<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
-                                builder: (context, state) {
-                                  if (state is OrderCurrentAssignmentLoadingState || state is OrderCurrentAssignmentInitialState) {
-                                    if (_deliveryType?.toLowerCase() == "food") return const SizedBox.shrink();
-                                    return _buildShimmerBanner();
-                                  }
-
-                                  if (state is OrderCurrentAssignmentSuccessState) {
-                                    final assignment = state.data.data;
-                                    if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
-                                      return const SizedBox.shrink();
+                              if (_deliveryType?.toLowerCase() == "vegetable")
+                                BlocBuilder<OrderCurrentAssignmentBloc, OrderCurrentAssignmentState>(
+                                  builder: (context, state) {
+                                    if (state is OrderCurrentAssignmentLoadingState) {
+                                      return _buildShimmerBanner();
                                     }
-                                    final autoAssignMode = assignment.effectiveAutoAssignMode.isNotEmpty
-                                        ? assignment.effectiveAutoAssignMode
-                                        : state.data.autoAssignMode;
-                                    return BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
-                                      builder: (context, ordersState) {
-                                        String paymentMode = '';
-                                        if (ordersState is CurrentAssignmentOrdersSuccessState && ordersState.data.data.isNotEmpty) {
-                                          paymentMode = ordersState.data.data.first.paymentMode;
-                                        }
-                                        return VegetableOrderActiveAssignmentWidget(
-                                          orderCount: assignment.orderCount,
-                                          status: assignment.status,
-                                          uuid: assignment.uuid,
-                                          paymentMode: paymentMode,
-                                          autoAssignMode: autoAssignMode,
-                                        );
-                                      },
-                                    );
-                                  }
 
-                                  return const SizedBox.shrink();
-                                },
-                              ),
+                                    if (state is OrderCurrentAssignmentSuccessState) {
+                                      final assignment = state.data.data;
+                                      if (assignment == null || assignment.orderCount == 0 || assignment.orderIds.isEmpty) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final autoAssignMode = assignment.effectiveAutoAssignMode.isNotEmpty
+                                          ? assignment.effectiveAutoAssignMode
+                                          : state.data.autoAssignMode;
+                                      
+                                      return BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+                                        builder: (context, ordersState) {
+                                          String paymentMode = '';
+                                          if (ordersState is CurrentAssignmentOrdersSuccessState && ordersState.data.data.isNotEmpty) {
+                                            paymentMode = ordersState.data.data.first.paymentMode;
+                                          }
+                                          return VegetableOrderActiveAssignmentWidget(
+                                            orderCount: assignment.orderCount,
+                                            status: assignment.status,
+                                            uuid: assignment.uuid,
+                                            paymentMode: paymentMode,
+                                            autoAssignMode: autoAssignMode,
+                                          );
+                                        },
+                                      );
+                                    }
+
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
 
                               // Active Assignment Banner (Food)
-                              BlocBuilder<OrderListBloc, OrderListState>(
-                                builder: (context, state) {
-                                  if (_deliveryType?.toLowerCase() != "food") return const SizedBox.shrink();
+                              if (_deliveryType?.toLowerCase() == "food")
+                                BlocBuilder<FoodOrderCurrentAssignmentBloc, FoodOrderCurrentAssignmentState>(
+                                  builder: (context, state) {
+                                    if (state is FoodOrderCurrentAssignmentLoadingState) {
+                                      return _buildShimmerBanner();
+                                    }
 
-                                  final orders = state.orders;
-                                  if (state is OrderListLoadingState && (orders == null || orders.isEmpty)) {
-                                    return _buildShimmerBanner();
-                                  }
+                                    if (state is FoodOrderCurrentAssignmentSuccessState) {
+                                      final activeOrder = state.data.data;
+                                      if (activeOrder == null) return const SizedBox.shrink();
 
-                                  if (orders != null && orders.isNotEmpty) {
-                                    final activeOrders = orders.where(
-                                      (o) {
-                                        final s = o.orderStatus.toUpperCase();
-                                        return s != 'DELIVERED' && s != 'CANCELLED' && s != 'REJECTED';
-                                      },
-                                    ).toList();
+                                      return FoodOrderActiveAssignmentWidget(
+                                        orderCount: 1, // Single order assignment usually for food
+                                        assignmentStatus: activeOrder.assignmentStatus,
+                                        orderStatus: activeOrder.orderStatus,
+                                        uuid: activeOrder.uuId,
+                                        paymentMode: activeOrder.paymentMode,
+                                      );
+                                    }
 
-                                    if (activeOrders.isEmpty) return const SizedBox.shrink();
-
-                                    final activeOrder = activeOrders.first;
-
-                                    return FoodOrderActiveAssignmentWidget(
-                                      orderCount: activeOrders.length,
-                                      assignmentStatus: activeOrder.assignmentStatus,
-                                      orderStatus: activeOrder.orderStatus,
-                                      uuid: activeOrder.uuId,
-                                      paymentMode: activeOrder.paymentMode,
-                                    );
-                                  }
-
-                                  return const SizedBox.shrink();
-                                },
-                              ),
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
 
                               const SizedBox(height: 100),
                             ],

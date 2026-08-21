@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -6,6 +7,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 
 class NoficationService {
+  /// Stream controller for incoming foreground / opened notifications
+  static final StreamController<RemoteMessage> _onMessageStreamController =
+      StreamController<RemoteMessage>.broadcast();
+  static Stream<RemoteMessage> get onMessageStream =>
+      _onMessageStreamController.stream;
+
   /// ✅ Declare the local notification plugin here
   static final FlutterLocalNotificationsPlugin
   _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -194,11 +201,15 @@ class NoficationService {
 
       // ✅ Show local notification for foreground messages
       showLocalNotification(message);
+
+      // ✅ Emit message to stream listeners for immediate UI refresh
+      _onMessageStreamController.add(message);
     });
 
     /// Listen for background messages
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('A new onMessageOpenedApp event was published!');
+      _onMessageStreamController.add(message);
 
       /// Handle the message when the app is opened from a notification
     });

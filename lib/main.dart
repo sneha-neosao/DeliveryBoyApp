@@ -12,6 +12,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:tanstack_query/tanstack_query.dart';
 
 const AndroidNotificationChannel channel = AndroidNotificationChannel(
     'high_importance_channel', // id
@@ -95,11 +96,14 @@ Future<void> main() async {
   );
 
   runApp(
-    EasyLocalization(
-      supportedLocales: const [englishLocale],
-      path: "assets/translations",
-      startLocale: englishLocale,
-      child: const MyApp(),
+    QueryClientProvider(
+      client: QueryClient(),
+      child: EasyLocalization(
+        supportedLocales: const [englishLocale],
+        path: "assets/translations",
+        startLocale: englishLocale,
+        child: const MyApp(),
+      ),
     ),
   );
 }

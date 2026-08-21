@@ -117,7 +117,7 @@ class AuthRepositoryImpl implements Repository {
           if (respData.data?.accessToken != null) {
             await SessionManager.saveSessionId(respData.data?.accessToken);
             final token = respData.data!.accessToken!;
-            final wsUrl = "https://web.neosao.co.in?token=$token";
+            final wsUrl = "${ApiUrl.socketUrl}?token=$token";
             getIt<TrackingSocketService>().startTracking(
               socketUrl: wsUrl,
               jwtToken: token,

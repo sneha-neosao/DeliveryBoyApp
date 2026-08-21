@@ -397,24 +397,54 @@ class TrackingSocketService {
 
       if (lat == null || long == null) {
         try {
+          final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          if (!serviceEnabled) {
+            logger.w("TrackingSocketService: Location service disabled. Cannot get fresh current location.");
+            return;
+          }
+
+          LocationPermission permission = await Geolocator.checkPermission();
+          if (permission == LocationPermission.denied) {
+            permission = await Geolocator.requestPermission();
+            if (permission == LocationPermission.denied ||
+                permission == LocationPermission.deniedForever) {
+              logger.w("TrackingSocketService: Location permission not granted. Skipping delivery:geo_update.");
+              return;
+            }
+          }
+
           Position? position;
           try {
+            // First attempt with high accuracy
             position = await Geolocator.getCurrentPosition(
               locationSettings: const LocationSettings(
                 accuracy: LocationAccuracy.high,
-                timeLimit: Duration(seconds: 4),
+                timeLimit: Duration(seconds: 8),
               ),
             );
           } catch (_) {
-            position = await Geolocator.getLastKnownPosition();
+            // Fallback attempt to get fresh current position with medium accuracy (Wi-Fi/Cellular/GPS)
+            position = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.medium,
+                timeLimit: Duration(seconds: 6),
+              ),
+            );
           }
+
           if (position != null) {
             latitude = position.latitude;
             longitude = position.longitude;
           }
         } catch (e) {
-          logger.e("TrackingSocketService: Failed to get position for delivery:geo_update: $e");
+          logger.e("TrackingSocketService: Failed to get fresh current position for delivery:geo_update: $e");
         }
+      }
+
+      // Do not emit invalid/zero coordinates
+      if (latitude == 0.0 && longitude == 0.0) {
+        logger.w("TrackingSocketService: Current location not available yet. Skipping delivery:geo_update with 0.0, 0.0.");
+        return;
       }
 
       final Map<String, dynamic> payload = {

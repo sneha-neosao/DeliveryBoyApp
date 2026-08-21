@@ -1,4 +1,5 @@
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
+import 'package:delivery_boy_app/src/core/api/api_url.dart';
 import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 import 'package:delivery_boy_app/src/features/widgets/safe_gif_controller.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
         final session = (_authState as AuthCheckSignInStatusSuccessState).data;
         final token = session.data?.accessToken;
         if (token != null && token.isNotEmpty) {
-          final wsUrl = "https://web.neosao.co.in?token=$token";
+          final wsUrl = "${ApiUrl.socketUrl}?token=$token";
           getIt<TrackingSocketService>().startTracking(
             socketUrl: wsUrl,
             jwtToken: token,

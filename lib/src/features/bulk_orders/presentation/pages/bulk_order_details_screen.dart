@@ -2,6 +2,7 @@ import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_details_bloc/order_details_bloc.dart';
@@ -13,22 +14,63 @@ import 'package:delivery_boy_app/src/features/orders/presentation/widgets/status
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class BulkOrderDetailsScreen extends StatelessWidget {
+class BulkOrderDetailsScreen extends StatefulWidget {
   final Order? order;
+  final String? orderUuid;
+  final String? assignmentUuid;
 
   const BulkOrderDetailsScreen({
     super.key,
     this.order,
+    this.orderUuid,
+    this.assignmentUuid,
   });
 
   @override
+  State<BulkOrderDetailsScreen> createState() => _BulkOrderDetailsScreenState();
+}
+
+class _BulkOrderDetailsScreenState extends State<BulkOrderDetailsScreen> {
+  Order? _order;
+  String? _subOrderUuid;
+  late final CurrentAssignmentOrdersBloc _currentAssignmentOrdersBloc;
+  late final OrderDetailsBloc _orderDetailsBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+    _subOrderUuid = widget.order?.uuId ?? widget.orderUuid;
+    _currentAssignmentOrdersBloc = getIt<CurrentAssignmentOrdersBloc>();
+    _orderDetailsBloc = getIt<OrderDetailsBloc>();
+
+    if (_subOrderUuid != null && _subOrderUuid!.isNotEmpty) {
+      _orderDetailsBloc.add(OrderDetailsGetEvent(_subOrderUuid!));
+    } else if (widget.assignmentUuid != null && widget.assignmentUuid!.isNotEmpty) {
+      // First call order API for current assignment
+      _currentAssignmentOrdersBloc.add(
+        CurrentAssignmentOrdersGetEvent(widget.assignmentUuid!, 1, 10),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _orderDetailsBloc.close();
+    _currentAssignmentOrdersBloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (order == null) {
+    if (_subOrderUuid == null && (widget.assignmentUuid == null || widget.assignmentUuid!.isEmpty)) {
       return Scaffold(
         appBar: AppBar(
           title: Text('order_details'.tr()),
@@ -52,97 +94,185 @@ class BulkOrderDetailsScreen extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (context) =>
-              getIt<OrderDetailsBloc>()..add(OrderDetailsGetEvent(order!.uuId)),
-        ),
-        BlocProvider(
-          create: (context) => getIt<OrderAssignmentBloc>(),
-        ),
-        BlocProvider(
-          create: (context) => getIt<OrderStatusUpdateBloc>(),
-        ),
+        BlocProvider.value(value: _orderDetailsBloc),
+        BlocProvider.value(value: _currentAssignmentOrdersBloc),
+        BlocProvider(create: (_) => getIt<OrderAssignmentBloc>()),
+        BlocProvider(create: (_) => getIt<OrderStatusUpdateBloc>()),
       ],
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFFF9F5),
-        body: SafeArea(
-          top: false,
-          child: BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
-            builder: (context, state) {
-              if (state is OrderDetailsLoadingState || state is OrderDetailsInitialState) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColor.darkOrange,
-                  ),
-                );
-              } else if (state is OrderDetailsFailureState) {
-                return RefreshIndicator(
-                  color: AppColor.darkOrange,
-                  onRefresh: () async {
-                    context
-                        .read<OrderDetailsBloc>()
-                        .add(OrderDetailsGetEvent(order!.uuId));
-                    await Future.delayed(const Duration(seconds: 1));
-                  },
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Container(
-                      height: MediaQuery.of(context).size.height - 100,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            size: 48,
-                            color: AppColor.bright_red,
-                          ),
-                          16.hS,
-                          Text(
-                            'failed_load_details'.tr(),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          8.hS,
-                          Text(
-                            state.message,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          24.hS,
-                          ElevatedButton(
-                            onPressed: () {
-                              context
-                                  .read<OrderDetailsBloc>()
-                                  .add(OrderDetailsGetEvent(order!.uuId));
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColor.darkOrange,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: Text('retry'.tr()),
-                          ),
-                        ],
-                      ),
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+            listener: (context, state) {
+              if (state is CurrentAssignmentOrdersSuccessState && state.data.data.isNotEmpty) {
+                final firstOrderData = state.data.data.first;
+                setState(() {
+                  _order = firstOrderData.toOrder();
+                  _subOrderUuid = firstOrderData.uuId;
+                });
+                // Using that suborder uuid, call details API
+                _orderDetailsBloc.add(OrderDetailsGetEvent(firstOrderData.uuId));
+              } else if (state is CurrentAssignmentOrdersFailureState) {
+                appSnackBar(context, AppColor.bright_red, state.message);
+              }
+            },
+          ),
+        ],
+        child: Scaffold(
+          backgroundColor: const Color(0xFFFFF9F5),
+          body: SafeArea(
+            top: false,
+            child: BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+              builder: (context, currentOrdersState) {
+                if (currentOrdersState is CurrentAssignmentOrdersLoadingState && _subOrderUuid == null) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColor.darkOrange,
                     ),
-                  ),
-                );
-              } else if (state is OrderDetailsSuccessState) {
-                final orderDetails = state.data.data;
-                if (orderDetails == null) {
-                  return Center(
-                    child: Text('no_order_details_found'.tr()),
                   );
                 }
-                return _OrderDetailsView(orderDetails: orderDetails, fallbackOrder: order!);
-              }
-              return const SizedBox.shrink();
-            },
+
+                if (currentOrdersState is CurrentAssignmentOrdersFailureState && _subOrderUuid == null) {
+                  return RefreshIndicator(
+                    color: AppColor.darkOrange,
+                    onRefresh: () async {
+                      if (widget.assignmentUuid != null) {
+                        _currentAssignmentOrdersBloc.add(
+                          CurrentAssignmentOrdersGetEvent(widget.assignmentUuid!, 1, 10),
+                        );
+                      }
+                      await Future.delayed(const Duration(seconds: 1));
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height - 100,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              size: 48,
+                              color: AppColor.bright_red,
+                            ),
+                            16.hS,
+                            Text(
+                              'failed_load_details'.tr(),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            8.hS,
+                            Text(
+                              currentOrdersState.message,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            24.hS,
+                            ElevatedButton(
+                              onPressed: () {
+                                if (widget.assignmentUuid != null) {
+                                  _currentAssignmentOrdersBloc.add(
+                                    CurrentAssignmentOrdersGetEvent(widget.assignmentUuid!, 1, 10),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColor.darkOrange,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: Text('retry'.tr()),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
+                  builder: (context, state) {
+                    if (state is OrderDetailsLoadingState || state is OrderDetailsInitialState) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColor.darkOrange,
+                        ),
+                      );
+                    } else if (state is OrderDetailsFailureState) {
+                      return RefreshIndicator(
+                        color: AppColor.darkOrange,
+                        onRefresh: () async {
+                          if (_subOrderUuid != null) {
+                            _orderDetailsBloc.add(OrderDetailsGetEvent(_subOrderUuid!));
+                          }
+                          await Future.delayed(const Duration(seconds: 1));
+                        },
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Container(
+                            height: MediaQuery.of(context).size.height - 100,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 48,
+                                  color: AppColor.bright_red,
+                                ),
+                                16.hS,
+                                Text(
+                                  'failed_load_details'.tr(),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                8.hS,
+                                Text(
+                                  state.message,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                24.hS,
+                                ElevatedButton(
+                                  onPressed: () {
+                                    if (_subOrderUuid != null) {
+                                      _orderDetailsBloc.add(OrderDetailsGetEvent(_subOrderUuid!));
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColor.darkOrange,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: Text('retry'.tr()),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    } else if (state is OrderDetailsSuccessState) {
+                      final orderDetails = state.data.data;
+                      if (orderDetails == null) {
+                        return Center(
+                          child: Text('no_order_details_found'.tr()),
+                        );
+                      }
+                      return _OrderDetailsView(orderDetails: orderDetails, fallbackOrder: _order);
+                    }
+                    return const SizedBox.shrink();
+                  },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -158,11 +288,11 @@ const double _kCircleGap = 65.0;
 
 class _OrderDetailsView extends StatefulWidget {
   final OrderDetails orderDetails;
-  final Order fallbackOrder;
+  final Order? fallbackOrder;
 
   const _OrderDetailsView({
     required this.orderDetails,
-    required this.fallbackOrder,
+    this.fallbackOrder,
   });
 
   @override
@@ -279,18 +409,22 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
     final orderDetails = widget.orderDetails;
     final fallbackOrder = widget.fallbackOrder;
 
-    final String displayId = orderDetails.uuId.isNotEmpty
-        ? '#${orderDetails.uuId.substring(0, orderDetails.uuId.length > 8 ? 8 : orderDetails.uuId.length)}'
-        : '#ORD-${orderDetails.id}';
+    final String displayId = 'ORD_${orderDetails.id}';
     final String customerName = orderDetails.deliveryDetails?.name.isNotEmpty == true
         ? orderDetails.deliveryDetails!.name
-        : (orderDetails.customerName.isNotEmpty ? orderDetails.customerName : fallbackOrder.customerName);
+        : (orderDetails.customerName.isNotEmpty
+            ? orderDetails.customerName
+            : (fallbackOrder?.customerName ?? ''));
     final String customerPhone = orderDetails.deliveryDetails?.phone.isNotEmpty == true
         ? orderDetails.deliveryDetails!.phone
-        : (orderDetails.customerContact.isNotEmpty ? orderDetails.customerContact : fallbackOrder.customerContact);
+        : (orderDetails.customerContact.isNotEmpty
+            ? orderDetails.customerContact
+            : (fallbackOrder?.customerContact ?? ''));
     final String deliveryAddress = orderDetails.deliveryDetails?.address.isNotEmpty == true
         ? orderDetails.deliveryDetails!.address
-        : (fallbackOrder.deliveryAddress.isNotEmpty ? fallbackOrder.deliveryAddress : 'address_not_available'.tr());
+        : (fallbackOrder?.deliveryAddress.isNotEmpty == true
+            ? fallbackOrder!.deliveryAddress
+            : 'address_not_available'.tr());
 
     final double statusBarH = MediaQuery.of(context).padding.top;
     final double topShift = statusBarH * _progress;
@@ -444,7 +578,61 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                       },
                     ),
                     16.hS,
-                    DeliveryAddressCardWidget(customerName: customerName, customerPhone: customerPhone, deliveryAddress: deliveryAddress),
+                    DeliveryAddressCardWidget(
+                      customerName: customerName,
+                      customerPhone: customerPhone,
+                      deliveryAddress: deliveryAddress,
+                      showNavigationIcon: true,
+                      onNavigationTap: () {
+                        final double deliveryLat = orderDetails.deliveryDetails?.deliveryLat ??
+                            widget.fallbackOrder?.deliveryLat ??
+                            0.0;
+                        final double deliveryLng = orderDetails.deliveryDetails?.deliveryLng ??
+                            widget.fallbackOrder?.deliveryLng ??
+                            0.0;
+                        final double storeLat = widget.fallbackOrder?.storeLatitude ?? 0.0;
+                        final double storeLng = widget.fallbackOrder?.storeLongitude ?? 0.0;
+
+                        final Order effectiveOrder = widget.fallbackOrder ??
+                            Order(
+                              id: orderDetails.id,
+                              uuId: orderDetails.uuId,
+                              orderStatus: orderDetails.orderStatus,
+                              paymentMode: orderDetails.paymentMode,
+                              paymentStatus: orderDetails.paymentStatus,
+                              grandTotal: orderDetails.grandTotal,
+                              platformCharges: orderDetails.platformCharges,
+                              totalItems: orderDetails.totalItems,
+                              customerName: customerName,
+                              customerContact: customerPhone,
+                              deliveryAddress: deliveryAddress,
+                              deliveryName: orderDetails.deliveryDetails?.name ?? '',
+                              deliveryPhone: orderDetails.deliveryDetails?.phone ?? '',
+                              deliveryPincode: orderDetails.deliveryDetails?.pincode ?? '',
+                              slotStartTime: orderDetails.slotStartTime,
+                              slotEndTime: orderDetails.slotEndTime,
+                              deliveryDate: orderDetails.deliveryDate,
+                              isAssigned: true,
+                              assignedDeliveryBoyId: 0,
+                              assignedDeliveryBoyName: '',
+                              assignedDeliveryBoyPhone: '',
+                              assignmentStatus: '',
+                              deliveryLat: deliveryLat,
+                              deliveryLng: deliveryLng,
+                              storeLatitude: storeLat,
+                              storeLongitude: storeLng,
+                            );
+
+                        context.push(
+                          AppRoute.bulkOrderMap.path,
+                          extra: {
+                            'storeLocation': LatLng(storeLat, storeLng),
+                            'deliveryLocations': [LatLng(deliveryLat, deliveryLng)],
+                            'orders': [effectiveOrder],
+                          },
+                        );
+                      },
+                    ),
                     16.hS,
                     OrderDetailsWidget(orderDetails: orderDetails),
                     16.hS,
@@ -471,8 +659,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
         // DEL_ACCEPTED     → inactive PICKED UP button
         // ACCEPTED         → inactive PICKED UP button
         // READY_FOR_PICKUP → active   PICKED UP button
-        // PICKED_UP        → active   ON THE WAY button
-        // ON_THE_WAY       → active   DELIVERED button
+        // PICKED_UP        → active   DELIVERED button (ON_THE_WAY commented out)
         if (orderDetails.orderStatus != 'REJECTED' &&
             orderDetails.orderStatus != 'DELIVERED') ...[
           if (orderDetails.orderStatus == 'PREPARING' && !_isAccepted)
@@ -482,10 +669,12 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
               orderDetails.orderStatus == 'ACCEPTED' ||
               orderDetails.orderStatus == 'DEL_ACCEPTED')
             _buildPickedUpButton(context, orderDetails)
-          else if (orderDetails.orderStatus == 'PICKED_UP')
-            _buildOnTheWayButton(context, orderDetails)
-          else if (orderDetails.orderStatus == 'ON_THE_WAY')
+          else if (orderDetails.orderStatus == 'PICKED_UP' || orderDetails.orderStatus == 'ON_THE_WAY')
             _buildDeliveredButton(context, orderDetails),
+          // else if (orderDetails.orderStatus == 'PICKED_UP')
+          //   _buildOnTheWayButton(context, orderDetails)
+          // else if (orderDetails.orderStatus == 'ON_THE_WAY')
+          //   _buildDeliveredButton(context, orderDetails),
         ],
       ],
     );
@@ -668,6 +857,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
     );
   }
 
+  /*
   // ── ON THE WAY button (shown when status is PICKED_UP) ────────────────────
   Widget _buildOnTheWayButton(BuildContext context, OrderDetails orderDetails) {
     return Container(
@@ -721,8 +911,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
       ),
     );
   }
+  */
 
-  // ── DELIVERED button (shown when status is ON_THE_WAY) ───────────────────
+  // ── DELIVERED button (shown when status is PICKED_UP / ON_THE_WAY) ─────────
   Widget _buildDeliveredButton(BuildContext context, OrderDetails orderDetails) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

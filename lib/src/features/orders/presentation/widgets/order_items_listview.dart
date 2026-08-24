@@ -56,7 +56,7 @@ class OrderItemsListview extends StatelessWidget {
                         color: const Color(0xFFFFF2E6),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: item.images.isNotEmpty
+                      child: (item.images.isNotEmpty && item.images.first.isNotEmpty)
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(

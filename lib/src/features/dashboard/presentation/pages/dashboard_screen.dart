@@ -18,6 +18,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
 import 'package:delivery_boy_app/src/core/api/api_url.dart';
 import 'package:delivery_boy_app/src/core/services/socket_connect_service.dart';
 
@@ -44,6 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Dashboard stats from /dashboard/ API
   num? _totalEarning;
   num? _todaysEarning;
+  num? _todaysCashOrderTotal;
   double? _avgRating;
   int? _deliveredCount;
   int? _pendingCount;
@@ -236,6 +238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   setState(() {
                     _totalEarning = d.totalEarning;
                     _todaysEarning = d.todaysEarning;
+                    _todaysCashOrderTotal = d.todaysCashOrderTotal;
                     _avgRating = d.avgRating;
                     _deliveredCount = d.completedOrdersCount;
                     _pendingCount = d.pendingOrdersCount;
@@ -256,6 +259,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             listener: (context, state) {
               if (state is OrderCurrentAssignmentSuccessState) {
                 final assignment = state.data.data;
+                final autoAssignMode = assignment?.effectiveAutoAssignMode.isNotEmpty == true
+                    ? assignment!.effectiveAutoAssignMode
+                    : state.data.autoAssignMode;
+                if (autoAssignMode.isNotEmpty) {
+                  SessionManager.saveAutoAssignMode(autoAssignMode);
+                }
                 if (assignment != null && assignment.uuid.isNotEmpty) {
                   _currentAssignmentOrdersBloc.add(
                     CurrentAssignmentOrdersGetEvent(assignment.uuid, 1, 10),
@@ -522,6 +531,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: WalletCardWidget(
                                   totalEarning: _totalEarning,
                                   todaysEarning: _todaysEarning,
+                                  todaysCashOrderTotal: _todaysCashOrderTotal,
                                   avgRating: _avgRating,
                                   totalDeliveries: _totalDeliveries,
                                 ),
@@ -576,8 +586,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       return BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
                                         builder: (context, ordersState) {
                                           String paymentMode = '';
+                                          Order? order;
                                           if (ordersState is CurrentAssignmentOrdersSuccessState && ordersState.data.data.isNotEmpty) {
                                             paymentMode = ordersState.data.data.first.paymentMode;
+                                            order = ordersState.data.data.first.toOrder();
                                           }
                                           return VegetableOrderActiveAssignmentWidget(
                                             orderCount: assignment.orderCount,
@@ -585,6 +597,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             uuid: assignment.uuid,
                                             paymentMode: paymentMode,
                                             autoAssignMode: autoAssignMode,
+                                            assignment: assignment,
+                                            order: order,
                                           );
                                         },
                                       );

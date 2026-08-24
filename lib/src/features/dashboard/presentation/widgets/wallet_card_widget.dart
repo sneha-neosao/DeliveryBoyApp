@@ -1,5 +1,4 @@
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
-import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
@@ -7,6 +6,7 @@ import 'package:shimmer/shimmer.dart';
 class WalletCardWidget extends StatelessWidget {
   final num? totalEarning;
   final num? todaysEarning;
+  final num? todaysCashOrderTotal;
   final num? avgRating;
   final int? totalDeliveries;
 
@@ -14,6 +14,7 @@ class WalletCardWidget extends StatelessWidget {
     super.key,
     this.totalEarning,
     this.todaysEarning,
+    this.todaysCashOrderTotal,
     this.avgRating,
     this.totalDeliveries,
   });
@@ -23,11 +24,12 @@ class WalletCardWidget extends StatelessWidget {
     final totalDisplay = totalEarning != null
         ? '₹${totalEarning!.toStringAsFixed(0)}'
         : '₹0';
-    final todaysDisplay = todaysEarning != null
+    final todaysCashDisplay = todaysCashOrderTotal != null
+        ? '₹${todaysCashOrderTotal!.toStringAsFixed(0)}'
+        : '₹0';
+    final todaysEarnDisplay = todaysEarning != null
         ? '₹${todaysEarning!.toStringAsFixed(0)}'
         : '₹0';
-    final deliveriesDisplay =
-        totalDeliveries != null ? '$totalDeliveries' : '0';
     final ratingDisplay =
         avgRating != null ? avgRating!.toStringAsFixed(1) : '0.0';
 
@@ -145,16 +147,16 @@ class WalletCardWidget extends StatelessWidget {
             children: [
               _buildMetricItem(
                 "Today's Pay",
-                todaysDisplay,
+                todaysCashDisplay,
                 Icons.payments_rounded,
-                todaysEarning == null,
+                todaysCashOrderTotal == null,
               ),
               Container(height: 30, width: 1, color: Colors.grey.shade200),
               _buildMetricItem(
-                'Deliveries',
-                deliveriesDisplay,
-                Icons.local_shipping_rounded,
-                totalDeliveries == null,
+                "Today's Earn",
+                todaysEarnDisplay,
+                Icons.currency_rupee_rounded,
+                todaysEarning == null,
               ),
               Container(height: 30, width: 1, color: Colors.grey.shade200),
               _buildMetricItem(

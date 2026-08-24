@@ -324,9 +324,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
     final orderDetails = widget.orderDetails;
     final fallbackOrder = widget.fallbackOrder;
 
-    final String displayId = orderDetails.uuId.isNotEmpty
-        ? '#${orderDetails.uuId.substring(0, orderDetails.uuId.length > 8 ? 8 : orderDetails.uuId.length)}'
-        : '#ORD-${orderDetails.id}';
+    final String displayId = 'ORD_${orderDetails.id}';
     final String customerName = orderDetails.deliveryDetails?.name.isNotEmpty == true
         ? orderDetails.deliveryDetails!.name
         : (orderDetails.customerName.isNotEmpty ? orderDetails.customerName : fallbackOrder.customerName);

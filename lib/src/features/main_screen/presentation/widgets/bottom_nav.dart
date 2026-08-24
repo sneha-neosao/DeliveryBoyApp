@@ -19,8 +19,9 @@ class BottomNavItem {
 class BottomNav extends StatelessWidget {
   final int selectedIndex;
   final Function(int index) onTap;
+  final List<BottomNavItem> items;
 
-  static const List<BottomNavItem> navItems = [
+  static const List<BottomNavItem> defaultNavItems = [
     BottomNavItem(
       path: '/dashboard_screen',
       labelKey: 'dashboard',
@@ -41,32 +42,59 @@ class BottomNav extends StatelessWidget {
     ),
   ];
 
+  static const List<BottomNavItem> autoAssignVegetableNavItems = [
+    BottomNavItem(
+      path: '/dashboard_screen',
+      labelKey: 'dashboard',
+      icon: Icons.grid_view_outlined,
+      selectedIcon: Icons.grid_view_rounded,
+    ),
+    BottomNavItem(
+      path: '/profile_screen',
+      labelKey: 'drawer_profile',
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
+    ),
+  ];
+
+  static List<BottomNavItem> get navItems => defaultNavItems;
+
   const BottomNav({
     super.key,
     required this.selectedIndex,
     required this.onTap,
+    this.items = defaultNavItems,
   });
 
   Alignment _getItemAlignment(int index) {
+    if (items.length <= 2) return Alignment.center;
     if (index == 0) return Alignment.centerLeft;
-    if (index == navItems.length - 1) return Alignment.centerRight;
+    if (index == items.length - 1) return Alignment.centerRight;
     return Alignment.center;
   }
 
   EdgeInsets _getItemMargin(int index) {
+    if (items.length <= 2) return EdgeInsets.zero;
     if (index == 0) return const EdgeInsets.only(left: 12);
-    if (index == navItems.length - 1) return const EdgeInsets.only(right: 12);
+    if (index == items.length - 1) return const EdgeInsets.only(right: 12);
     return EdgeInsets.zero;
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isTwoItems = items.length <= 2;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Container(
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: isTwoItems ? 220 : double.infinity,
+            ),
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(32),
@@ -97,9 +125,9 @@ class BottomNav extends StatelessWidget {
             ),
           ),
           child: Row(
-            children: List.generate(navItems.length, (index) {
+            children: List.generate(items.length, (index) {
               final isSelected = index == selectedIndex;
-              final item = navItems[index];
+              final item = items[index];
 
               return Expanded(
                 child: GestureDetector(
@@ -212,6 +240,7 @@ class BottomNav extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

@@ -39,6 +39,9 @@ class DashboardStatsData {
   final num totalEarning;
   final num todaysEarning;
   final double avgRating;
+  final num todaysAllOrderTotal;
+  final num todaysCashOrderTotal;
+  final num todaysOnlineOrderTotal;
 
   DashboardStatsData({
     required this.pendingOrdersCount,
@@ -47,6 +50,9 @@ class DashboardStatsData {
     required this.totalEarning,
     required this.todaysEarning,
     required this.avgRating,
+    this.todaysAllOrderTotal = 0,
+    this.todaysCashOrderTotal = 0,
+    this.todaysOnlineOrderTotal = 0,
   });
 
   factory DashboardStatsData.fromJson(Map<String, dynamic> json) =>
@@ -59,6 +65,9 @@ class DashboardStatsData {
         avgRating: json["avg_rating"] != null
             ? (json["avg_rating"] as num).toDouble()
             : 0.0,
+        todaysAllOrderTotal: json["todays_all_order_total"] ?? 0,
+        todaysCashOrderTotal: json["todays_cash_order_total"] ?? 0,
+        todaysOnlineOrderTotal: json["todays_online_order_total"] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -68,5 +77,8 @@ class DashboardStatsData {
     "total_earning": totalEarning,
     "todays_earning": todaysEarning,
     "avg_rating": avgRating,
+    "todays_all_order_total": todaysAllOrderTotal,
+    "todays_cash_order_total": todaysCashOrderTotal,
+    "todays_online_order_total": todaysOnlineOrderTotal,
   };
 }

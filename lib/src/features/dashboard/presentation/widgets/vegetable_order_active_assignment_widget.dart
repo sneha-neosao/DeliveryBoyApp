@@ -1,5 +1,7 @@
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_start_assignment_bloc/order_start_assignment_bloc.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_current_assignment_reponse.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +13,8 @@ class VegetableOrderActiveAssignmentWidget extends StatefulWidget {
   final String uuid;
   final String paymentMode;
   final String autoAssignMode;
+  final AssignmentBatch? assignment;
+  final Order? order;
 
   const VegetableOrderActiveAssignmentWidget({
     super.key,
@@ -19,6 +23,8 @@ class VegetableOrderActiveAssignmentWidget extends StatefulWidget {
     required this.uuid,
     this.paymentMode = '',
     this.autoAssignMode = '',
+    this.assignment,
+    this.order,
   });
 
   @override
@@ -79,117 +85,203 @@ class _VegetableOrderActiveAssignmentWidgetState extends State<VegetableOrderAct
     bool showInactivePickedUp = assignmentStatus == 'DEL_ACCEPTED';
     bool showActivePickedUp = assignmentStatus == 'READY_FOR_PICKUP';
 
+    void navigateToDetails() {
+      if (isAutoAssign) {
+        if (widget.order != null) {
+          context.push(AppRoute.bulkOrderDetails.path, extra: widget.order);
+        } else {
+          context.push(AppRoute.bulkOrderDetails.path, extra: widget.uuid);
+        }
+      } else {
+        context.push(AppRoute.bulkOrder.path, extra: widget.assignment);
+      }
+    }
+
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFFFFF2E6),
-                Color(0xFFFFE8D6),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColor.border),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.shopping_bag_rounded,
-                color: AppColor.darkOrange,
-                size: 32,
+        child: GestureDetector(
+          onTap: navigateToDetails,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFFFF2E6),
+                  Color(0xFFFFE8D6),
+                ],
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Active Assignment (${widget.orderCount})',
-                      style: const TextStyle(
-                        color: AppColor.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColor.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.shopping_bag_rounded,
+                  color: AppColor.darkOrange,
+                  size: 32,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Active Assignment (${widget.orderCount})',
+                        style: const TextStyle(
+                          color: AppColor.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    if (showStart || showInactivePickedUp || showActivePickedUp) ...[
-                      const SizedBox(height: 6),
-                      if (showStart)
-                        if (isAutoAssign)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              OutlinedButton(
-                                onPressed: () => _showReleaseDialog(context, widget.uuid),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColor.bright_red,
-                                  side: const BorderSide(
-                                    color: AppColor.bright_red,
-                                    width: 1.2,
+                      if (showStart || showInactivePickedUp || showActivePickedUp) ...[
+                        const SizedBox(height: 6),
+                        if (showStart)
+                          if (isAutoAssign)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                OutlinedButton(
+                                  onPressed: () => _showReleaseDialog(context, widget.uuid),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColor.bright_red,
+                                    side: const BorderSide(
+                                      color: AppColor.bright_red,
+                                      width: 1.2,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    minimumSize: const Size(0, 32),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  minimumSize: const Size(0, 32),
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                  child: const Text(
+                                    'RELEASE',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                                child: const Text(
-                                  'RELEASE',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                const SizedBox(width: 10),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    context.read<OrderStartAssignmentBloc>().add(
+                                          OrderStartAssignmentGetEvent(
+                                            widget.uuid,
+                                            'DEL_ACCEPTED',
+                                          ),
+                                        );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColor.darkOrange,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    minimumSize: const Size(0, 32),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              ElevatedButton(
-                                onPressed: () {
-                                  context.read<OrderStartAssignmentBloc>().add(
-                                        OrderStartAssignmentGetEvent(
-                                          widget.uuid,
-                                          'DEL_ACCEPTED',
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'ACCEPT',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                      );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColor.darkOrange,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  minimumSize: const Size(0, 32),
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.arrow_forward_rounded, size: 14),
+                                    ],
                                   ),
+                                ),
+                              ],
+                            )
+                          else
+                            InkWell(
+                              onTap: () {
+                                context.read<OrderStartAssignmentBloc>().add(
+                                      OrderStartAssignmentGetEvent(
+                                        widget.uuid,
+                                        'DEL_ACCEPTED',
+                                      ),
+                                    );
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColor.darkOrange,
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
+                                    Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    SizedBox(width: 4),
                                     Text(
-                                      'ACCEPT',
+                                      'START',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        color: Colors.white,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(width: 4),
-                                    Icon(Icons.arrow_forward_rounded, size: 14),
                                   ],
                                 ),
                               ),
-                            ],
+                            )
+                        else if (showInactivePickedUp)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.shopping_bag_rounded,
+                                  color: Colors.grey.shade500,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'PICKED UP',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           )
-                        else
+                        else if (showActivePickedUp)
                           InkWell(
                             onTap: () {
                               context.read<OrderStartAssignmentBloc>().add(
                                     OrderStartAssignmentGetEvent(
                                       widget.uuid,
-                                      'DEL_ACCEPTED',
+                                      'PICKED_UP',
                                     ),
                                   );
                             },
@@ -207,13 +299,13 @@ class _VegetableOrderActiveAssignmentWidgetState extends State<VegetableOrderAct
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Icons.play_arrow_rounded,
+                                    Icons.shopping_bag_rounded,
                                     color: Colors.white,
                                     size: 16,
                                   ),
                                   SizedBox(width: 4),
                                   Text(
-                                    'START',
+                                    'PICKED UP',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
@@ -223,106 +315,34 @@ class _VegetableOrderActiveAssignmentWidgetState extends State<VegetableOrderAct
                                 ],
                               ),
                             ),
-                          )
-                      else if (showInactivePickedUp)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 6,
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.shopping_bag_rounded,
-                                color: Colors.grey.shade500,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'PICKED UP',
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else if (showActivePickedUp)
-                        InkWell(
-                          onTap: () {
-                            context.read<OrderStartAssignmentBloc>().add(
-                                  OrderStartAssignmentGetEvent(
-                                    widget.uuid,
-                                    'PICKED_UP',
-                                  ),
-                                );
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColor.darkOrange,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.shopping_bag_rounded,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'PICKED UP',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              InkWell(
-                onTap: () {
-                  context.go(AppRoute.orders.path);
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
+                const SizedBox(width: 10),
+                InkWell(
+                  onTap: navigateToDetails,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColor.darkOrange,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.info_rounded,
                       color: AppColor.darkOrange,
-                      width: 1.5,
+                      size: 20,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.info_rounded,
-                    color: AppColor.darkOrange,
-                    size: 20,
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

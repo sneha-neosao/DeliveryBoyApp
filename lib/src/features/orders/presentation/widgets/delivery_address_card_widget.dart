@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -7,12 +8,16 @@ class DeliveryAddressCardWidget extends StatelessWidget {
   final String customerName;
   final String customerPhone;
   final String deliveryAddress;
+  final bool showNavigationIcon;
+  final VoidCallback? onNavigationTap;
 
   const DeliveryAddressCardWidget({
     super.key,
     required this.customerName,
     required this.customerPhone,
     required this.deliveryAddress,
+    this.showNavigationIcon = false,
+    this.onNavigationTap,
   });
 
   @override
@@ -84,7 +89,7 @@ class DeliveryAddressCardWidget extends StatelessWidget {
                         ],
                       ),
                     ),
-                    _buildPhoneCircle(),
+                    _buildRightActionCircle(),
                   ],
                 ),
                 38.hS,
@@ -126,7 +131,34 @@ class DeliveryAddressCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPhoneCircle() {
+  Widget _buildRightActionCircle() {
+    if (showNavigationIcon) {
+      return InkWell(
+        onTap: onNavigationTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColor.darkOrange,
+              width: 1.5,
+            ),
+          ),
+          child: Transform.rotate(
+            angle: math.pi / 4, // 45° towards upper-right
+            child: const Icon(
+              Icons.navigation,
+              color: AppColor.darkOrange,
+              size: 18,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: 36,
       height: 36,

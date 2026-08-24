@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:delivery_boy_app/src/remote/models/auth_model/Login_response.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +7,8 @@ import '../utils/failure_converter.dart';
 
 /// session for managing the data locally
 class SessionManager {
+  static final ValueNotifier<String?> autoAssignModeNotifier = ValueNotifier<String?>(null);
+
   static Future<bool> checkIsKeyPresent(String key) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.containsKey(key);
@@ -64,6 +66,21 @@ class SessionManager {
     return prefs.getString("firebasetoken");
   }
 
+  static Future<void> saveAutoAssignMode(String mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("autoAssignMode", mode);
+    autoAssignModeNotifier.value = mode;
+  }
+
+  static Future<String?> getAutoAssignMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final mode = prefs.getString("autoAssignMode");
+    if (autoAssignModeNotifier.value != mode) {
+      autoAssignModeNotifier.value = mode;
+    }
+    return mode;
+  }
+
   static Future<void> saveCredentials(String username, String password) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString("saved_username", username);
@@ -88,6 +105,7 @@ class SessionManager {
     final password = prefs.getString("saved_password");
     
     final success = await prefs.clear();
+    autoAssignModeNotifier.value = null;
     
     // Restore credentials
     if (username != null && password != null) {

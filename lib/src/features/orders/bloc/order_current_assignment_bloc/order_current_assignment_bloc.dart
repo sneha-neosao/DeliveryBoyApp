@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/usecases/usecase.dart';
 import 'package:delivery_boy_app/src/core/utils/logger.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_current_assignment_usecase.dart';
@@ -28,7 +29,15 @@ class OrderCurrentAssignmentBloc extends Bloc<OrderCurrentAssignmentEvent, Order
 
     result.fold(
       (l) => emit(OrderCurrentAssignmentFailureState(l.message)),
-      (r) => emit(OrderCurrentAssignmentSuccessState(r)),
+      (r) {
+        final mode = r.data?.effectiveAutoAssignMode.isNotEmpty == true
+            ? r.data!.effectiveAutoAssignMode
+            : r.autoAssignMode;
+        if (mode.isNotEmpty) {
+          SessionManager.saveAutoAssignMode(mode);
+        }
+        emit(OrderCurrentAssignmentSuccessState(r));
+      },
     );
   }
 

@@ -46,6 +46,20 @@ class AppRouteConf {
         path: AppRoute.bulkOrderDetails.path,
         name: AppRoute.bulkOrderDetails.name,
         pageBuilder: (context, state) {
+          if (state.extra is Order) {
+            return _fadePage(BulkOrderDetailsScreen(order: state.extra as Order));
+          } else if (state.extra is String) {
+            return _fadePage(BulkOrderDetailsScreen(assignmentUuid: state.extra as String));
+          } else if (state.extra is Map<String, dynamic>) {
+            final map = state.extra as Map<String, dynamic>;
+            return _fadePage(
+              BulkOrderDetailsScreen(
+                order: map['order'] as Order?,
+                orderUuid: map['orderUuid'] as String?,
+                assignmentUuid: map['assignmentUuid'] as String?,
+              ),
+            );
+          }
           final order = state.extra as Order?;
           return _fadePage(BulkOrderDetailsScreen(order: order));
         },

@@ -11,3 +11,4 @@ export '../../src/features/bulk_orders/presentation/pages/bulk_order_details_scr
 export '../../src/features/orders/presentation/pages/orders_tab_wrapper.dart';
 export '../../src/features/orders/presentation/pages/order_map_screen.dart';
 export '../../src/features/bulk_orders/presentation/pages/bulk_order_map_screen.dart';
+export '../../src/features/history/presentation/pages/history_screen.dart';

@@ -1,6 +1,6 @@
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/features/main_screen/presentation/widgets/bottom_nav.dart';
 
 class MainScreen extends StatefulWidget {
@@ -24,25 +24,19 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDeliveryTypeAndMode();
-    SessionManager.autoAssignModeNotifier.addListener(_onAutoAssignModeChanged);
+    _loadSessionInfo();
+    SessionManager.deliveryTypeNotifier.addListener(_onDeliveryInfoChanged);
+    SessionManager.autoAssignModeNotifier.addListener(_onDeliveryInfoChanged);
   }
 
   @override
   void dispose() {
-    SessionManager.autoAssignModeNotifier.removeListener(_onAutoAssignModeChanged);
+    SessionManager.deliveryTypeNotifier.removeListener(_onDeliveryInfoChanged);
+    SessionManager.autoAssignModeNotifier.removeListener(_onDeliveryInfoChanged);
     super.dispose();
   }
 
-  void _onAutoAssignModeChanged() {
-    if (mounted) {
-      setState(() {
-        _autoAssignMode = SessionManager.autoAssignModeNotifier.value;
-      });
-    }
-  }
-
-  Future<void> _loadDeliveryTypeAndMode() async {
+  Future<void> _loadSessionInfo() async {
     final session = await SessionManager.getUserSession();
     final mode = await SessionManager.getAutoAssignMode();
     if (mounted) {
@@ -53,61 +47,76 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  bool get _isVegetableAutoAssign {
-    final isVegetable = _deliveryType?.trim().toLowerCase() == 'vegetable';
-    final normalizedMode = (_autoAssignMode ?? '').trim().toLowerCase().replaceAll('_', '-').replaceAll(' ', '-');
-    return isVegetable && normalizedMode == 'auto-assign';
-  }
-
-  List<BottomNavItem> get _currentNavItems {
-    return _isVegetableAutoAssign
-        ? BottomNav.autoAssignVegetableNavItems
-        : BottomNav.defaultNavItems;
-  }
-
-  int _calculateSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.path;
-
-    if (_isVegetableAutoAssign) {
-      if (location.startsWith('/dashboard_screen')) {
-        return 0; // Dashboard
-      }
-      if (location.startsWith('/profile_screen')) {
-        return 1; // Profile
-      }
-      return 0;
-    } else {
-      if (location.startsWith('/dashboard_screen')) {
-        return 0; // Dashboard
-      }
-      if (location.startsWith('/orders_screen') ||
-          location.startsWith('/delivered_screen') ||
-          location.startsWith('/cancelled_screen') ||
-          location.startsWith('/rejected_screen')) {
-        return 1; // Orders
-      }
-      if (location.startsWith('/profile_screen')) {
-        return 2; // Profile
-      }
-      return 0;
+  void _onDeliveryInfoChanged() {
+    if (mounted) {
+      setState(() {
+        _deliveryType = SessionManager.deliveryTypeNotifier.value ?? _deliveryType;
+        _autoAssignMode = SessionManager.autoAssignModeNotifier.value ?? _autoAssignMode;
+      });
     }
   }
 
-  void _onItemTapped(int index, BuildContext context) {
+  List<BottomNavItem> _getActiveNavItems() {
+    final bool isFood = _deliveryType?.toLowerCase() == 'food';
+    final normalizedMode = (_autoAssignMode ?? '').trim().toLowerCase().replaceAll('_', '-');
+    final bool isAutoAssign = normalizedMode == 'auto-assign';
+
+    // In case of food, hide orders tab.
+    // In case of vegetable auto-assign, hide orders tab.
+    // In case of vegetable slot-wise, orders tab is visible.
+    final bool showOrders = !isFood && !isAutoAssign;
+
+    if (showOrders) {
+      return const [
+        BottomNav.dashboardItem,
+        BottomNav.ordersItem,
+        BottomNav.historyItem,
+        BottomNav.profileItem,
+      ];
+    } else {
+      return const [
+        BottomNav.dashboardItem,
+        BottomNav.historyItem,
+        BottomNav.profileItem,
+      ];
+    }
+  }
+
+  int _calculateSelectedIndex(BuildContext context, List<BottomNavItem> navItems) {
+    final String location = GoRouterState.of(context).uri.path;
+    for (int i = 0; i < navItems.length; i++) {
+      if (location.startsWith(navItems[i].path)) {
+        return i;
+      }
+    }
+    if (location.startsWith('/delivered_screen') ||
+        location.startsWith('/cancelled_screen') ||
+        location.startsWith('/rejected_screen')) {
+      final historyIdx = navItems.indexWhere((item) => item.path == '/history_screen');
+      if (historyIdx != -1) return historyIdx;
+      final ordersIdx = navItems.indexWhere((item) => item.path == '/orders_screen');
+      if (ordersIdx != -1) return ordersIdx;
+    }
+    return 0;
+  }
+
+  void _onItemTapped(int index, BuildContext context, List<BottomNavItem> navItems) {
     if (!_showBottomNav) {
       setState(() {
         _showBottomNav = true;
       });
     }
-    final targetPath = _currentNavItems[index].path;
-    context.go(targetPath);
+    if (index >= 0 && index < navItems.length) {
+      final targetPath = navItems[index].path;
+      context.go(targetPath);
+    }
   }
 
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification.metrics.axis == Axis.vertical) {
       if (notification is ScrollUpdateNotification) {
         final double delta = notification.scrollDelta ?? 0.0;
-        
+
         if (delta > 0.5) {
           // Immediately glide hide on scroll DOWN
           if (_showBottomNav) {
@@ -139,8 +148,8 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = _calculateSelectedIndex(context);
-    final navItems = _currentNavItems;
+    final navItems = _getActiveNavItems();
+    final selectedIndex = _calculateSelectedIndex(context, navItems);
 
     if (_lastSelectedIndex != -1 && _lastSelectedIndex != selectedIndex) {
       _showBottomNav = true;
@@ -173,9 +182,9 @@ class _MainScreenState extends State<MainScreen> {
           child: IgnorePointer(
             ignoring: !_showBottomNav,
             child: BottomNav(
-              selectedIndex: selectedIndex,
               items: navItems,
-              onTap: (index) => _onItemTapped(index, context),
+              selectedIndex: selectedIndex,
+              onTap: (index) => _onItemTapped(index, context, navItems),
             ),
           ),
         ),

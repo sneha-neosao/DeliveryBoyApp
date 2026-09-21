@@ -76,26 +76,42 @@ class _FoodOrderActiveAssignmentWidgetState extends State<FoodOrderActiveAssignm
     final aStatus = widget.assignmentStatus.toUpperCase();
     final oStatus = widget.orderStatus.toUpperCase();
 
-    final bool showFoodActions = aStatus == 'PREPAIRING' || aStatus == 'PREPARING' || 
-                                 oStatus == 'PREPAIRING' || oStatus == 'PREPARING';
+    final bool showFoodActions = aStatus == 'PREPAIRING' ||
+        aStatus == 'PREPARING' ||
+        oStatus == 'PREPAIRING' ||
+        oStatus == 'PREPARING';
+
+    void navigateToDetails() {
+      context.push(
+        AppRoute.orderDetails.path,
+        extra: {
+          'orderUuid': widget.uuid,
+          'fetchAssignmentFirst': true,
+          'deliveryType': 'food',
+        },
+      );
+    }
 
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFFFFF2E6),
-                Color(0xFFFFE8D6),
-              ],
+        child: GestureDetector(
+          onTap: navigateToDetails,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFFFF2E6),
+                  Color(0xFFFFE8D6),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColor.border),
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColor.border),
-          ),
-          child: Row(
+            child: Row(
             children: [
               const Icon(
                 Icons.shopping_bag_rounded,
@@ -188,9 +204,7 @@ class _FoodOrderActiveAssignmentWidgetState extends State<FoodOrderActiveAssignm
               ),
               const SizedBox(width: 10),
               InkWell(
-                onTap: () {
-                  context.go(AppRoute.orders.path);
-                },
+                onTap: navigateToDetails,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -213,8 +227,9 @@ class _FoodOrderActiveAssignmentWidgetState extends State<FoodOrderActiveAssignm
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showReleaseDialog(BuildContext context, String uuid) {
     final TextEditingController reasonCtrl = TextEditingController();

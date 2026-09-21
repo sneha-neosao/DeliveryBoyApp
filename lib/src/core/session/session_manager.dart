@@ -8,6 +8,7 @@ import '../utils/failure_converter.dart';
 /// session for managing the data locally
 class SessionManager {
   static final ValueNotifier<String?> autoAssignModeNotifier = ValueNotifier<String?>(null);
+  static final ValueNotifier<String?> deliveryTypeNotifier = ValueNotifier<String?>(null);
 
   static Future<bool> checkIsKeyPresent(String key) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -47,13 +48,18 @@ class SessionManager {
   static Future<void> saveUserSession(LoginResponse value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString("userSession", value.toRawJson());
+    deliveryTypeNotifier.value = value.data?.deliveryBoy?.deliveryType;
   }
 
   static Future<LoginResponse?> getUserSession() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString("userSession");
     if (raw == null) return null;
-    return LoginResponse.fromRawJson(raw);
+    final session = LoginResponse.fromRawJson(raw);
+    if (deliveryTypeNotifier.value != session.data?.deliveryBoy?.deliveryType) {
+      deliveryTypeNotifier.value = session.data?.deliveryBoy?.deliveryType;
+    }
+    return session;
   }
 
   static saveFirebaseToken(String? firebasetoken) async {
@@ -106,6 +112,7 @@ class SessionManager {
     
     final success = await prefs.clear();
     autoAssignModeNotifier.value = null;
+    deliveryTypeNotifier.value = null;
     
     // Restore credentials
     if (username != null && password != null) {

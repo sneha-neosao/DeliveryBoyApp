@@ -9,6 +9,7 @@ enum AppRoute {
   cancelled(path: "/cancelled_screen"),
   rejected(path: "/rejected_screen"),
   profile(path: "/profile_screen"),
+  history(path: "/history_screen"),
   bulkOrder(path: "/bulk_order_screen"),
   bulkOrderDetails(path: "/bulk_order_details_screen"),
   map(path: "/map_screen"),

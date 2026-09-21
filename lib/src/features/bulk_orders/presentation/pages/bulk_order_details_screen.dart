@@ -2,6 +2,8 @@ import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
+import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_details_shimmer_widget.dart';
 import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
@@ -124,11 +126,7 @@ class _BulkOrderDetailsScreenState extends State<BulkOrderDetailsScreen> {
             child: BlocBuilder<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
               builder: (context, currentOrdersState) {
                 if (currentOrdersState is CurrentAssignmentOrdersLoadingState && _subOrderUuid == null) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColor.darkOrange,
-                    ),
-                  );
+                  return const OrderDetailsShimmerWidget();
                 }
 
                 if (currentOrdersState is CurrentAssignmentOrdersFailureState && _subOrderUuid == null) {
@@ -197,11 +195,7 @@ class _BulkOrderDetailsScreenState extends State<BulkOrderDetailsScreen> {
                 return BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
                   builder: (context, state) {
                     if (state is OrderDetailsLoadingState || state is OrderDetailsInitialState) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColor.darkOrange,
-                        ),
-                      );
+                      return const OrderDetailsShimmerWidget();
                     } else if (state is OrderDetailsFailureState) {
                       return RefreshIndicator(
                         color: AppColor.darkOrange,
@@ -578,57 +572,60 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                       },
                     ),
                     16.hS,
-                    DeliveryAddressCardWidget(
-                      customerName: customerName,
-                      customerPhone: customerPhone,
-                      deliveryAddress: deliveryAddress,
-                      showNavigationIcon: true,
-                      onNavigationTap: () {
-                        final double deliveryLat = orderDetails.deliveryDetails?.deliveryLat ??
-                            widget.fallbackOrder?.deliveryLat ??
-                            0.0;
-                        final double deliveryLng = orderDetails.deliveryDetails?.deliveryLng ??
-                            widget.fallbackOrder?.deliveryLng ??
-                            0.0;
-                        final double storeLat = widget.fallbackOrder?.storeLatitude ?? 0.0;
-                        final double storeLng = widget.fallbackOrder?.storeLongitude ?? 0.0;
+                    Builder(
+                      builder: (context) {
+                        final autoAssignMode = (SessionManager.autoAssignModeNotifier.value ?? '').trim().toLowerCase().replaceAll('_', '-');
+                        final bool isAutoAssign = autoAssignMode == 'auto-assign';
 
-                        final Order effectiveOrder = widget.fallbackOrder ??
-                            Order(
-                              id: orderDetails.id,
-                              uuId: orderDetails.uuId,
-                              orderStatus: orderDetails.orderStatus,
-                              paymentMode: orderDetails.paymentMode,
-                              paymentStatus: orderDetails.paymentStatus,
-                              grandTotal: orderDetails.grandTotal,
-                              platformCharges: orderDetails.platformCharges,
-                              totalItems: orderDetails.totalItems,
-                              customerName: customerName,
-                              customerContact: customerPhone,
-                              deliveryAddress: deliveryAddress,
-                              deliveryName: orderDetails.deliveryDetails?.name ?? '',
-                              deliveryPhone: orderDetails.deliveryDetails?.phone ?? '',
-                              deliveryPincode: orderDetails.deliveryDetails?.pincode ?? '',
-                              slotStartTime: orderDetails.slotStartTime,
-                              slotEndTime: orderDetails.slotEndTime,
-                              deliveryDate: orderDetails.deliveryDate,
-                              isAssigned: true,
-                              assignedDeliveryBoyId: 0,
-                              assignedDeliveryBoyName: '',
-                              assignedDeliveryBoyPhone: '',
-                              assignmentStatus: '',
-                              deliveryLat: deliveryLat,
-                              deliveryLng: deliveryLng,
-                              storeLatitude: storeLat,
-                              storeLongitude: storeLng,
+                        return DeliveryAddressCardWidget(
+                          customerName: customerName,
+                          customerPhone: customerPhone,
+                          deliveryAddress: deliveryAddress,
+                          showNavigationIcon: isAutoAssign,
+                          onNavigationTap: () {
+                            final double deliveryLat = orderDetails.deliveryDetails?.deliveryLat ??
+                                widget.fallbackOrder?.deliveryLat ??
+                                0.0;
+                            final double deliveryLng = orderDetails.deliveryDetails?.deliveryLng ??
+                                widget.fallbackOrder?.deliveryLng ??
+                                0.0;
+                            final double storeLat = widget.fallbackOrder?.storeLatitude ?? 0.0;
+                            final double storeLng = widget.fallbackOrder?.storeLongitude ?? 0.0;
+
+                            final Order effectiveOrder = widget.fallbackOrder ??
+                                Order(
+                                  id: orderDetails.id,
+                                  uuId: orderDetails.uuId,
+                                  orderStatus: orderDetails.orderStatus,
+                                  paymentMode: orderDetails.paymentMode,
+                                  paymentStatus: orderDetails.paymentStatus,
+                                  grandTotal: orderDetails.grandTotal,
+                                  platformCharges: orderDetails.platformCharges,
+                                  totalItems: orderDetails.totalItems,
+                                  customerName: customerName,
+                                  customerContact: customerPhone,
+                                  deliveryAddress: deliveryAddress,
+                                  deliveryName: orderDetails.deliveryDetails?.name ?? '',
+                                  deliveryPhone: orderDetails.deliveryDetails?.phone ?? '',
+                                  deliveryPincode: orderDetails.deliveryDetails?.pincode ?? '',
+                                  slotStartTime: orderDetails.slotStartTime,
+                                  slotEndTime: orderDetails.slotEndTime,
+                                  deliveryDate: orderDetails.deliveryDate,
+                                  isAssigned: true,
+                                  assignedDeliveryBoyId: 0,
+                                  assignedDeliveryBoyName: '',
+                                  assignedDeliveryBoyPhone: '',
+                                  assignmentStatus: '',
+                                  deliveryLat: deliveryLat,
+                                  deliveryLng: deliveryLng,
+                                  storeLatitude: storeLat,
+                                  storeLongitude: storeLng,
+                                );
+
+                            context.push(
+                              AppRoute.orderMap.path,
+                              extra: [effectiveOrder],
                             );
-
-                        context.push(
-                          AppRoute.bulkOrderMap.path,
-                          extra: {
-                            'storeLocation': LatLng(storeLat, storeLng),
-                            'deliveryLocations': [LatLng(deliveryLat, deliveryLng)],
-                            'orders': [effectiveOrder],
                           },
                         );
                       },

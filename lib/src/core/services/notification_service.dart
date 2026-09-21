@@ -139,7 +139,7 @@ class NoficationService {
 
     // Assignment Channel
     if (isOrderAssignment) {
-      channelId = 'order_assignment_channel_v2';
+      channelId = '1001';
       channelName = 'Order Assignments';
       customSound = const RawResourceAndroidNotificationSound('notification_bell');
     }

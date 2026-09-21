@@ -93,7 +93,7 @@ class _VegetableOrderActiveAssignmentWidgetState extends State<VegetableOrderAct
           context.push(AppRoute.bulkOrderDetails.path, extra: widget.uuid);
         }
       } else {
-        context.push(AppRoute.bulkOrder.path, extra: widget.assignment);
+        context.go(AppRoute.orders.path);
       }
     }
 

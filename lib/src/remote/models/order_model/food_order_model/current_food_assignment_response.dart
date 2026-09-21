@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'order_list_response.dart';
 
 class CurrentFoodAssignmentResponse {
   final int status;
@@ -153,4 +154,33 @@ class AssignmentOrder {
     "assigned_delivery_boy_phone": assignedDeliveryBoyPhone,
     "assignment_status": assignmentStatus,
   };
+
+  Order toOrder() => Order(
+    id: id,
+    uuId: uuId,
+    orderStatus: orderStatus,
+    paymentMode: paymentMode,
+    paymentStatus: paymentStatus,
+    grandTotal: grandTotal,
+    platformCharges: platformCharges,
+    totalItems: totalItems,
+    customerName: customerName,
+    customerContact: customerContact,
+    deliveryAddress: deliveryAddress,
+    deliveryName: deliveryName,
+    deliveryPhone: deliveryPhone,
+    deliveryPincode: deliveryPincode,
+    slotStartTime: slotStartTime ?? '',
+    slotEndTime: slotEndTime ?? '',
+    deliveryDate: deliveryDate,
+    isAssigned: isAssigned,
+    assignedDeliveryBoyId: assignedDeliveryBoyId,
+    assignedDeliveryBoyName: assignedDeliveryBoyName,
+    assignedDeliveryBoyPhone: assignedDeliveryBoyPhone,
+    assignmentStatus: assignmentStatus,
+    deliveryLat: deliveryLat ?? 0.0,
+    deliveryLng: deliveryLng ?? 0.0,
+    storeLatitude: storeLatitude,
+    storeLongitude: storeLongitude,
+  );
 }

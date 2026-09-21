@@ -3,6 +3,7 @@ import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DeliveryAddressCardWidget extends StatelessWidget {
   final String customerName;
@@ -132,42 +133,71 @@ class DeliveryAddressCardWidget extends StatelessWidget {
   }
 
   Widget _buildRightActionCircle() {
-    if (showNavigationIcon) {
-      return InkWell(
-        onTap: onNavigationTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColor.darkOrange,
-              width: 1.5,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: () async {
+            if (customerPhone.isNotEmpty) {
+              final Uri phoneUri = Uri(scheme: 'tel', path: customerPhone);
+              try {
+                if (await canLaunchUrl(phoneUri)) {
+                  await launchUrl(phoneUri);
+                } else {
+                  await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+                }
+              } catch (e) {
+                debugPrint('Could not launch phone: $e');
+              }
+            }
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColor.darkOrange,
+                width: 1.5,
+              ),
             ),
-          ),
-          child: Transform.rotate(
-            angle: math.pi / 4, // 45° towards upper-right
             child: const Icon(
-              Icons.navigation,
+              Icons.phone_rounded,
               color: AppColor.darkOrange,
               size: 18,
             ),
           ),
         ),
-      );
-    }
-
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: const Icon(Icons.phone_rounded, color: AppColor.darkOrange, size: 16),
+        if (showNavigationIcon) ...[
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: onNavigationTap,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColor.darkOrange,
+                  width: 1.5,
+                ),
+              ),
+              child: Transform.rotate(
+                angle: math.pi / 4, // 45° towards upper-right
+                child: const Icon(
+                  Icons.navigation,
+                  color: AppColor.darkOrange,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

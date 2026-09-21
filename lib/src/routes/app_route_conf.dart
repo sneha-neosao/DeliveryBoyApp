@@ -38,6 +38,21 @@ class AppRouteConf {
         path: AppRoute.orderDetails.path,
         name: AppRoute.orderDetails.name,
         pageBuilder: (context, state) {
+          if (state.extra is Order) {
+            return _fadePage(OrderDetailsScreen(order: state.extra as Order));
+          } else if (state.extra is String) {
+            return _fadePage(OrderDetailsScreen(orderUuid: state.extra as String));
+          } else if (state.extra is Map<String, dynamic>) {
+            final map = state.extra as Map<String, dynamic>;
+            return _fadePage(
+              OrderDetailsScreen(
+                order: map['order'] as Order?,
+                orderUuid: map['orderUuid'] as String?,
+                fetchAssignmentFirst: map['fetchAssignmentFirst'] as bool? ?? false,
+                deliveryType: map['deliveryType'] as String?,
+              ),
+            );
+          }
           final order = state.extra as Order?;
           return _fadePage(OrderDetailsScreen(order: order));
         },
@@ -124,6 +139,11 @@ class AppRouteConf {
             path: AppRoute.orders.path,
             name: AppRoute.orders.name,
             pageBuilder: (context, state) => _fadePage(const OrdersTabWrapper()),
+          ),
+          GoRoute(
+            path: AppRoute.history.path,
+            name: AppRoute.history.name,
+            pageBuilder: (context, state) => _fadePage(const HistoryScreen()),
           ),
           GoRoute(
             path: AppRoute.profile.path,

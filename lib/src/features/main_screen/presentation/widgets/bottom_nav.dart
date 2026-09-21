@@ -21,43 +21,40 @@ class BottomNav extends StatelessWidget {
   final Function(int index) onTap;
   final List<BottomNavItem> items;
 
+  static const BottomNavItem dashboardItem = BottomNavItem(
+    path: '/dashboard_screen',
+    labelKey: 'dashboard',
+    icon: Icons.grid_view_outlined,
+    selectedIcon: Icons.grid_view_rounded,
+  );
+
+  static const BottomNavItem ordersItem = BottomNavItem(
+    path: '/orders_screen',
+    labelKey: 'drawer_orders',
+    icon: Icons.shopping_bag_outlined,
+    selectedIcon: Icons.shopping_bag_rounded,
+  );
+
+  static const BottomNavItem historyItem = BottomNavItem(
+    path: '/history_screen',
+    labelKey: 'drawer_order_history',
+    icon: Icons.history_rounded,
+    selectedIcon: Icons.history_rounded,
+  );
+
+  static const BottomNavItem profileItem = BottomNavItem(
+    path: '/profile_screen',
+    labelKey: 'drawer_profile',
+    icon: Icons.person_outline_rounded,
+    selectedIcon: Icons.person_rounded,
+  );
+
   static const List<BottomNavItem> defaultNavItems = [
-    BottomNavItem(
-      path: '/dashboard_screen',
-      labelKey: 'dashboard',
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view_rounded,
-    ),
-    BottomNavItem(
-      path: '/orders_screen',
-      labelKey: 'drawer_orders',
-      icon: Icons.shopping_bag_outlined,
-      selectedIcon: Icons.shopping_bag_rounded,
-    ),
-    BottomNavItem(
-      path: '/profile_screen',
-      labelKey: 'drawer_profile',
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
-    ),
+    dashboardItem,
+    ordersItem,
+    historyItem,
+    profileItem,
   ];
-
-  static const List<BottomNavItem> autoAssignVegetableNavItems = [
-    BottomNavItem(
-      path: '/dashboard_screen',
-      labelKey: 'dashboard',
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view_rounded,
-    ),
-    BottomNavItem(
-      path: '/profile_screen',
-      labelKey: 'drawer_profile',
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
-    ),
-  ];
-
-  static List<BottomNavItem> get navItems => defaultNavItems;
 
   const BottomNav({
     super.key,
@@ -67,14 +64,12 @@ class BottomNav extends StatelessWidget {
   });
 
   Alignment _getItemAlignment(int index) {
-    if (items.length <= 2) return Alignment.center;
     if (index == 0) return Alignment.centerLeft;
     if (index == items.length - 1) return Alignment.centerRight;
     return Alignment.center;
   }
 
   EdgeInsets _getItemMargin(int index) {
-    if (items.length <= 2) return EdgeInsets.zero;
     if (index == 0) return const EdgeInsets.only(left: 12);
     if (index == items.length - 1) return const EdgeInsets.only(right: 12);
     return EdgeInsets.zero;
@@ -82,19 +77,12 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isTwoItems = items.length <= 2;
-
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: isTwoItems ? 220 : double.infinity,
-            ),
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(32),
@@ -210,22 +198,22 @@ class BottomNav extends StatelessWidget {
                                 curve: Curves.easeInOut,
                                 child: isSelected
                                     ? Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            item.labelKey.tr(),
-                                            style: const TextStyle(
-                                              color: AppColor.darkOrange,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w700,
-                                              letterSpacing: 0.2,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      )
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      item.labelKey.tr(),
+                                      style: const TextStyle(
+                                        color: AppColor.darkOrange,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.2,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                )
                                     : const SizedBox.shrink(),
                               ),
                             ],
@@ -240,7 +228,6 @@ class BottomNav extends StatelessWidget {
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

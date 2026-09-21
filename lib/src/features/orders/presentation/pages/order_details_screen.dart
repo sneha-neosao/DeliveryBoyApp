@@ -2,10 +2,12 @@ import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/orders/bloc/food_order_current_assignment_bloc/food_order_current_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_details_bloc/order_details_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/delivery_address_card_widget.dart';
+import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_details_shimmer_widget.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_details_widget.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_items_listview.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/payment_info_card_widget.dart';
@@ -13,22 +15,63 @@ import 'package:delivery_boy_app/src/features/orders/presentation/widgets/status
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-class OrderDetailsScreen extends StatelessWidget {
+class OrderDetailsScreen extends StatefulWidget {
   final Order? order;
+  final String? orderUuid;
+  final bool fetchAssignmentFirst;
+  final String? deliveryType;
 
   const OrderDetailsScreen({
     super.key,
     this.order,
+    this.orderUuid,
+    this.fetchAssignmentFirst = false,
+    this.deliveryType,
   });
 
   @override
+  State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
+}
+
+class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+  late final OrderDetailsBloc _orderDetailsBloc;
+  FoodOrderCurrentAssignmentBloc? _foodAssignmentBloc;
+  Order? _order;
+  String? _orderUuid;
+  bool _fetchingAssignment = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+    _orderUuid = widget.order?.uuId ?? widget.orderUuid;
+    _orderDetailsBloc = getIt<OrderDetailsBloc>();
+
+    if (widget.fetchAssignmentFirst) {
+      _fetchingAssignment = true;
+      _foodAssignmentBloc = getIt<FoodOrderCurrentAssignmentBloc>();
+      _foodAssignmentBloc!.add(const FoodOrderCurrentAssignmentGetEvent());
+    } else if (_orderUuid != null && _orderUuid!.isNotEmpty) {
+      _orderDetailsBloc.add(OrderDetailsGetEvent(_orderUuid!));
+    }
+  }
+
+  @override
+  void dispose() {
+    _orderDetailsBloc.close();
+    _foodAssignmentBloc?.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (order == null) {
+    if (!widget.fetchAssignmentFirst && _order == null && (_orderUuid == null || _orderUuid!.isEmpty)) {
       return Scaffold(
         appBar: AppBar(
           title: Text('order_details'.tr()),
@@ -52,10 +95,9 @@ class OrderDetailsScreen extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (context) =>
-              getIt<OrderDetailsBloc>()..add(OrderDetailsGetEvent(order!.uuId)),
-        ),
+        BlocProvider.value(value: _orderDetailsBloc),
+        if (_foodAssignmentBloc != null)
+          BlocProvider.value(value: _foodAssignmentBloc!),
         BlocProvider(
           create: (context) => getIt<OrderAssignmentBloc>(),
         ),
@@ -63,87 +105,143 @@ class OrderDetailsScreen extends StatelessWidget {
           create: (context) => getIt<OrderStatusUpdateBloc>(),
         ),
       ],
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFFF9F5),
-        body: SafeArea(
-          top: false,
-          child: BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
-            builder: (context, state) {
-              if (state is OrderDetailsLoadingState || state is OrderDetailsInitialState) {
-                return const Center(
-                  child: CircularProgressIndicator(
+      child: MultiBlocListener(
+        listeners: [
+          if (_foodAssignmentBloc != null)
+            BlocListener<FoodOrderCurrentAssignmentBloc, FoodOrderCurrentAssignmentState>(
+              listener: (context, state) {
+                if (state is FoodOrderCurrentAssignmentSuccessState) {
+                  final activeOrder = state.data.data;
+                  if (activeOrder != null && activeOrder.uuId.isNotEmpty) {
+                    setState(() {
+                      _fetchingAssignment = false;
+                      _order = activeOrder.toOrder();
+                      _orderUuid = activeOrder.uuId;
+                    });
+                    _orderDetailsBloc.add(OrderDetailsGetEvent(activeOrder.uuId));
+                  } else {
+                    setState(() => _fetchingAssignment = false);
+                  }
+                } else if (state is FoodOrderCurrentAssignmentFailureState) {
+                  setState(() => _fetchingAssignment = false);
+                  appSnackBar(context, AppColor.bright_red, state.message);
+                }
+              },
+            ),
+        ],
+        child: Scaffold(
+          backgroundColor: const Color(0xFFFFF9F5),
+          body: SafeArea(
+            top: false,
+            child: BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
+              builder: (context, state) {
+                if (_fetchingAssignment ||
+                    state is OrderDetailsLoadingState ||
+                    state is OrderDetailsInitialState) {
+                  return const OrderDetailsShimmerWidget();
+                } else if (state is OrderDetailsFailureState) {
+                  final retryUuid = _orderUuid ?? _order?.uuId ?? '';
+                  return RefreshIndicator(
                     color: AppColor.darkOrange,
-                  ),
-                );
-              } else if (state is OrderDetailsFailureState) {
-                return RefreshIndicator(
-                  color: AppColor.darkOrange,
-                  onRefresh: () async {
-                    context
-                        .read<OrderDetailsBloc>()
-                        .add(OrderDetailsGetEvent(order!.uuId));
-                    await Future.delayed(const Duration(seconds: 1));
-                  },
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Container(
-                      height: MediaQuery.of(context).size.height - 100,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            size: 48,
-                            color: AppColor.bright_red,
-                          ),
-                          16.hS,
-                          Text(
-                            'failed_load_details'.tr(),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                    onRefresh: () async {
+                      if (retryUuid.isNotEmpty) {
+                        _orderDetailsBloc.add(OrderDetailsGetEvent(retryUuid));
+                      } else if (widget.fetchAssignmentFirst && _foodAssignmentBloc != null) {
+                        setState(() => _fetchingAssignment = true);
+                        _foodAssignmentBloc!.add(const FoodOrderCurrentAssignmentGetEvent());
+                      }
+                      await Future.delayed(const Duration(seconds: 1));
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height - 100,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              size: 48,
+                              color: AppColor.bright_red,
                             ),
-                          ),
-                          8.hS,
-                          Text(
-                            state.message,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
+                            16.hS,
+                            Text(
+                              'failed_load_details'.tr(),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          24.hS,
-                          ElevatedButton(
-                            onPressed: () {
-                              context
-                                  .read<OrderDetailsBloc>()
-                                  .add(OrderDetailsGetEvent(order!.uuId));
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColor.darkOrange,
-                              foregroundColor: Colors.white,
+                            8.hS,
+                            Text(
+                              state.message,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                              ),
                             ),
-                            child: Text('retry'.tr()),
-                          ),
-                        ],
+                            24.hS,
+                            ElevatedButton(
+                              onPressed: () {
+                                if (retryUuid.isNotEmpty) {
+                                  _orderDetailsBloc.add(OrderDetailsGetEvent(retryUuid));
+                                } else if (widget.fetchAssignmentFirst && _foodAssignmentBloc != null) {
+                                  setState(() => _fetchingAssignment = true);
+                                  _foodAssignmentBloc!.add(const FoodOrderCurrentAssignmentGetEvent());
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColor.darkOrange,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: Text('retry'.tr()),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }
-else if (state is OrderDetailsSuccessState) {
-                final orderDetails = state.data.data;
-                if (orderDetails == null) {
-                  return Center(
-                    child: Text('no_order_details_found'.tr()),
                   );
+                } else if (state is OrderDetailsSuccessState) {
+                  final orderDetails = state.data.data;
+                  if (orderDetails == null) {
+                    return Center(
+                      child: Text('no_order_details_found'.tr()),
+                    );
+                  }
+                  final fallbackOrder = _order ??
+                      Order(
+                        id: orderDetails.id,
+                        uuId: orderDetails.uuId,
+                        orderStatus: orderDetails.orderStatus,
+                        paymentMode: orderDetails.paymentMode,
+                        paymentStatus: orderDetails.paymentStatus,
+                        grandTotal: orderDetails.grandTotal,
+                        platformCharges: orderDetails.platformCharges,
+                        totalItems: orderDetails.totalItems,
+                        customerName: orderDetails.customerName,
+                        customerContact: orderDetails.customerContact,
+                        deliveryAddress: orderDetails.deliveryDetails?.address ?? '',
+                        deliveryName: orderDetails.deliveryDetails?.name ?? '',
+                        deliveryPhone: orderDetails.deliveryDetails?.phone ?? '',
+                        deliveryPincode: orderDetails.deliveryDetails?.pincode ?? '',
+                        slotStartTime: orderDetails.slotStartTime,
+                        slotEndTime: orderDetails.slotEndTime,
+                        deliveryDate: orderDetails.deliveryDate,
+                        isAssigned: true,
+                        assignedDeliveryBoyId: 0,
+                        assignedDeliveryBoyName: '',
+                        assignedDeliveryBoyPhone: '',
+                        assignmentStatus: '',
+                        deliveryLat: orderDetails.deliveryDetails?.deliveryLat ?? 0.0,
+                        deliveryLng: orderDetails.deliveryDetails?.deliveryLng ?? 0.0,
+                      );
+                  return _OrderDetailsView(orderDetails: orderDetails, fallbackOrder: fallbackOrder);
                 }
-                return _OrderDetailsView(orderDetails: orderDetails, fallbackOrder: order!);
-              }
-              return const SizedBox.shrink();
-            },
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       ),
@@ -539,6 +637,47 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                     customerName: customerName,
                     customerPhone: customerPhone,
                     deliveryAddress: deliveryAddress,
+                    showNavigationIcon: true,
+                    onNavigationTap: () {
+                      final double storeLat = fallbackOrder.storeLatitude ?? 0.0;
+                      final double storeLng = fallbackOrder.storeLongitude ?? 0.0;
+                      final double deliveryLat = orderDetails.deliveryDetails?.deliveryLat ?? fallbackOrder.deliveryLat;
+                      final double deliveryLng = orderDetails.deliveryDetails?.deliveryLng ?? fallbackOrder.deliveryLng;
+
+                      final mapOrder = Order(
+                        id: orderDetails.id != 0 ? orderDetails.id : fallbackOrder.id,
+                        uuId: orderDetails.uuId.isNotEmpty ? orderDetails.uuId : fallbackOrder.uuId,
+                        orderStatus: orderDetails.orderStatus.isNotEmpty ? orderDetails.orderStatus : fallbackOrder.orderStatus,
+                        paymentMode: orderDetails.paymentMode.isNotEmpty ? orderDetails.paymentMode : fallbackOrder.paymentMode,
+                        paymentStatus: orderDetails.paymentStatus.isNotEmpty ? orderDetails.paymentStatus : fallbackOrder.paymentStatus,
+                        grandTotal: orderDetails.grandTotal,
+                        platformCharges: orderDetails.platformCharges,
+                        totalItems: orderDetails.totalItems,
+                        customerName: customerName,
+                        customerContact: customerPhone,
+                        deliveryAddress: deliveryAddress,
+                        deliveryName: orderDetails.deliveryDetails?.name ?? fallbackOrder.deliveryName,
+                        deliveryPhone: orderDetails.deliveryDetails?.phone ?? fallbackOrder.deliveryPhone,
+                        deliveryPincode: orderDetails.deliveryDetails?.pincode ?? fallbackOrder.deliveryPincode,
+                        slotStartTime: orderDetails.slotStartTime,
+                        slotEndTime: orderDetails.slotEndTime,
+                        deliveryDate: orderDetails.deliveryDate,
+                        isAssigned: fallbackOrder.isAssigned,
+                        assignedDeliveryBoyId: fallbackOrder.assignedDeliveryBoyId,
+                        assignedDeliveryBoyName: fallbackOrder.assignedDeliveryBoyName,
+                        assignedDeliveryBoyPhone: fallbackOrder.assignedDeliveryBoyPhone,
+                        assignmentStatus: fallbackOrder.assignmentStatus,
+                        deliveryLat: deliveryLat,
+                        deliveryLng: deliveryLng,
+                        storeLatitude: storeLat,
+                        storeLongitude: storeLng,
+                      );
+
+                      context.push(
+                        AppRoute.orderMap.path,
+                        extra: [mapOrder],
+                      );
+                    },
                   ),
                   16.hS,
                   // Order metrics + time info

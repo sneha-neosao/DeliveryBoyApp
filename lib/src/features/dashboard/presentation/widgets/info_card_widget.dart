@@ -1,8 +1,6 @@
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
-import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
 class InfoCardWidget extends StatelessWidget {
@@ -10,6 +8,7 @@ class InfoCardWidget extends StatelessWidget {
   final ValueChanged<bool> onOnlineToggle;
   final String? userName;
   final String? userPhone;
+  final String? userEmail;
   final String? userImageUrl;
   final bool isLoading;
 
@@ -19,6 +18,7 @@ class InfoCardWidget extends StatelessWidget {
     required this.onOnlineToggle,
     this.userName,
     this.userPhone,
+    this.userEmail,
     this.userImageUrl,
     this.isLoading = false,
   });
@@ -245,6 +245,44 @@ class InfoCardWidget extends StatelessWidget {
                                   ),
                                 ],
                               ),
+                        if (isLoading) ...[
+                          const SizedBox(height: 3),
+                          Shimmer.fromColors(
+                            baseColor: Colors.white.withValues(alpha: 0.3),
+                            highlightColor: Colors.white.withValues(alpha: 0.6),
+                            child: Container(
+                              width: 130,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ] else if (userEmail != null && userEmail!.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.email_outlined,
+                                size: 14,
+                                color: Colors.white.withValues(alpha: 0.85),
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  userEmail!,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),

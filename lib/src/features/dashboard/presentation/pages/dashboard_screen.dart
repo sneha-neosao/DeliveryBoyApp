@@ -35,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isStartingAssignment = false;
   String? _userName;
   String? _userPhone;
+  String? _userEmail;
   String? _userImageUrl;
   String? _deliveryType;
   int? _deliveryBoyId;
@@ -136,6 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _userName = deliveryBoy.name;
         _userPhone = deliveryBoy.phone;
+        _userEmail = deliveryBoy.email;
         _userImageUrl = deliveryBoy.profileImage;
         _deliveryType = deliveryBoy.deliveryType;
         _deliveryBoyId = deliveryBoy.id;
@@ -215,6 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   setState(() {
                     _userName = profileData?.name;
                     _userPhone = profileData?.phone;
+                    _userEmail = profileData?.email;
                     _userImageUrl = profileData?.profileImage;
                     if (profileData?.isOnline != null) {
                       _isOnline = profileData!.isOnline;
@@ -510,6 +513,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     isOnline: _isOnline,
                                     userName: _userName,
                                     userPhone: _userPhone,
+                                    userEmail: _userEmail,
                                     userImageUrl: _userImageUrl,
                                     isLoading: isProfileLoading,
                                     onOnlineToggle: (value) {

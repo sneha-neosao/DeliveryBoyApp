@@ -4,6 +4,7 @@ import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/app_updat
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/dashboard_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/firebase_token_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/dashboard/domain/usecase/online_status_usecase.dart';
+import 'package:delivery_boy_app/src/features/history/domain/usecase/today_delivered_history_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/login_usecase.dart';
 import 'package:delivery_boy_app/src/features/login/domain/logout_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/food_order_current_assignment_bloc/food_order_current_assignment_bloc.dart';
@@ -188,6 +189,13 @@ void configureDepedencies() {
   );
   getIt.registerFactory(
         () => DeleteAccountBloc(getIt<DeleteAccountUseCase>()),
+  );
+
+  getIt.registerLazySingleton(
+        () => TodayDeliveredHistoryUseCase(getIt<AuthRepositoryImpl>()),
+  );
+  getIt.registerFactory(
+        () => TodayDeliveredHistoryBloc(getIt<TodayDeliveredHistoryUseCase>()),
   );
 
 

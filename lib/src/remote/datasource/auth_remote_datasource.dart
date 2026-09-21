@@ -12,6 +12,7 @@ import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_detail
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_list_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_start_assignment_usecase.dart';
 import 'package:delivery_boy_app/src/features/orders/domain/usecase/order_status_update_usecase.dart';
+import 'package:delivery_boy_app/src/features/history/domain/usecase/today_delivered_history_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/password_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_image_update_usecase.dart';
 import 'package:delivery_boy_app/src/features/profile/domain/usecase/profile_update_usecase.dart';
@@ -26,6 +27,7 @@ import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery
 import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_current_assignment_reponse.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/order_details_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
+import 'package:delivery_boy_app/src/remote/models/order_model/today_delivered_history_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_start_assignment_response.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/vegetable_grocery_order_models/order_status_update_response.dart';
 import 'package:delivery_boy_app/src/remote/models/profile_model/profile_image_update_response.dart';
@@ -61,6 +63,8 @@ sealed class RemoteDataSource {
   Future<CurrentAssignmentOrderListResponse> current_assignment_orders(CurrentAssignmentOrderListParams params, String token);
 
   Future<CurrentFoodAssignmentResponse> food_order_current_assignment(String token);
+
+  Future<TodayDeliveredHistoryResponse> today_delivered_history(TodayDeliveredHistoryParams params, String token);
 
   /// Profile
   Future<ProfileResponse> profile(String token);
@@ -413,6 +417,35 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       );
 
       final respData = CurrentFoodAssignmentResponse.fromJson(response);
+      return respData;
+    } on EmptyException {
+      throw AuthException();
+    } catch (e) {
+      logger.e(e);
+      if (e.toString() == noElement) {
+        throw AuthException();
+      }
+      if (e is ApiException) {
+        throw e; // rethrow as-is
+      }
+      throw ServerException();
+    }
+  }
+
+  @override
+  Future<TodayDeliveredHistoryResponse> today_delivered_history(TodayDeliveredHistoryParams params, String token) async {
+    try {
+      final response = await _helper.execute(
+        method: Method.get,
+        url: "${ApiUrl.todayDeliveredHistory}?page=${params.page}&limit=${params.limit}",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final respData = TodayDeliveredHistoryResponse.fromJson(response);
       return respData;
     } on EmptyException {
       throw AuthException();

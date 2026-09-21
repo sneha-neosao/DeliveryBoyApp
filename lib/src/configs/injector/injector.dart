@@ -29,3 +29,5 @@ export '../../core/api/api_url.dart';
 export '../../core/services/socket_connect_service.dart';
 export '../../core/utils/logger.dart';
 export '../../features/profile/bloc/delete_account_bloc/delete_account_bloc.dart';
+export '../../features/history/bloc/today_delivered_history_bloc/today_delivered_history_bloc.dart';
+export '../../remote/models/order_model/today_delivered_history_response.dart';

@@ -195,16 +195,22 @@ class Item {
   factory Item.fromJson(Map<String, dynamic> json) => Item(
     productId: json["product_id"] ?? 0,
     productVariantId: json["product_variant_id"] ?? 0,
-    productName: json["product_name"] ?? "",
+    productName: (json["product_name"] ?? json["vendor_item_name"] ?? json["item_name"] ?? json["name"] ?? "").toString(),
     variantName: json["variant_name"] ?? "",
     uomName: json["uom_name"] ?? "",
     itemId: json["item_id"],
-    vendorItemName: json["vendor_item_name"],
+    vendorItemName: (json["vendor_item_name"] ?? json["product_name"] ?? json["item_name"] ?? json["name"])?.toString(),
     images: (json["images"] as List? ?? []).map((x) => x.toString()).toList(),
     quantity: json["quantity"] ?? 0,
     price: json["price"] ?? 0,
     totalPrice: json["total_price"] ?? 0,
   );
+
+  String get displayName {
+    if (productName.isNotEmpty) return productName;
+    if (vendorItemName != null && vendorItemName!.isNotEmpty) return vendorItemName!;
+    return '';
+  }
 
   Map<String, dynamic> toJson() => {
     "product_id": productId,

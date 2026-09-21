@@ -74,15 +74,24 @@ class OrderItemsListview extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item.productName,
+                            item.displayName.isNotEmpty
+                                ? item.displayName
+                                : (item.productName.isNotEmpty
+                                    ? item.productName
+                                    : (item.vendorItemName ?? '')),
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 14, color: AppColor.charcoal),
                           ),
-                          4.hS,
-                          Text(
-                            '${item.variantName} • ${item.uomName}',
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                          ),
+                          if (item.variantName.isNotEmpty || item.uomName.isNotEmpty) ...[
+                            4.hS,
+                            Text(
+                              [
+                                if (item.variantName.isNotEmpty) item.variantName,
+                                if (item.uomName.isNotEmpty) item.uomName,
+                              ].join(' • '),
+                              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                            ),
+                          ],
                         ],
                       ),
                     ),

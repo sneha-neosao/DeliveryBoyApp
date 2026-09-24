@@ -14,6 +14,8 @@ import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/wal
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/vegetable_order_active_assignment_widget.dart';
 import 'package:delivery_boy_app/src/features/dashboard/presentation/widgets/food_order_active_assignment_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
+import 'package:delivery_boy_app/src/features/widgets/app_update_dialog_widget.dart';
+import 'package:delivery_boy_app/src/features/widgets/maintenance_dialog_widget.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
@@ -197,6 +199,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           BlocListener<ProfileBloc, ProfileState>(
             listener: (context, state) async {
               if (state is ProfileSuccessState) {
+                if (state.data.status == 300) {
+                  MaintenanceDialogWidget.show(
+                    context,
+                    message: state.data.message,
+                  );
+                  return;
+                }
+
                 final profileData = state.data.data;
 
                 // Update session with fresh profile data
@@ -407,8 +417,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           BlocListener<AppUpdateBloc, AppUpdateState>(
             listener: (context, state) {
               if (state is AppUpdateSuccessState) {
-                // Handle app update logic here (e.g. show dialog if version is old)
-                print("App Update Status: ${state.data.status}");
+                if (state.data.data != null) {
+                  AppUpdateDialogWidget.checkAndShow(context, state.data.data!);
+                }
               }
               if (state is AppUpdateFailureState) {
                 // appSnackBar(context, AppColor.bright_red, state.message);

@@ -362,7 +362,8 @@ class _VegetableOrderActiveAssignmentWidgetState extends State<VegetableOrderAct
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: Form(
+            child: SingleChildScrollView(
+              child: Form(
               key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -467,7 +468,8 @@ class _VegetableOrderActiveAssignmentWidgetState extends State<VegetableOrderAct
               ),
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }

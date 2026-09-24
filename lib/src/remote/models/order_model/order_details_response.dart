@@ -34,9 +34,11 @@ class OrderDetailsResponse {
 class OrderDetails {
   final int id;
   final String uuId;
+  final int? vendorId;
   final num totalAmount;
   final num grandTotal;
   final num platformCharges;
+  final num deliveryCharge;
   final int totalItems;
   final String note;
   final String paymentMode;
@@ -49,6 +51,16 @@ class OrderDetails {
   final String slotStartTime;
   final String slotEndTime;
   final String deliveryDate;
+  final String? storeName;
+  final String? storeAddress;
+  final double? storeLatitude;
+  final double? storeLongitude;
+  final String? restaurantName;
+  final String? restaurantAddress;
+  final double? restaurantLatitude;
+  final double? restaurantLongitude;
+  final String? restaurantPhone;
+  final PickupDetails? pickupDetails;
   final DeliveryDetails? deliveryDetails;
   final List<Item> items;
   final List<StatusLog> statusLogs;
@@ -56,9 +68,11 @@ class OrderDetails {
   OrderDetails({
     required this.id,
     required this.uuId,
+    this.vendorId,
     required this.totalAmount,
     required this.grandTotal,
     required this.platformCharges,
+    this.deliveryCharge = 0,
     required this.totalItems,
     required this.note,
     required this.paymentMode,
@@ -71,6 +85,16 @@ class OrderDetails {
     required this.slotStartTime,
     required this.slotEndTime,
     required this.deliveryDate,
+    this.storeName,
+    this.storeAddress,
+    this.storeLatitude,
+    this.storeLongitude,
+    this.restaurantName,
+    this.restaurantAddress,
+    this.restaurantLatitude,
+    this.restaurantLongitude,
+    this.restaurantPhone,
+    this.pickupDetails,
     this.deliveryDetails,
     required this.items,
     required this.statusLogs,
@@ -79,9 +103,11 @@ class OrderDetails {
   factory OrderDetails.fromJson(Map<String, dynamic> json) => OrderDetails(
     id: json["id"] ?? 0,
     uuId: json["uu_id"] ?? "",
+    vendorId: json["vendor_id"],
     totalAmount: json["total_amount"] ?? 0,
     grandTotal: json["grand_total"] ?? 0,
     platformCharges: json["platform_charges"] ?? 0,
+    deliveryCharge: json["delivery_charge"] ?? 0,
     totalItems: json["total_items"] ?? 0,
     note: json["note"] ?? "",
     paymentMode: json["payment_mode"] ?? "",
@@ -91,9 +117,21 @@ class OrderDetails {
     customerName: json["customer_name"] ?? "",
     customerEmail: json["customer_email"],
     customerContact: json["customer_contact"] ?? "",
-    slotStartTime: json["slot_start_time"] ?? "",
-    slotEndTime: json["slot_end_time"] ?? "",
+    slotStartTime: json["slot_start_time"]?.toString() ?? "",
+    slotEndTime: json["slot_end_time"]?.toString() ?? "",
     deliveryDate: json["delivery_date"] ?? "",
+    storeName: json["store_name"]?.toString(),
+    storeAddress: json["store_address"]?.toString(),
+    storeLatitude: (json["store_latitude"] as num?)?.toDouble(),
+    storeLongitude: (json["store_longitude"] as num?)?.toDouble(),
+    restaurantName: json["restaurant_name"]?.toString(),
+    restaurantAddress: json["restaurant_address"]?.toString(),
+    restaurantLatitude: (json["restaurant_latitude"] as num?)?.toDouble(),
+    restaurantLongitude: (json["restaurant_longitude"] as num?)?.toDouble(),
+    restaurantPhone: json["restaurant_phone"]?.toString(),
+    pickupDetails: json["pickup_details"] != null
+        ? PickupDetails.fromJson(json["pickup_details"])
+        : null,
     deliveryDetails: json["delivery_details"] != null
         ? DeliveryDetails.fromJson(json["delivery_details"])
         : null,
@@ -108,9 +146,11 @@ class OrderDetails {
   Map<String, dynamic> toJson() => {
     "id": id,
     "uu_id": uuId,
+    "vendor_id": vendorId,
     "total_amount": totalAmount,
     "grand_total": grandTotal,
     "platform_charges": platformCharges,
+    "delivery_charge": deliveryCharge,
     "total_items": totalItems,
     "note": note,
     "payment_mode": paymentMode,
@@ -123,9 +163,55 @@ class OrderDetails {
     "slot_start_time": slotStartTime,
     "slot_end_time": slotEndTime,
     "delivery_date": deliveryDate,
+    "store_name": storeName,
+    "store_address": storeAddress,
+    "store_latitude": storeLatitude,
+    "store_longitude": storeLongitude,
+    "restaurant_name": restaurantName,
+    "restaurant_address": restaurantAddress,
+    "restaurant_latitude": restaurantLatitude,
+    "restaurant_longitude": restaurantLongitude,
+    "restaurant_phone": restaurantPhone,
+    "pickup_details": pickupDetails?.toJson(),
     "delivery_details": deliveryDetails?.toJson(),
     "items": items.map((x) => x.toJson()).toList(),
     "status_logs": statusLogs.map((x) => x.toJson()).toList(),
+  };
+}
+
+class PickupDetails {
+  final String pickupType;
+  final String name;
+  final String address;
+  final String? phone;
+  final double? latitude;
+  final double? longitude;
+
+  PickupDetails({
+    required this.pickupType,
+    required this.name,
+    required this.address,
+    this.phone,
+    this.latitude,
+    this.longitude,
+  });
+
+  factory PickupDetails.fromJson(Map<String, dynamic> json) => PickupDetails(
+    pickupType: json["pickup_type"] ?? "",
+    name: json["name"] ?? "",
+    address: json["address"] ?? "",
+    phone: json["phone"]?.toString(),
+    latitude: (json["latitude"] as num?)?.toDouble(),
+    longitude: (json["longitude"] as num?)?.toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "pickup_type": pickupType,
+    "name": name,
+    "address": address,
+    "phone": phone,
+    "latitude": latitude,
+    "longitude": longitude,
   };
 }
 
@@ -170,7 +256,15 @@ class Item {
   final int productVariantId;
   final String productName;
   final String variantName;
+  final num? variantQty;
+  final String? subUomName;
+  final String? subUomShortName;
+  final num? conversionFactor;
   final String uomName;
+  final String? uomShortName;
+  final String? unit;
+  final String? weight;
+  final String? formattedQuantity;
   final int? itemId;
   final String? vendorItemName;
   final List<String> images;
@@ -183,7 +277,15 @@ class Item {
     required this.productVariantId,
     required this.productName,
     required this.variantName,
+    this.variantQty,
+    this.subUomName,
+    this.subUomShortName,
+    this.conversionFactor,
     required this.uomName,
+    this.uomShortName,
+    this.unit,
+    this.weight,
+    this.formattedQuantity,
     this.itemId,
     this.vendorItemName,
     required this.images,
@@ -196,8 +298,16 @@ class Item {
     productId: json["product_id"] ?? 0,
     productVariantId: json["product_variant_id"] ?? 0,
     productName: (json["product_name"] ?? json["vendor_item_name"] ?? json["item_name"] ?? json["name"] ?? "").toString(),
-    variantName: json["variant_name"] ?? "",
-    uomName: json["uom_name"] ?? "",
+    variantName: (json["variant_name"] ?? "").toString(),
+    variantQty: json["variant_qty"],
+    subUomName: json["sub_uom_name"]?.toString(),
+    subUomShortName: json["sub_uom_short_name"]?.toString(),
+    conversionFactor: json["conversion_factor"],
+    uomName: (json["uom_name"] ?? "").toString(),
+    uomShortName: json["uom_short_name"]?.toString(),
+    unit: json["unit"]?.toString(),
+    weight: json["weight"]?.toString(),
+    formattedQuantity: json["formatted_quantity"]?.toString(),
     itemId: json["item_id"],
     vendorItemName: (json["vendor_item_name"] ?? json["product_name"] ?? json["item_name"] ?? json["name"])?.toString(),
     images: (json["images"] as List? ?? []).map((x) => x.toString()).toList(),
@@ -212,12 +322,39 @@ class Item {
     return '';
   }
 
+  /// Formatted variant quantity and sub UOM string (e.g. "250 Gram" or "260 Gram")
+  String get itemVariantDisplay {
+    if (variantQty != null && subUomName != null && subUomName!.trim().isNotEmpty) {
+      final qtyStr = (variantQty! % 1 == 0) ? variantQty!.toInt().toString() : variantQty!.toString();
+      return '$qtyStr ${subUomName!.trim()}';
+    } else if (variantQty != null && subUomShortName != null && subUomShortName!.trim().isNotEmpty) {
+      final qtyStr = (variantQty! % 1 == 0) ? variantQty!.toInt().toString() : variantQty!.toString();
+      return '$qtyStr ${subUomShortName!.trim()}';
+    } else if (variantQty != null && uomName.trim().isNotEmpty) {
+      final qtyStr = (variantQty! % 1 == 0) ? variantQty!.toInt().toString() : variantQty!.toString();
+      return '$qtyStr ${uomName.trim()}';
+    } else {
+      return [
+        if (variantName.isNotEmpty) variantName,
+        if (uomName.isNotEmpty) uomName,
+      ].join(' • ');
+    }
+  }
+
   Map<String, dynamic> toJson() => {
     "product_id": productId,
     "product_variant_id": productVariantId,
     "product_name": productName,
     "variant_name": variantName,
+    "variant_qty": variantQty,
+    "sub_uom_name": subUomName,
+    "sub_uom_short_name": subUomShortName,
+    "conversion_factor": conversionFactor,
     "uom_name": uomName,
+    "uom_short_name": uomShortName,
+    "unit": unit,
+    "weight": weight,
+    "formatted_quantity": formattedQuantity,
     "item_id": itemId,
     "vendor_item_name": vendorItemName,
     "images": images,

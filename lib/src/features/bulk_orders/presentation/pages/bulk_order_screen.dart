@@ -541,9 +541,9 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
   }
 
   Widget _buildOrderCard(BuildContext context, Order order, bool isActive, int index, int activeIndex, double cardProgress) {
-    final String displayId = order.uuId.isNotEmpty
-        ? '#${order.uuId.substring(0, order.uuId.length > 8 ? 8 : order.uuId.length)}'
-        : '#ORD-${order.id}';
+    final String displayId = order.id != 0
+        ? 'ORD_${order.id}'
+        : (order.uuId.isNotEmpty ? 'ORD_${order.uuId}' : '');
 
     final String rawStatus = order.orderStatus;
     final String upperStatus = rawStatus.toUpperCase();

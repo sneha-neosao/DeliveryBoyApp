@@ -67,11 +67,22 @@ class AppVersion {
   });
 
   factory AppVersion.fromJson(Map<String, dynamic> json) => AppVersion(
-    version: json["version"] ?? "",
-    forceUpdate: json["force_update"] ?? false,
-    updateMessage: json["update_message"] ?? "",
-    storeLink: json["store_link"] ?? "",
+    version: (json["version"] ?? "").toString().trim(),
+    forceUpdate: _parseBool(json["force_update"]),
+    updateMessage: (json["update_message"] ?? "").toString(),
+    storeLink: (json["store_link"] ?? "").toString().trim(),
   );
+
+  static bool _parseBool(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is num) return value == 1;
+    if (value is String) {
+      final v = value.toLowerCase().trim();
+      return v == 'true' || v == '1';
+    }
+    return false;
+  }
 
   Map<String, dynamic> toJson() => {
     "version": version,

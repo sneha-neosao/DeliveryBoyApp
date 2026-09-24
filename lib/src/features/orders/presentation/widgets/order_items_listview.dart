@@ -82,14 +82,15 @@ class OrderItemsListview extends StatelessWidget {
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 14, color: AppColor.charcoal),
                           ),
-                          if (item.variantName.isNotEmpty || item.uomName.isNotEmpty) ...[
+                          if (item.itemVariantDisplay.isNotEmpty) ...[
                             4.hS,
                             Text(
-                              [
-                                if (item.variantName.isNotEmpty) item.variantName,
-                                if (item.uomName.isNotEmpty) item.uomName,
-                              ].join(' • '),
-                              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                              item.itemVariantDisplay,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ],

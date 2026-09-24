@@ -81,6 +81,7 @@
   "order_accepted": "Order Accepted",
   "order_items": "Order Items",
   "platform_charges_label": "Platform Charges",
+  "delivery_charges_label": "Delivery Charges",
   "subtotal": "Subtotal",
   "grand_total_label": "Grand Total",
   "status_history": "Status History",
@@ -113,5 +114,13 @@
   "enter_old_password": "Enter Old Password",
   "enter_new_password": "Enter New Password",
   "enter_confirm_password": "Enter Confirm Password",
-  "please_select_profile_image": "Please select profile image"
+  "please_select_profile_image": "Please select profile image",
+  "store": "Store",
+  "store_address": "Store Address",
+  "restaurant": "Restaurant",
+  "restaurant_address": "Restaurant Address",
+  "customer": "Customer",
+  "delivery_address": "Delivery Address",
+  "release": "Release",
+  "release_order": "Release Order"
 }

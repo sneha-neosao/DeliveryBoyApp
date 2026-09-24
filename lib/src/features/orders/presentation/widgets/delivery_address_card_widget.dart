@@ -1,11 +1,14 @@
 import 'dart:math' as math;
-import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DeliveryAddressCardWidget extends StatelessWidget {
+  final String? pickupName;
+  final String? pickupAddress;
+  final String? pickupPhone;
+  final bool isVendor;
   final String customerName;
   final String customerPhone;
   final String deliveryAddress;
@@ -14,6 +17,10 @@ class DeliveryAddressCardWidget extends StatelessWidget {
 
   const DeliveryAddressCardWidget({
     super.key,
+    this.pickupName,
+    this.pickupAddress,
+    this.pickupPhone,
+    this.isVendor = false,
     required this.customerName,
     required this.customerPhone,
     required this.deliveryAddress,
@@ -21,8 +28,36 @@ class DeliveryAddressCardWidget extends StatelessWidget {
     this.onNavigationTap,
   });
 
+  Future<void> _callPhone(String phone) async {
+    final cleanPhone = phone.trim();
+    if (cleanPhone.isEmpty) return;
+    final Uri phoneUri = Uri(scheme: 'tel', path: cleanPhone);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Could not launch phone: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final String effectivePickupAddress = pickupAddress?.trim().isNotEmpty == true
+        ? pickupAddress!.trim()
+        : (isVendor ? 'restaurant_address'.tr() : 'store_address'.tr());
+
+    final String? effectiveSubtitleName = (pickupName?.trim().isNotEmpty == true &&
+            pickupName!.trim().toLowerCase() != effectivePickupAddress.toLowerCase())
+        ? pickupName!.trim()
+        : null;
+
+    final String effectiveCustomerName = customerName.trim().isNotEmpty
+        ? customerName.trim()
+        : 'customer'.tr();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -36,168 +71,200 @@ class DeliveryAddressCardWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              4.hS,
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFF2E6),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.store_rounded, color: AppColor.darkOrange, size: 14),
-              ),
-              CustomPaint(
-                size: const Size(2, 60),
-                painter: _DottedLinePainter(),
-              ),
-              const Icon(Icons.location_on_rounded, color: AppColor.darkOrange, size: 24),
-            ],
-          ),
-          14.wS,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Left route indicator
+            Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            customerName.isNotEmpty ? customerName : 'customer'.tr(),
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          2.hS,
-                          Text(
-                            customerPhone.isNotEmpty ? customerPhone : 'no_contact_info'.tr(),
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildRightActionCircle(),
-                  ],
+                const SizedBox(height: 2),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF2E6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isVendor ? Icons.restaurant_rounded : Icons.store_rounded,
+                    color: AppColor.darkOrange,
+                    size: 14,
+                  ),
                 ),
-                38.hS,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'delivery_address'.tr(),
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          2.hS,
-                          Text(
-                            deliveryAddress,
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 12,
-                              height: 1.3,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: CustomPaint(
+                    size: const Size(2, double.infinity),
+                    painter: _DottedLinePainter(),
+                  ),
                 ),
+                const Icon(
+                  Icons.location_on_rounded,
+                  color: AppColor.darkOrange,
+                  size: 24,
+                ),
+                const SizedBox(height: 2),
               ],
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            // Right info section
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Top Section: Store / Restaurant ──
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              effectivePickupAddress,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (effectiveSubtitleName != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                effectiveSubtitleName,
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 12,
+                                  height: 1.3,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (pickupPhone != null && pickupPhone!.trim().isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        _buildCircleButton(
+                          icon: Icons.phone_rounded,
+                          onTap: () => _callPhone(pickupPhone!),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // ── Bottom Section: Customer & Delivery Address ──
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Customer name (just above delivery address)
+                            Text(
+                              effectiveCustomerName,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (customerPhone.trim().isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                customerPhone.trim(),
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 6),
+                            // Delivery address
+                            Text(
+                              deliveryAddress.trim().isNotEmpty
+                                  ? deliveryAddress.trim()
+                                  : 'address_not_available'.tr(),
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                                height: 1.3,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildCustomerActionButtons(),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildRightActionCircle() {
+  Widget _buildCustomerActionButtons() {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        InkWell(
-          onTap: () async {
-            if (customerPhone.isNotEmpty) {
-              final Uri phoneUri = Uri(scheme: 'tel', path: customerPhone);
-              try {
-                if (await canLaunchUrl(phoneUri)) {
-                  await launchUrl(phoneUri);
-                } else {
-                  await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
-                }
-              } catch (e) {
-                debugPrint('Could not launch phone: $e');
-              }
-            }
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColor.darkOrange,
-                width: 1.5,
-              ),
-            ),
-            child: const Icon(
-              Icons.phone_rounded,
-              color: AppColor.darkOrange,
-              size: 18,
-            ),
+        if (customerPhone.trim().isNotEmpty)
+          _buildCircleButton(
+            icon: Icons.phone_rounded,
+            onTap: () => _callPhone(customerPhone),
           ),
-        ),
         if (showNavigationIcon) ...[
           const SizedBox(width: 8),
-          InkWell(
+          _buildCircleButton(
+            icon: Icons.navigation,
+            isNavigation: true,
             onTap: onNavigationTap,
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColor.darkOrange,
-                  width: 1.5,
-                ),
-              ),
-              child: Transform.rotate(
-                angle: math.pi / 4, // 45° towards upper-right
-                child: const Icon(
-                  Icons.navigation,
-                  color: AppColor.darkOrange,
-                  size: 18,
-                ),
-              ),
-            ),
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildCircleButton({
+    required IconData icon,
+    bool isNavigation = false,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColor.darkOrange,
+            width: 1.5,
+          ),
+        ),
+        child: isNavigation
+            ? Transform.rotate(
+                angle: math.pi / 4,
+                child: Icon(
+                  icon,
+                  color: AppColor.darkOrange,
+                  size: 18,
+                ),
+              )
+            : Icon(
+                icon,
+                color: AppColor.darkOrange,
+                size: 18,
+              ),
+      ),
     );
   }
 }
@@ -205,6 +272,7 @@ class DeliveryAddressCardWidget extends StatelessWidget {
 class _DottedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.height <= 0) return;
     final paint = Paint()
       ..color = AppColor.darkOrange.withValues(alpha: 0.4)
       ..strokeWidth = 1.5
@@ -212,11 +280,12 @@ class _DottedLinePainter extends CustomPainter {
 
     const double dashHeight = 4;
     const double dashSpace = 4;
-    double startY = 0;
-    while (startY < size.height) {
+    double startY = 4;
+    while (startY < size.height - 4) {
+      final double endY = math.min(startY + dashHeight, size.height - 4);
       canvas.drawLine(
         Offset(size.width / 2, startY),
-        Offset(size.width / 2, startY + dashHeight),
+        Offset(size.width / 2, endY),
         paint,
       );
       startY += dashHeight + dashSpace;

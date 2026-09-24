@@ -7,6 +7,7 @@ import 'package:delivery_boy_app/src/features/profile/presentation/widgets/chang
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/edit_profile_input_widget.dart';
 import 'package:delivery_boy_app/src/features/profile/presentation/widgets/profile_image_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/app_alert_dialogue_widget.dart';
+import 'package:delivery_boy_app/src/features/widgets/maintenance_dialog_widget.dart';
 import 'package:delivery_boy_app/src/features/widgets/snackbar_widget.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
 import 'package:flutter/material.dart';
@@ -169,6 +170,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return BlocListener<ProfileBloc, ProfileState>(
             listener: (context, state) {
               if (state is ProfileSuccessState) {
+                if (state.data.status == 300) {
+                  MaintenanceDialogWidget.show(
+                    context,
+                    message: state.data.message,
+                  );
+                  return;
+                }
+
                 final profileData = state.data.data;
                 if (profileData != null && mounted) {
                   setState(() {

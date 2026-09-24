@@ -21,9 +21,9 @@ class OrderListCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String displayId = order.uuId.isNotEmpty
-        ? '#${order.uuId.substring(0, order.uuId.length > 8 ? 8 : order.uuId.length)}'
-        : '#ORD-${order.id}';
+    final String displayId = order.id != 0
+        ? 'ORD_${order.id}'
+        : (order.uuId.isNotEmpty ? 'ORD_${order.uuId}' : '');
     // Map raw API status → human-readable label
     String _statusLabel(String raw) {
       switch (raw.toUpperCase()) {

@@ -1,6 +1,7 @@
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
 import 'package:delivery_boy_app/src/core/services/notification_service.dart';
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/food_order_current_assignment_bloc/food_order_current_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
@@ -422,6 +423,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
     final orderDetails = widget.orderDetails;
     final fallbackOrder = widget.fallbackOrder;
 
+    final autoAssignMode = (SessionManager.autoAssignModeNotifier.value ?? '').trim().toLowerCase().replaceAll('_', '-');
+    final bool isAutoAssign = autoAssignMode == 'auto-assign';
+
     final String displayId = 'ORD_${orderDetails.id}';
     final String customerName = orderDetails.deliveryDetails?.name.isNotEmpty == true
         ? orderDetails.deliveryDetails!.name
@@ -434,6 +438,34 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
         : (fallbackOrder.deliveryAddress.isNotEmpty
             ? fallbackOrder.deliveryAddress
             : 'address_not_available'.tr());
+
+    final bool isVendor = orderDetails.vendorId != null;
+
+    final String? pickupName = isVendor
+        ? (orderDetails.restaurantName?.isNotEmpty == true
+            ? orderDetails.restaurantName
+            : orderDetails.pickupDetails?.name)
+        : (orderDetails.storeName?.isNotEmpty == true
+            ? orderDetails.storeName
+            : orderDetails.pickupDetails?.name);
+
+    final String pickupAddress = isVendor
+        ? (orderDetails.restaurantAddress?.isNotEmpty == true
+            ? orderDetails.restaurantAddress!
+            : (orderDetails.pickupDetails?.address.isNotEmpty == true
+                ? orderDetails.pickupDetails!.address
+                : ''))
+        : (orderDetails.storeAddress?.isNotEmpty == true
+            ? orderDetails.storeAddress!
+            : (orderDetails.pickupDetails?.address.isNotEmpty == true
+                ? orderDetails.pickupDetails!.address
+                : ''));
+
+    final String? pickupPhone = isVendor
+        ? (orderDetails.restaurantPhone?.isNotEmpty == true
+            ? orderDetails.restaurantPhone
+            : orderDetails.pickupDetails?.phone)
+        : orderDetails.pickupDetails?.phone;
 
     final double statusBarH = MediaQuery.of(context).padding.top;
     final double topShift = statusBarH * _progress;
@@ -634,13 +666,17 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                   16.hS,
                   // Delivery address card
                   DeliveryAddressCardWidget(
+                    isVendor: isVendor,
+                    pickupName: pickupName,
+                    pickupAddress: pickupAddress,
+                    pickupPhone: pickupPhone,
                     customerName: customerName,
                     customerPhone: customerPhone,
                     deliveryAddress: deliveryAddress,
                     showNavigationIcon: true,
                     onNavigationTap: () {
-                      final double storeLat = fallbackOrder.storeLatitude ?? 0.0;
-                      final double storeLng = fallbackOrder.storeLongitude ?? 0.0;
+                      final double storeLat = orderDetails.storeLatitude ?? orderDetails.pickupDetails?.latitude ?? fallbackOrder.storeLatitude ?? 0.0;
+                      final double storeLng = orderDetails.storeLongitude ?? orderDetails.pickupDetails?.longitude ?? fallbackOrder.storeLongitude ?? 0.0;
                       final double deliveryLat = orderDetails.deliveryDetails?.deliveryLat ?? fallbackOrder.deliveryLat;
                       final double deliveryLng = orderDetails.deliveryDetails?.deliveryLng ?? fallbackOrder.deliveryLng;
 
@@ -704,27 +740,35 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
       ),
 
         // ── Sticky bottom area ─────────────────────────────────────────────
-        // REJECTED         → no button
-        // DELIVERED        → no button
-        // PREPARING        → Reject + Accept buttons
-        // DEL_ACCEPTED     → inactive PICKED UP button
-        // ACCEPTED         → inactive PICKED UP button
-        // READY_FOR_PICKUP → active   PICKED UP button
-        // PICKED_UP        → active   ON THE WAY button
-        // ON_THE_WAY       → active   DELIVERED button
+        // AUTO-ASSIGN MODE:
+        //   PREPARING / PREPAIRING → Reject + Accept buttons
+        //   DEL_ACCEPTED / ACCEPTED → inactive PICKED UP button
+        //   READY_FOR_PICKUP       → active   PICKED UP button
+        //   PICKED_UP              → active   ON THE WAY button
+        //   ON_THE_WAY             → active   DELIVERED button
+        // SLOT-WISE MODE:
+        //   PICKED_UP              → active   ON THE WAY button
+        //   ON_THE_WAY             → active   DELIVERED button
         if (orderDetails.orderStatus != 'REJECTED' &&
             orderDetails.orderStatus != 'DELIVERED') ...[
-          if (orderDetails.orderStatus == 'PREPARING' && !_isAccepted)
-            _buildPrepairingButtons(context, orderDetails)
-          else if (_isAccepted ||
-              orderDetails.orderStatus == 'READY_FOR_PICKUP' ||
-              orderDetails.orderStatus == 'ACCEPTED' ||
-              orderDetails.orderStatus == 'DEL_ACCEPTED')
-            _buildPickedUpButton(context, orderDetails)
-          else if (orderDetails.orderStatus == 'PICKED_UP')
-            _buildOnTheWayButton(context, orderDetails)
-          else if (orderDetails.orderStatus == 'ON_THE_WAY')
-            _buildDeliveredButton(context, orderDetails),
+          if (isAutoAssign) ...[
+            if ((orderDetails.orderStatus == 'PREPARING' || orderDetails.orderStatus == 'PREPAIRING') && !_isAccepted)
+              _buildPrepairingButtons(context, orderDetails)
+            else if (_isAccepted ||
+                orderDetails.orderStatus == 'READY_FOR_PICKUP' ||
+                orderDetails.orderStatus == 'ACCEPTED' ||
+                orderDetails.orderStatus == 'DEL_ACCEPTED')
+              _buildPickedUpButton(context, orderDetails)
+            else if (orderDetails.orderStatus == 'PICKED_UP')
+              _buildOnTheWayButton(context, orderDetails)
+            else if (orderDetails.orderStatus == 'ON_THE_WAY')
+              _buildDeliveredButton(context, orderDetails),
+          ] else ...[
+            if (orderDetails.orderStatus == 'PICKED_UP')
+              _buildOnTheWayButton(context, orderDetails)
+            else if (orderDetails.orderStatus == 'ON_THE_WAY')
+              _buildDeliveredButton(context, orderDetails),
+          ],
         ],
 
       ],
@@ -762,7 +806,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                   ),
                 ),
                 child: Text(
-                  'reject'.tr(),
+                  'release'.tr(),
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
               ),
@@ -1019,143 +1063,183 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
 
   // ── Reject dialog ─────────────────────────────────────────────────────────
   void _showRejectDialog(BuildContext context) {
-    final TextEditingController _reasonCtrl = TextEditingController();
-    final _formKey = GlobalKey<FormState>();
-
     showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogCtx) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title row
-                  Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFEEEE),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.cancel_outlined,
-                            color: AppColor.bright_red, size: 20),
-                      ),
-                      12.wS,
-                      const Text(
-                        'Release Order',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                  16.hS,
-                  // Reason text field
-                  TextFormField(
-                    controller: _reasonCtrl,
-                    maxLines: 3,
-                    textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
-                      hintText: 'enter_rejection_reason'.tr(),
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                      filled: true,
-                      fillColor: const Color(0xFFFFF9F5),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColor.darkOrange, width: 1.5),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColor.bright_red, width: 1.5),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColor.bright_red, width: 1.5),
-                      ),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'please_enter_reason'.tr();
-                      }
-                      return null;
-                    },
-                  ),
-                  20.hS,
-                  // Submit button — right-aligned, styled like Accept
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: SizedBox(
-                      height: 46,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (!_formKey.currentState!.validate()) return;
-                          final reason = _reasonCtrl.text.trim();
-                          Navigator.of(dialogCtx).pop();
-                          _pendingAction = 'reject';
-                          context.read<OrderAssignmentBloc>().add(
-                                OrderAssignmentGetEvent(
-                                  widget.orderDetails.uuId,
-                                  'REJECTED',
-                                  reason,
-                                ),
-                              );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColor.darkOrange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                          elevation: 3,
-                          shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'submit'.tr(),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.arrow_forward_rounded, size: 18),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ), // closes Form
-          ), // closes Padding
-        );
-      },
-    ).then((_) => _reasonCtrl.dispose());
+      builder: (dialogCtx) => _RejectOrderDialog(
+        orderUuid: widget.orderDetails.uuId,
+        onSubmit: (reason) {
+          _pendingAction = 'reject';
+          context.read<OrderAssignmentBloc>().add(
+                OrderAssignmentGetEvent(
+                  widget.orderDetails.uuId,
+                  'REJECTED',
+                  reason,
+                ),
+              );
+        },
+      ),
+    );
   }
 }
+
+class _RejectOrderDialog extends StatefulWidget {
+  final String orderUuid;
+  final ValueChanged<String> onSubmit;
+
+  const _RejectOrderDialog({
+    required this.orderUuid,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_RejectOrderDialog> createState() => _RejectOrderDialogState();
+}
+
+class _RejectOrderDialogState extends State<_RejectOrderDialog> {
+  late final TextEditingController _reasonCtrl;
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title row
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFEEEE),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.cancel_outlined,
+                          color: AppColor.bright_red, size: 20),
+                    ),
+                    12.wS,
+                    const Text(
+                      'Release Order',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                16.hS,
+                // Reason text field
+                TextFormField(
+                  controller: _reasonCtrl,
+                  maxLines: 3,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    hintText: 'enter_rejection_reason'.tr(),
+                    hintStyle:
+                        TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                    filled: true,
+                    fillColor: const Color(0xFFFFF9F5),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppColor.darkOrange, width: 1.5),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppColor.bright_red, width: 1.5),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppColor.bright_red, width: 1.5),
+                    ),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'please_enter_reason'.tr();
+                    }
+                    return null;
+                  },
+                ),
+                20.hS,
+                // Submit button — right-aligned, styled like Accept
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (!_formKey.currentState!.validate()) return;
+                        final reason = _reasonCtrl.text.trim();
+                        Navigator.of(context).pop();
+                        widget.onSubmit(reason);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.darkOrange,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        elevation: 3,
+                        shadowColor:
+                            AppColor.darkOrange.withValues(alpha: 0.4),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'submit'.tr(),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_rounded, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

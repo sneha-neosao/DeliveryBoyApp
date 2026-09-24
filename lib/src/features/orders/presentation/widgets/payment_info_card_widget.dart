@@ -52,8 +52,8 @@ class PaymentInfoCardWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('platform_charges_label'.tr(), style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-                Text('₹${orderDetails.platformCharges}',
+                Text('delivery_charges_label'.tr(), style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                Text('₹${orderDetails.deliveryCharge}',
                     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               ],
             ),

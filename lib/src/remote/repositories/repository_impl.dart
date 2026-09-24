@@ -535,7 +535,7 @@ class AuthRepositoryImpl implements Repository {
 
           final respData = await _remoteDataSource.profile(token);
 
-          if (respData.status != 200) {
+          if (respData.status != 200 && respData.status != 300) {
             return Left(CredentialFailure(respData.message));
           }
 

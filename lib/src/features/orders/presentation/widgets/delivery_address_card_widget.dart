@@ -13,6 +13,7 @@ class DeliveryAddressCardWidget extends StatelessWidget {
   final String customerPhone;
   final String deliveryAddress;
   final bool showNavigationIcon;
+  final bool showPickupCallButton;
   final VoidCallback? onNavigationTap;
 
   const DeliveryAddressCardWidget({
@@ -25,6 +26,7 @@ class DeliveryAddressCardWidget extends StatelessWidget {
     required this.customerPhone,
     required this.deliveryAddress,
     this.showNavigationIcon = false,
+    this.showPickupCallButton = false,
     this.onNavigationTap,
   });
 
@@ -143,7 +145,7 @@ class DeliveryAddressCardWidget extends StatelessWidget {
                           ],
                         ),
                       ),
-                      if (pickupPhone != null && pickupPhone!.trim().isNotEmpty) ...[
+                      if (showPickupCallButton && pickupPhone != null && pickupPhone!.trim().isNotEmpty) ...[
                         const SizedBox(width: 8),
                         _buildCircleButton(
                           icon: Icons.phone_rounded,

@@ -9,6 +9,11 @@ import '../utils/failure_converter.dart';
 class SessionManager {
   static final ValueNotifier<String?> autoAssignModeNotifier = ValueNotifier<String?>(null);
   static final ValueNotifier<String?> deliveryTypeNotifier = ValueNotifier<String?>(null);
+  static final ValueNotifier<int> refreshDashboardNotifier = ValueNotifier<int>(0);
+
+  static void refreshDashboard() {
+    refreshDashboardNotifier.value++;
+  }
 
   static Future<bool> checkIsKeyPresent(String key) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

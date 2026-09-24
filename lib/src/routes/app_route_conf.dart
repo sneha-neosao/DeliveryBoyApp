@@ -35,26 +35,51 @@ class AppRouteConf {
         pageBuilder: (context, state) => _fadePage(const LoginScreen()),
       ),
       GoRoute(
-        path: AppRoute.orderDetails.path,
-        name: AppRoute.orderDetails.name,
+        path: AppRoute.autoAssignOrderDetails.path,
+        name: AppRoute.autoAssignOrderDetails.name,
         pageBuilder: (context, state) {
           if (state.extra is Order) {
-            return _fadePage(OrderDetailsScreen(order: state.extra as Order));
+            return _fadePage(AutoAssignOrderDetailsScreen(order: state.extra as Order));
           } else if (state.extra is String) {
-            return _fadePage(OrderDetailsScreen(orderUuid: state.extra as String));
-          } else if (state.extra is Map<String, dynamic>) {
-            final map = state.extra as Map<String, dynamic>;
+            return _fadePage(AutoAssignOrderDetailsScreen(orderUuid: state.extra as String));
+          } else if (state.extra is Map) {
+            final map = state.extra as Map;
             return _fadePage(
-              OrderDetailsScreen(
+              AutoAssignOrderDetailsScreen(
                 order: map['order'] as Order?,
                 orderUuid: map['orderUuid'] as String?,
+                assignmentUuid: map['assignmentUuid'] as String?,
                 fetchAssignmentFirst: map['fetchAssignmentFirst'] as bool? ?? false,
                 deliveryType: map['deliveryType'] as String?,
               ),
             );
           }
           final order = state.extra as Order?;
-          return _fadePage(OrderDetailsScreen(order: order));
+          return _fadePage(AutoAssignOrderDetailsScreen(order: order));
+        },
+      ),
+      GoRoute(
+        path: AppRoute.orderDetails.path,
+        name: AppRoute.orderDetails.name,
+        pageBuilder: (context, state) {
+          if (state.extra is Order) {
+            return _fadePage(AutoAssignOrderDetailsScreen(order: state.extra as Order));
+          } else if (state.extra is String) {
+            return _fadePage(AutoAssignOrderDetailsScreen(orderUuid: state.extra as String));
+          } else if (state.extra is Map) {
+            final map = state.extra as Map;
+            return _fadePage(
+              AutoAssignOrderDetailsScreen(
+                order: map['order'] as Order?,
+                orderUuid: map['orderUuid'] as String?,
+                assignmentUuid: map['assignmentUuid'] as String?,
+                fetchAssignmentFirst: map['fetchAssignmentFirst'] as bool? ?? false,
+                deliveryType: map['deliveryType'] as String?,
+              ),
+            );
+          }
+          final order = state.extra as Order?;
+          return _fadePage(AutoAssignOrderDetailsScreen(order: order));
         },
       ),
       GoRoute(

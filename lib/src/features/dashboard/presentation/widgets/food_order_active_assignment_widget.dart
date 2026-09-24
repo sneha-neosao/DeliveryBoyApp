@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/routes/app_route_path.dart';
@@ -81,15 +82,18 @@ class _FoodOrderActiveAssignmentWidgetState extends State<FoodOrderActiveAssignm
         oStatus == 'PREPAIRING' ||
         oStatus == 'PREPARING';
 
-    void navigateToDetails() {
-      context.push(
-        AppRoute.orderDetails.path,
+    void navigateToDetails() async {
+      await context.push(
+        AppRoute.autoAssignOrderDetails.path,
         extra: {
           'orderUuid': widget.uuid,
           'fetchAssignmentFirst': true,
           'deliveryType': 'food',
         },
       );
+      if (mounted) {
+        SessionManager.refreshDashboard();
+      }
     }
 
     return ScaleTransition(

@@ -685,16 +685,11 @@ class _BulkOrderScreenState extends State<BulkOrderScreen> with SingleTickerProv
             16.hS,
             Builder(
               builder: (context) {
-                // final bool isDeliveredState = upperStatus == 'ON_THE_WAY';
-                // final String btnText = isDeliveredState ? 'DELIVERED' : 'ON THE WAY';
-                // final IconData btnIcon = isDeliveredState ? Icons.check_circle_rounded : Icons.delivery_dining_rounded;
-                // final bool isButtonActive = upperStatus == 'PICKED_UP' || upperStatus == 'ON_THE_WAY';
-                // final String targetStatus = upperStatus == 'PICKED_UP' ? 'ON_THE_WAY' : 'DELIVERED';
-
-                const String btnText = 'DELIVERED';
-                const IconData btnIcon = Icons.check_circle_rounded;
+                final bool isDeliveredState = upperStatus == 'ON_THE_WAY';
+                final String btnText = isDeliveredState ? 'DELIVERED' : 'ON THE WAY';
+                final IconData btnIcon = isDeliveredState ? Icons.check_circle_rounded : Icons.delivery_dining_rounded;
                 final bool isButtonActive = upperStatus == 'PICKED_UP' || upperStatus == 'ON_THE_WAY';
-                const String targetStatus = 'DELIVERED';
+                final String targetStatus = upperStatus == 'PICKED_UP' ? 'ON_THE_WAY' : 'DELIVERED';
 
                 return SizedBox(
                   width: double.infinity,

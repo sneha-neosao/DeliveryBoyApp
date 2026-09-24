@@ -3,6 +3,7 @@ import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.
 import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
+import 'package:delivery_boy_app/src/features/bulk_orders/bloc/current_assignment_orders_bloc/current_assignment_orders_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/food_order_current_assignment_bloc/food_order_current_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_assignment_bloc/order_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_status_update_bloc/order_status_update_bloc.dart';
@@ -22,27 +23,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-class OrderDetailsScreen extends StatefulWidget {
+class AutoAssignOrderDetailsScreen extends StatefulWidget {
   final Order? order;
   final String? orderUuid;
+  final String? assignmentUuid;
   final bool fetchAssignmentFirst;
   final String? deliveryType;
 
-  const OrderDetailsScreen({
+  const AutoAssignOrderDetailsScreen({
     super.key,
     this.order,
     this.orderUuid,
+    this.assignmentUuid,
     this.fetchAssignmentFirst = false,
     this.deliveryType,
   });
 
   @override
-  State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
+  State<AutoAssignOrderDetailsScreen> createState() => _AutoAssignOrderDetailsScreenState();
 }
 
-class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+typedef OrderDetailsScreen = AutoAssignOrderDetailsScreen;
+
+class _AutoAssignOrderDetailsScreenState extends State<AutoAssignOrderDetailsScreen> {
   late final OrderDetailsBloc _orderDetailsBloc;
   FoodOrderCurrentAssignmentBloc? _foodAssignmentBloc;
+  CurrentAssignmentOrdersBloc? _currentAssignmentOrdersBloc;
   Order? _order;
   String? _orderUuid;
   bool _fetchingAssignment = false;
@@ -54,12 +60,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     _orderUuid = widget.order?.uuId ?? widget.orderUuid;
     _orderDetailsBloc = getIt<OrderDetailsBloc>();
 
-    if (widget.fetchAssignmentFirst) {
+    if (_orderUuid != null && _orderUuid!.isNotEmpty) {
+      _orderDetailsBloc.add(OrderDetailsGetEvent(_orderUuid!));
+    } else if (widget.assignmentUuid != null && widget.assignmentUuid!.isNotEmpty) {
+      _fetchingAssignment = true;
+      _currentAssignmentOrdersBloc = getIt<CurrentAssignmentOrdersBloc>();
+      _currentAssignmentOrdersBloc!.add(
+        CurrentAssignmentOrdersGetEvent(widget.assignmentUuid!, 1, 10),
+      );
+    } else if (widget.fetchAssignmentFirst) {
       _fetchingAssignment = true;
       _foodAssignmentBloc = getIt<FoodOrderCurrentAssignmentBloc>();
       _foodAssignmentBloc!.add(const FoodOrderCurrentAssignmentGetEvent());
-    } else if (_orderUuid != null && _orderUuid!.isNotEmpty) {
-      _orderDetailsBloc.add(OrderDetailsGetEvent(_orderUuid!));
     }
   }
 
@@ -67,12 +79,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   void dispose() {
     _orderDetailsBloc.close();
     _foodAssignmentBloc?.close();
+    _currentAssignmentOrdersBloc?.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.fetchAssignmentFirst && _order == null && (_orderUuid == null || _orderUuid!.isEmpty)) {
+    if (!widget.fetchAssignmentFirst &&
+        (widget.assignmentUuid == null || widget.assignmentUuid!.isEmpty) &&
+        _order == null &&
+        (_orderUuid == null || _orderUuid!.isEmpty)) {
       return Scaffold(
         appBar: AppBar(
           title: Text('order_details'.tr()),
@@ -94,11 +110,177 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       );
     }
 
+    final Widget content = Scaffold(
+      backgroundColor: const Color(0xFFFFF9F5),
+      body: SafeArea(
+        top: false,
+        child: BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
+          builder: (context, state) {
+            if (_fetchingAssignment ||
+                state is OrderDetailsLoadingState ||
+                state is OrderDetailsInitialState) {
+              return const OrderDetailsShimmerWidget();
+            } else if (state is OrderDetailsFailureState) {
+              final retryUuid = _orderUuid ?? _order?.uuId ?? '';
+              return RefreshIndicator(
+                color: AppColor.darkOrange,
+                onRefresh: () async {
+                  if (retryUuid.isNotEmpty) {
+                    _orderDetailsBloc.add(OrderDetailsGetEvent(retryUuid));
+                  } else if (widget.assignmentUuid != null && _currentAssignmentOrdersBloc != null) {
+                    setState(() => _fetchingAssignment = true);
+                    _currentAssignmentOrdersBloc!.add(CurrentAssignmentOrdersGetEvent(widget.assignmentUuid!, 1, 10));
+                  } else if (widget.fetchAssignmentFirst && _foodAssignmentBloc != null) {
+                    setState(() => _fetchingAssignment = true);
+                    _foodAssignmentBloc!.add(const FoodOrderCurrentAssignmentGetEvent());
+                  }
+                  await Future.delayed(const Duration(seconds: 1));
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    height: MediaQuery.of(context).size.height - 100,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          size: 48,
+                          color: AppColor.bright_red,
+                        ),
+                        16.hS,
+                        Text(
+                          'failed_load_details'.tr(),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        8.hS,
+                        Text(
+                          state.message,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        24.hS,
+                        ElevatedButton(
+                          onPressed: () {
+                            if (retryUuid.isNotEmpty) {
+                              _orderDetailsBloc.add(OrderDetailsGetEvent(retryUuid));
+                            } else if (widget.fetchAssignmentFirst && _foodAssignmentBloc != null) {
+                              setState(() => _fetchingAssignment = true);
+                              _foodAssignmentBloc!.add(const FoodOrderCurrentAssignmentGetEvent());
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColor.darkOrange,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text('retry'.tr()),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            } else if (state is OrderDetailsSuccessState) {
+              final orderDetails = state.data.data;
+              if (orderDetails == null) {
+                return Center(
+                  child: Text('no_order_details_found'.tr()),
+                );
+              }
+              final fallbackOrder = _order ??
+                  Order(
+                    id: orderDetails.id,
+                    uuId: orderDetails.uuId,
+                    orderStatus: orderDetails.orderStatus,
+                    paymentMode: orderDetails.paymentMode,
+                    paymentStatus: orderDetails.paymentStatus,
+                    grandTotal: orderDetails.grandTotal,
+                    platformCharges: orderDetails.platformCharges,
+                    totalItems: orderDetails.totalItems,
+                    customerName: orderDetails.customerName,
+                    customerContact: orderDetails.customerContact,
+                    deliveryAddress: orderDetails.deliveryDetails?.address ?? '',
+                    deliveryName: orderDetails.deliveryDetails?.name ?? '',
+                    deliveryPhone: orderDetails.deliveryDetails?.phone ?? '',
+                    deliveryPincode: orderDetails.deliveryDetails?.pincode ?? '',
+                    slotStartTime: orderDetails.slotStartTime,
+                    slotEndTime: orderDetails.slotEndTime,
+                    deliveryDate: orderDetails.deliveryDate,
+                    isAssigned: true,
+                    assignedDeliveryBoyId: 0,
+                    assignedDeliveryBoyName: '',
+                    assignedDeliveryBoyPhone: '',
+                    assignmentStatus: '',
+                    deliveryLat: orderDetails.deliveryDetails?.deliveryLat ?? 0.0,
+                    deliveryLng: orderDetails.deliveryDetails?.deliveryLng ?? 0.0,
+                  );
+              return _OrderDetailsView(
+                orderDetails: orderDetails,
+                fallbackOrder: fallbackOrder,
+                deliveryType: widget.deliveryType,
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    final listeners = [
+      if (_foodAssignmentBloc != null)
+        BlocListener<FoodOrderCurrentAssignmentBloc, FoodOrderCurrentAssignmentState>(
+          listener: (context, state) {
+            if (state is FoodOrderCurrentAssignmentSuccessState) {
+              final activeOrder = state.data.data;
+              if (activeOrder != null && activeOrder.uuId.isNotEmpty) {
+                setState(() {
+                  _fetchingAssignment = false;
+                  _order = activeOrder.toOrder();
+                  _orderUuid = activeOrder.uuId;
+                });
+                _orderDetailsBloc.add(OrderDetailsGetEvent(activeOrder.uuId));
+              } else {
+                setState(() => _fetchingAssignment = false);
+              }
+            } else if (state is FoodOrderCurrentAssignmentFailureState) {
+              setState(() => _fetchingAssignment = false);
+              appSnackBar(context, AppColor.bright_red, state.message);
+            }
+          },
+        ),
+      if (_currentAssignmentOrdersBloc != null)
+        BlocListener<CurrentAssignmentOrdersBloc, CurrentAssignmentOrdersState>(
+          listener: (context, state) {
+            if (state is CurrentAssignmentOrdersSuccessState && state.data.data.isNotEmpty) {
+              final firstOrder = state.data.data.first;
+              setState(() {
+                _fetchingAssignment = false;
+                _order = firstOrder.toOrder();
+                _orderUuid = firstOrder.uuId;
+              });
+              _orderDetailsBloc.add(OrderDetailsGetEvent(firstOrder.uuId));
+            } else if (state is CurrentAssignmentOrdersFailureState) {
+              setState(() => _fetchingAssignment = false);
+              appSnackBar(context, AppColor.bright_red, state.message);
+            }
+          },
+        ),
+    ];
+
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: _orderDetailsBloc),
         if (_foodAssignmentBloc != null)
           BlocProvider.value(value: _foodAssignmentBloc!),
+        if (_currentAssignmentOrdersBloc != null)
+          BlocProvider.value(value: _currentAssignmentOrdersBloc!),
         BlocProvider(
           create: (context) => getIt<OrderAssignmentBloc>(),
         ),
@@ -106,146 +288,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           create: (context) => getIt<OrderStatusUpdateBloc>(),
         ),
       ],
-      child: MultiBlocListener(
-        listeners: [
-          if (_foodAssignmentBloc != null)
-            BlocListener<FoodOrderCurrentAssignmentBloc, FoodOrderCurrentAssignmentState>(
-              listener: (context, state) {
-                if (state is FoodOrderCurrentAssignmentSuccessState) {
-                  final activeOrder = state.data.data;
-                  if (activeOrder != null && activeOrder.uuId.isNotEmpty) {
-                    setState(() {
-                      _fetchingAssignment = false;
-                      _order = activeOrder.toOrder();
-                      _orderUuid = activeOrder.uuId;
-                    });
-                    _orderDetailsBloc.add(OrderDetailsGetEvent(activeOrder.uuId));
-                  } else {
-                    setState(() => _fetchingAssignment = false);
-                  }
-                } else if (state is FoodOrderCurrentAssignmentFailureState) {
-                  setState(() => _fetchingAssignment = false);
-                  appSnackBar(context, AppColor.bright_red, state.message);
-                }
-              },
-            ),
-        ],
-        child: Scaffold(
-          backgroundColor: const Color(0xFFFFF9F5),
-          body: SafeArea(
-            top: false,
-            child: BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
-              builder: (context, state) {
-                if (_fetchingAssignment ||
-                    state is OrderDetailsLoadingState ||
-                    state is OrderDetailsInitialState) {
-                  return const OrderDetailsShimmerWidget();
-                } else if (state is OrderDetailsFailureState) {
-                  final retryUuid = _orderUuid ?? _order?.uuId ?? '';
-                  return RefreshIndicator(
-                    color: AppColor.darkOrange,
-                    onRefresh: () async {
-                      if (retryUuid.isNotEmpty) {
-                        _orderDetailsBloc.add(OrderDetailsGetEvent(retryUuid));
-                      } else if (widget.fetchAssignmentFirst && _foodAssignmentBloc != null) {
-                        setState(() => _fetchingAssignment = true);
-                        _foodAssignmentBloc!.add(const FoodOrderCurrentAssignmentGetEvent());
-                      }
-                      await Future.delayed(const Duration(seconds: 1));
-                    },
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height - 100,
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline_rounded,
-                              size: 48,
-                              color: AppColor.bright_red,
-                            ),
-                            16.hS,
-                            Text(
-                              'failed_load_details'.tr(),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            8.hS,
-                            Text(
-                              state.message,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            24.hS,
-                            ElevatedButton(
-                              onPressed: () {
-                                if (retryUuid.isNotEmpty) {
-                                  _orderDetailsBloc.add(OrderDetailsGetEvent(retryUuid));
-                                } else if (widget.fetchAssignmentFirst && _foodAssignmentBloc != null) {
-                                  setState(() => _fetchingAssignment = true);
-                                  _foodAssignmentBloc!.add(const FoodOrderCurrentAssignmentGetEvent());
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColor.darkOrange,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: Text('retry'.tr()),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                } else if (state is OrderDetailsSuccessState) {
-                  final orderDetails = state.data.data;
-                  if (orderDetails == null) {
-                    return Center(
-                      child: Text('no_order_details_found'.tr()),
-                    );
-                  }
-                  final fallbackOrder = _order ??
-                      Order(
-                        id: orderDetails.id,
-                        uuId: orderDetails.uuId,
-                        orderStatus: orderDetails.orderStatus,
-                        paymentMode: orderDetails.paymentMode,
-                        paymentStatus: orderDetails.paymentStatus,
-                        grandTotal: orderDetails.grandTotal,
-                        platformCharges: orderDetails.platformCharges,
-                        totalItems: orderDetails.totalItems,
-                        customerName: orderDetails.customerName,
-                        customerContact: orderDetails.customerContact,
-                        deliveryAddress: orderDetails.deliveryDetails?.address ?? '',
-                        deliveryName: orderDetails.deliveryDetails?.name ?? '',
-                        deliveryPhone: orderDetails.deliveryDetails?.phone ?? '',
-                        deliveryPincode: orderDetails.deliveryDetails?.pincode ?? '',
-                        slotStartTime: orderDetails.slotStartTime,
-                        slotEndTime: orderDetails.slotEndTime,
-                        deliveryDate: orderDetails.deliveryDate,
-                        isAssigned: true,
-                        assignedDeliveryBoyId: 0,
-                        assignedDeliveryBoyName: '',
-                        assignedDeliveryBoyPhone: '',
-                        assignmentStatus: '',
-                        deliveryLat: orderDetails.deliveryDetails?.deliveryLat ?? 0.0,
-                        deliveryLng: orderDetails.deliveryDetails?.deliveryLng ?? 0.0,
-                      );
-                  return _OrderDetailsView(orderDetails: orderDetails, fallbackOrder: fallbackOrder);
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        ),
-      ),
+      child: listeners.isNotEmpty
+          ? MultiBlocListener(
+              listeners: listeners,
+              child: content,
+            )
+          : content,
     );
   }
 }
@@ -257,16 +305,16 @@ const double _kExpandedHeaderH = 130.0;
 const double _kCollapsedHeaderH = 62.0;
 // How many pixels of scroll trigger a full collapse
 const double _kCollapseScrollRange = 90.0;
-// Space for the circle avatar that peeks below the orange bar
-const double _kCircleGap = 65.0;
 
 class _OrderDetailsView extends StatefulWidget {
   final OrderDetails orderDetails;
   final Order fallbackOrder;
+  final String? deliveryType;
 
   const _OrderDetailsView({
     required this.orderDetails,
     required this.fallbackOrder,
+    this.deliveryType,
   });
 
   @override
@@ -282,6 +330,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
   /// When true, the Accept/Reject buttons are replaced by the PICKED UP button.
   bool _isAccepted = false;
 
+  /// Tracks whether the delivery boy has released this order.
+  bool _isReleased = false;
+
   /// Stores the last action dispatched so the listener knows what happened.
   String _pendingAction = '';
 
@@ -289,6 +340,14 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
   void initState() {
     super.initState();
     _sc.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(covariant _OrderDetailsView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.orderDetails.orderStatus != widget.orderDetails.orderStatus) {
+      _isAccepted = false;
+    }
   }
 
   @override
@@ -349,9 +408,6 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
 
   @override
   Widget build(BuildContext context) {
-    final orderDetails = widget.orderDetails;
-    final fallbackOrder = widget.fallbackOrder;
-
     return MultiBlocListener(
       listeners: [
         // ── Accept / Reject (OrderAssignmentBloc) ──────────────────────────
@@ -367,16 +423,28 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
 
               if (_pendingAction == 'accept') {
                 // Stay on screen — switch UI to the inactive PICKED UP button.
-                setState(() => _isAccepted = true);
+                setState(() {
+                  _isAccepted = true;
+                  _isReleased = false;
+                });
                 appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
                     ? state.data.message
                     : 'order_accepted'.tr());
+                // Refresh order details from server
+                context.read<OrderDetailsBloc>().add(
+                  OrderDetailsGetEvent(widget.orderDetails.uuId),
+                );
               } else {
-                // Reject — go back to the list.
-                appSnackBar(context, AppColor.green, state.data.message.isNotEmpty
-                    ? state.data.message
-                    : 'order_accepted'.tr());
-                context.pop();
+                // Release / Reject — navigate to dashboard tab screen and refresh current assignment API
+                appSnackBar(
+                  context,
+                  AppColor.green,
+                  state.data.message.isNotEmpty
+                      ? state.data.message
+                      : 'Order released',
+                );
+                SessionManager.refreshDashboard();
+                context.go(AppRoute.dashboard.path);
               }
             } else if (state is OrderAssignmentFailureState) {
               setState(() => _isLoading = false);
@@ -390,13 +458,20 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
             if (state is OrderStatusUpdateLoadingState) {
               setState(() => _isLoading = true);
             } else if (state is OrderStatusUpdateSuccessState) {
-              setState(() => _isLoading = false);
+              setState(() {
+                _isLoading = false;
+                _isAccepted = false;
+                _isReleased = false;
+              });
               appSnackBar(
                 context,
                 AppColor.green,
                 state.data.message.isNotEmpty ? state.data.message : 'Status updated',
               );
-              context.pop(true); // signal the orders screen to refresh
+              // Stay on details screen and refresh the details API to show updated UI
+              context.read<OrderDetailsBloc>().add(
+                OrderDetailsGetEvent(widget.orderDetails.uuId),
+              );
             } else if (state is OrderStatusUpdateFailureState) {
               setState(() => _isLoading = false);
               appSnackBar(context, AppColor.bright_red, state.message);
@@ -422,9 +497,7 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
   Widget _buildBody(BuildContext context) {
     final orderDetails = widget.orderDetails;
     final fallbackOrder = widget.fallbackOrder;
-
-    final autoAssignMode = (SessionManager.autoAssignModeNotifier.value ?? '').trim().toLowerCase().replaceAll('_', '-');
-    final bool isAutoAssign = autoAssignMode == 'auto-assign';
+    final String statusUpper = orderDetails.orderStatus.toUpperCase();
 
     final String displayId = 'ORD_${orderDetails.id}';
     final String customerName = orderDetails.deliveryDetails?.name.isNotEmpty == true
@@ -567,7 +640,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                             ),
                             child: ClipOval(
                               child: Image.asset(
-                                'assets/images/food_plate_img.png',
+                                widget.deliveryType?.toLowerCase() == 'food'
+                                    ? 'assets/images/food_plate_img.png'
+                                    : 'assets/images/vege_grocery_plate_img.png',
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.contain,
@@ -639,6 +714,11 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                         case 'ON_THE_WAY':
                           bgColor = const Color(0xFFDBEAFE);   // light indigo-blue
                           textColor = const Color(0xFF3B82F6);  // indigo-blue
+                          break;
+                        case 'REJECTED':
+                        case 'CANCELLED':
+                          bgColor = const Color(0xFFFFEEEE);   // light red
+                          textColor = AppColor.bright_red;      // red
                           break;
                         default:
                           bgColor = const Color(0xFFFFF2E6);   // default orange tint
@@ -740,36 +820,24 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
       ),
 
         // ── Sticky bottom area ─────────────────────────────────────────────
-        // AUTO-ASSIGN MODE:
-        //   PREPARING / PREPAIRING → Reject + Accept buttons
+        // AUTO-ASSIGN ORDER DETAILS (Vegetable Auto-assign & Food):
+        //   PREPARING / PREPAIRING (not accepted, not released) → ACCEPT and RELEASE buttons
         //   DEL_ACCEPTED / ACCEPTED → inactive PICKED UP button
         //   READY_FOR_PICKUP       → active   PICKED UP button
         //   PICKED_UP              → active   ON THE WAY button
         //   ON_THE_WAY             → active   DELIVERED button
-        // SLOT-WISE MODE:
-        //   PICKED_UP              → active   ON THE WAY button
-        //   ON_THE_WAY             → active   DELIVERED button
-        if (orderDetails.orderStatus != 'REJECTED' &&
-            orderDetails.orderStatus != 'DELIVERED') ...[
-          if (isAutoAssign) ...[
-            if ((orderDetails.orderStatus == 'PREPARING' || orderDetails.orderStatus == 'PREPAIRING') && !_isAccepted)
-              _buildPrepairingButtons(context, orderDetails)
-            else if (_isAccepted ||
-                orderDetails.orderStatus == 'READY_FOR_PICKUP' ||
-                orderDetails.orderStatus == 'ACCEPTED' ||
-                orderDetails.orderStatus == 'DEL_ACCEPTED')
-              _buildPickedUpButton(context, orderDetails)
-            else if (orderDetails.orderStatus == 'PICKED_UP')
-              _buildOnTheWayButton(context, orderDetails)
-            else if (orderDetails.orderStatus == 'ON_THE_WAY')
-              _buildDeliveredButton(context, orderDetails),
-          ] else ...[
-            if (orderDetails.orderStatus == 'PICKED_UP')
-              _buildOnTheWayButton(context, orderDetails)
-            else if (orderDetails.orderStatus == 'ON_THE_WAY')
-              _buildDeliveredButton(context, orderDetails),
-          ],
-        ],
+        //   Any other status / released → no button
+        if (!_isReleased && (statusUpper == 'PREPARING' || statusUpper == 'PREPAIRING') && !_isAccepted)
+          _buildPrepairingButtons(context, orderDetails)
+        else if (!_isReleased && (statusUpper == 'READY_FOR_PICKUP' ||
+            statusUpper == 'ACCEPTED' ||
+            statusUpper == 'DEL_ACCEPTED' ||
+            ((statusUpper == 'PREPARING' || statusUpper == 'PREPAIRING') && _isAccepted)))
+          _buildPickedUpButton(context, orderDetails)
+        else if (!_isReleased && statusUpper == 'PICKED_UP')
+          _buildOnTheWayButton(context, orderDetails)
+        else if (!_isReleased && statusUpper == 'ON_THE_WAY')
+          _buildDeliveredButton(context, orderDetails),
 
       ],
     );
@@ -890,7 +958,9 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                       size: 14, color: Color(0xFFCA8A04)),
                   const SizedBox(width: 6),
                   Text(
-                    'Waiting for restaurant to mark order ready...',
+                    widget.deliveryType?.toLowerCase() == 'food'
+                        ? 'Waiting for restaurant to mark order ready...'
+                        : 'Waiting for store to mark order ready...',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,

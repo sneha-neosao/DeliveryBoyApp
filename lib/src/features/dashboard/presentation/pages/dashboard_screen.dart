@@ -112,10 +112,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _sendFirebaseToken();
     });
+
+    SessionManager.refreshDashboardNotifier.addListener(_refreshDashboardAndAssignments);
   }
 
-  void _refreshDashboardAndAssignments() {
+  Future<void> _refreshDashboardAndAssignments() async {
     if (!mounted) return;
+    if (_deliveryType == null) {
+      final session = await SessionManager.getUserSession();
+      _deliveryType = session?.data?.deliveryBoy?.deliveryType;
+    }
     _dashboardBloc.add(DashboardGetEvent());
     if (_deliveryType?.toLowerCase() == "food") {
       _foodOrderCurrentAssignmentBloc.add(const FoodOrderCurrentAssignmentGetEvent());
@@ -127,6 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    SessionManager.refreshDashboardNotifier.removeListener(_refreshDashboardAndAssignments);
     _notificationSubscription?.cancel();
     _socketMessageSubscription?.cancel();
     super.dispose();

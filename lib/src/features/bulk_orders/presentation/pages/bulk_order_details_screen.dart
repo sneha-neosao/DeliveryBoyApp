@@ -1,6 +1,5 @@
 import 'package:delivery_boy_app/src/configs/injector/injector_conf.dart';
 import 'package:delivery_boy_app/src/core/extensions/integer_sizedbox_extension.dart';
-import 'package:delivery_boy_app/src/core/services/notification_service.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/features/orders/presentation/widgets/order_details_shimmer_widget.dart';
@@ -21,7 +20,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class BulkOrderDetailsScreen extends StatefulWidget {
   final Order? order;
@@ -278,7 +276,6 @@ class _BulkOrderDetailsScreenState extends State<BulkOrderDetailsScreen> {
 const double _kExpandedHeaderH = 130.0;
 const double _kCollapsedHeaderH = 62.0;
 const double _kCollapseScrollRange = 90.0;
-const double _kCircleGap = 65.0;
 
 class _OrderDetailsView extends StatefulWidget {
   final OrderDetails orderDetails;
@@ -297,8 +294,6 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
   final ScrollController _sc = ScrollController();
   double _scrollOffset = 0.0;
   bool _isLoading = false;
-  bool _isAccepted = false;
-  String _pendingAction = '';
 
   @override
   void initState() {
@@ -343,49 +338,22 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
 
   @override
   Widget build(BuildContext context) {
-    final orderDetails = widget.orderDetails;
-    final fallbackOrder = widget.fallbackOrder;
-
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<OrderAssignmentBloc, OrderAssignmentState>(
-          listener: (context, state) {
-            if (state is OrderAssignmentLoadingState) {
-              setState(() => _isLoading = true);
-            } else if (state is OrderAssignmentSuccessState) {
-              setState(() => _isLoading = false);
-
-              // Stop any ringing notification sound
-              NoficationService.cancelAll();
-
-              if (_pendingAction == 'accept') {
-                setState(() => _isAccepted = true);
-                appSnackBar(context, AppColor.green, state.data.message.isNotEmpty ? state.data.message : 'order_accepted'.tr());
-              } else {
-                appSnackBar(context, AppColor.green, state.data.message.isNotEmpty ? state.data.message : 'order_accepted'.tr());
-                context.pop();
-              }
-            } else if (state is OrderAssignmentFailureState) {
-              setState(() => _isLoading = false);
-              appSnackBar(context, AppColor.bright_red, state.message);
-            }
-          },
-        ),
-        BlocListener<OrderStatusUpdateBloc, OrderStatusUpdateState>(
-          listener: (context, state) {
+    return BlocListener<OrderStatusUpdateBloc, OrderStatusUpdateState>(
+      listener: (context, state) {
             if (state is OrderStatusUpdateLoadingState) {
               setState(() => _isLoading = true);
             } else if (state is OrderStatusUpdateSuccessState) {
               setState(() => _isLoading = false);
               appSnackBar(context, AppColor.green, state.data.message.isNotEmpty ? state.data.message : 'Status updated');
-              context.pop(true);
+              // Stay on details screen and refresh the details API to show updated UI
+              context.read<OrderDetailsBloc>().add(
+                OrderDetailsGetEvent(widget.orderDetails.uuId),
+              );
             } else if (state is OrderStatusUpdateFailureState) {
               setState(() => _isLoading = false);
               appSnackBar(context, AppColor.bright_red, state.message);
             }
-          },
-        ),
-      ],
+      },
       child: Stack(
         children: [
           _buildBody(context),
@@ -402,9 +370,6 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
   Widget _buildBody(BuildContext context) {
     final orderDetails = widget.orderDetails;
     final fallbackOrder = widget.fallbackOrder;
-
-    final autoAssignMode = (SessionManager.autoAssignModeNotifier.value ?? '').trim().toLowerCase().replaceAll('_', '-');
-    final bool isAutoAssign = autoAssignMode == 'auto-assign';
 
     final String displayId = 'ORD_${orderDetails.id}';
     final String customerName = orderDetails.deliveryDetails?.name.isNotEmpty == true
@@ -685,212 +650,18 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
           ),
         ),
         // ── Sticky bottom area ─────────────────────────────────────────────
-        // AUTO-ASSIGN MODE:
-        //   PREPARING / PREPAIRING → Reject + Accept buttons
-        //   DEL_ACCEPTED / ACCEPTED → inactive PICKED UP button
-        //   READY_FOR_PICKUP       → active   PICKED UP button
-        //   PICKED_UP / ON_THE_WAY → active   DELIVERED button
-        // SLOT-WISE MODE:
-        //   PICKED_UP / ON_THE_WAY → active   DELIVERED button
-        if (orderDetails.orderStatus != 'REJECTED' &&
-            orderDetails.orderStatus != 'DELIVERED') ...[
-          if (isAutoAssign) ...[
-            if ((orderDetails.orderStatus == 'PREPARING' || orderDetails.orderStatus == 'PREPAIRING') && !_isAccepted)
-              _buildPrepairingButtons(context, orderDetails)
-            else if (_isAccepted ||
-                orderDetails.orderStatus == 'READY_FOR_PICKUP' ||
-                orderDetails.orderStatus == 'ACCEPTED' ||
-                orderDetails.orderStatus == 'DEL_ACCEPTED')
-              _buildPickedUpButton(context, orderDetails)
-            else if (orderDetails.orderStatus == 'PICKED_UP' || orderDetails.orderStatus == 'ON_THE_WAY')
-              _buildDeliveredButton(context, orderDetails),
-          ] else ...[
-            if (orderDetails.orderStatus == 'PICKED_UP' || orderDetails.orderStatus == 'ON_THE_WAY')
-              _buildDeliveredButton(context, orderDetails),
-          ],
-        ],
+        // BULK / SLOT-WISE ORDERS:
+        //   PICKED_UP  → active ON THE WAY button
+        //   ON_THE_WAY → active DELIVERED button
+        //   Any other status → no button
+        if (orderDetails.orderStatus.toUpperCase() == 'PICKED_UP')
+          _buildOnTheWayButton(context, orderDetails)
+        else if (orderDetails.orderStatus.toUpperCase() == 'ON_THE_WAY')
+          _buildDeliveredButton(context, orderDetails),
       ],
     );
   }
 
-  // ── Reject + Accept buttons (shown when status is PREPARING) ───────────────
-  Widget _buildPrepairingButtons(BuildContext context, OrderDetails orderDetails) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Reject button
-          Expanded(
-            child: SizedBox(
-              height: 50,
-              child: OutlinedButton(
-                onPressed: _isLoading ? null : () => _showRejectDialog(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColor.bright_red,
-                  side: const BorderSide(color: AppColor.bright_red, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                child: Text(
-                  'release'.tr(),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-              ),
-            ),
-          ),
-          12.wS,
-          // Accept button
-          Expanded(
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () {
-                        _pendingAction = 'accept';
-                        context.read<OrderAssignmentBloc>().add(
-                          OrderAssignmentGetEvent(
-                            orderDetails.uuId,
-                            'DEL_ACCEPTED',
-                            null,
-                          ),
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColor.darkOrange,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  elevation: 3,
-                  shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'accept_order'.tr(),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.arrow_forward_rounded, size: 18),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── PICKED UP button (shown after accept, active only when READY_FOR_PICKUP) ─
-  Widget _buildPickedUpButton(BuildContext context, OrderDetails orderDetails) {
-    // Button is inactive for DEL_ACCEPTED; becomes active only when READY_FOR_PICKUP.
-    final bool isReadyForPickup =
-        orderDetails.orderStatus.toUpperCase() == 'READY_FOR_PICKUP';
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Hint label shown while waiting for READY_FOR_PICKUP
-          if (!isReadyForPickup)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.access_time_rounded,
-                      size: 14, color: Color(0xFFCA8A04)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Waiting for restaurant to mark order ready...',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          // PICKED UP button
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              // Active only when order is READY_FOR_PICKUP
-              onPressed: (isReadyForPickup && !_isLoading)
-                  ? () {
-                      context.read<OrderStatusUpdateBloc>().add(
-                        OrderStatusUpdateGetEvent(
-                          orderDetails.uuId,
-                          'PICKED_UP',
-                          null,
-                        ),
-                      );
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                // Orange when active, gray when inactive
-                backgroundColor:
-                    isReadyForPickup ? AppColor.darkOrange : Colors.grey.shade300,
-                foregroundColor:
-                    isReadyForPickup ? Colors.white : Colors.grey.shade500,
-                disabledBackgroundColor: Colors.grey.shade300,
-                disabledForegroundColor: Colors.grey.shade500,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                elevation: isReadyForPickup ? 3 : 0,
-                shadowColor: AppColor.darkOrange.withValues(alpha: 0.4),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.shopping_bag_rounded,
-                    size: 18,
-                    color: isReadyForPickup ? Colors.white : Colors.grey.shade500,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'PICKED UP',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /*
   // ── ON THE WAY button (shown when status is PICKED_UP) ────────────────────
   Widget _buildOnTheWayButton(BuildContext context, OrderDetails orderDetails) {
     return Container(
@@ -944,7 +715,6 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
       ),
     );
   }
-  */
 
   // ── DELIVERED button (shown when status is PICKED_UP / ON_THE_WAY) ─────────
   Widget _buildDeliveredButton(BuildContext context, OrderDetails orderDetails) {
@@ -994,170 +764,6 @@ class _OrderDetailsViewState extends State<_OrderDetailsView> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showRejectDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogCtx) => _RejectOrderDialog(
-        orderUuid: widget.orderDetails.uuId,
-        onSubmit: (reason) {
-          _pendingAction = 'reject';
-          context.read<OrderAssignmentBloc>().add(
-                OrderAssignmentGetEvent(
-                  widget.orderDetails.uuId,
-                  'REJECTED',
-                  reason,
-                ),
-              );
-        },
-      ),
-    );
-  }
-}
-
-class _RejectOrderDialog extends StatefulWidget {
-  final String orderUuid;
-  final ValueChanged<String> onSubmit;
-
-  const _RejectOrderDialog({
-    required this.orderUuid,
-    required this.onSubmit,
-  });
-
-  @override
-  State<_RejectOrderDialog> createState() => _RejectOrderDialogState();
-}
-
-class _RejectOrderDialogState extends State<_RejectOrderDialog> {
-  late final TextEditingController _reasonCtrl;
-  final _formKey = GlobalKey<FormState>();
-
-  @override
-  void initState() {
-    super.initState();
-    _reasonCtrl = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _reasonCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                          color: Color(0xFFFFEEEE), shape: BoxShape.circle),
-                      child: const Icon(Icons.cancel_outlined,
-                          color: AppColor.bright_red, size: 20),
-                    ),
-                    12.wS,
-                    Text('release_order'.tr(),
-                        style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87)),
-                  ],
-                ),
-                16.hS,
-                TextFormField(
-                  controller: _reasonCtrl,
-                  maxLines: 3,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    hintText: 'enter_rejection_reason'.tr(),
-                    hintStyle:
-                        TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                    filled: true,
-                    fillColor: const Color(0xFFFFF9F5),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200)),
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200)),
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: AppColor.darkOrange, width: 1.5)),
-                    errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: AppColor.bright_red, width: 1.5)),
-                    focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: AppColor.bright_red, width: 1.5)),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'please_enter_reason'.tr();
-                    }
-                    return null;
-                  },
-                ),
-                20.hS,
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: SizedBox(
-                    height: 46,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (!_formKey.currentState!.validate()) return;
-                        final reason = _reasonCtrl.text.trim();
-                        Navigator.of(context).pop();
-                        widget.onSubmit(reason);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColor.darkOrange,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25)),
-                        elevation: 3,
-                        shadowColor:
-                            AppColor.darkOrange.withValues(alpha: 0.4),
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('submit'.tr(),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15)),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.arrow_forward_rounded, size: 18),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),

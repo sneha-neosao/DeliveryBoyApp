@@ -1,3 +1,4 @@
+import 'package:delivery_boy_app/src/core/session/session_manager.dart';
 import 'package:delivery_boy_app/src/core/theme/app_color.dart';
 import 'package:delivery_boy_app/src/features/orders/bloc/order_start_assignment_bloc/order_start_assignment_bloc.dart';
 import 'package:delivery_boy_app/src/remote/models/order_model/food_order_model/order_list_response.dart';
@@ -85,12 +86,19 @@ class _VegetableOrderActiveAssignmentWidgetState extends State<VegetableOrderAct
     bool showInactivePickedUp = assignmentStatus == 'DEL_ACCEPTED';
     bool showActivePickedUp = assignmentStatus == 'READY_FOR_PICKUP';
 
-    void navigateToDetails() {
+    void navigateToDetails() async {
       if (isAutoAssign) {
-        if (widget.order != null) {
-          context.push(AppRoute.bulkOrderDetails.path, extra: widget.order);
-        } else {
-          context.push(AppRoute.bulkOrderDetails.path, extra: widget.uuid);
+        await context.push(
+          AppRoute.autoAssignOrderDetails.path,
+          extra: {
+            'assignmentUuid': widget.uuid,
+            'order': widget.order,
+            'orderUuid': widget.order?.uuId,
+            'deliveryType': 'vegetable',
+          },
+        );
+        if (mounted) {
+          SessionManager.refreshDashboard();
         }
       } else {
         context.go(AppRoute.orders.path);
